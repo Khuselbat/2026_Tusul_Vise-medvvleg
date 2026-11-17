@@ -8,7 +8,7 @@
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас эсвэл S3-тэй нийцтэй сан (MinIO), сонголтоор AES-256-GCM (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 128 интеграцын тест бодит MySQL дээр (+ S3/MinIO тест CI-д); Playwright E2E 5 урсгал × (desktop + mobile) |
+| Тест | Node test runner + Supertest — 128 интеграцын тест бодит MySQL дээр (+ S3 драйверийн тест CI-д); Playwright E2E 5 урсгал × (desktop + mobile) |
 | Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, ZIP татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
 | Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |

@@ -1,4 +1,4 @@
-// Үе 3 — S3-тэй нийцтэй файлын сан (MinIO). Зөвхөн S3_TEST=1 үед ажиллана (CI нь MinIO контейнертэй ажиллуулна):
+// Үе 3 — S3-тэй нийцтэй файлын сан (MinIO, AWS S3 г.м.). Зөвхөн S3_TEST=1 үед ажиллана (CI нь S3 эмулятортой ажиллуулна):
 //   S3_TEST=1 S3_ENDPOINT=http://127.0.0.1:9000 S3_BUCKET=civiz-test S3_ACCESS_KEY=… S3_SECRET_KEY=… node --test test/s3.test.js
 import { test, describe, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -6,7 +6,7 @@ import { config } from '../src/config.js';
 
 const enabled = process.env.S3_TEST === '1';
 
-describe('S3 драйвер (MinIO)', { skip: !enabled && 'S3_TEST=1 тохируулаагүй' }, () => {
+describe('S3 драйвер', { skip: !enabled && 'S3_TEST=1 тохируулаагүй' }, () => {
   let storage;
   before(async () => {
     config.storage.driver = 's3';
