@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import { Link } from 'react-router-dom';
 
 /* ───────── Форматлах ───────── */
+import { t } from '../i18n.js';
 export const fmtDate = (v) => {
   if (!v) return '—';
   const d = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00`) : new Date(v);
@@ -17,33 +18,62 @@ export const fmtBytes = (n) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(
 
 /* ───────── Өгөгдөл уншиx hook ───────── */
 export function useAsync(fn, deps = []) {
-  const [state, setState] = useState({ loading: true, error: null, data: null });
+  const [state, setState] = useState({
+    loading: true,
+    error: null,
+    data: null,
+  });
   const fnRef = useRef(fn);
   fnRef.current = fn;
   const run = useCallback(() => {
     let alive = true;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState((s) => ({
+      ...s,
+      loading: true,
+      error: null,
+    }));
     fnRef
       .current()
-      .then((data) => alive && setState({ loading: false, error: null, data }))
-      .catch((error) => alive && setState({ loading: false, error, data: null }));
+      .then(
+        (data) =>
+          alive &&
+          setState({
+            loading: false,
+            error: null,
+            data,
+          }),
+      )
+      .catch(
+        (error) =>
+          alive &&
+          setState({
+            loading: false,
+            error,
+            data: null,
+          }),
+      );
     return () => {
       alive = false;
     };
   }, deps); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => run(), [run]);
-  return { ...state, reload: run };
+  return {
+    ...state,
+    reload: run,
+  };
 }
 
 /* ───────── Хуудасны бүтэц ───────── */
 export function Page({ crumb, title, subtitle, actions, children, footer }) {
   useEffect(() => {
-    document.title = `${title} · Цахим виз`;
+    document.title = t('{{v0}} · Цахим виз', {
+      v0: title,
+    });
   }, [title]);
   return (
     <div className="page">
       <nav className="crumb" aria-label="Breadcrumb">
-        <Link to="/">Цахим виз</Link>
+        <Link to="/">{t('Цахим виз')}</Link>
         {crumb?.map((c, i) => (
           <span key={i}>
             {' '}
@@ -63,13 +93,11 @@ export function Page({ crumb, title, subtitle, actions, children, footer }) {
     </div>
   );
 }
-
 export const Card = ({ children, className = '', ...p }) => (
   <section className={`card ${className}`} {...p}>
     {children}
   </section>
 );
-
 export function Button({ variant = 'primary', loading, children, className = '', ...p }) {
   return (
     <button className={`btn btn-${variant} ${className}`} disabled={loading || p.disabled} {...p}>
@@ -79,7 +107,6 @@ export function Button({ variant = 'primary', loading, children, className = '',
   );
 }
 export const LinkButton = ({ variant = 'primary', className = '', ...p }) => <Link className={`btn btn-${variant} ${className}`} {...p} />;
-
 export function Field({ label, error, hint, children, required, htmlFor, className = '' }) {
   return (
     <div className={`field ${error ? 'has-error' : ''} ${className}`}>
@@ -105,7 +132,6 @@ export function Field({ label, error, hint, children, required, htmlFor, classNa
     </div>
   );
 }
-
 const STATUS_TONE = {
   DRAFT: 'muted',
   SUBMITTED: 'info',
@@ -118,20 +144,19 @@ const STATUS_TONE = {
   DISABLED: 'danger',
 };
 export const STATUS_LABEL = {
-  DRAFT: 'Ноорог',
-  SUBMITTED: 'Илгээсэн',
-  IN_REVIEW: 'Бүрдэл хянаж байна',
-  INCOMPLETE: 'Нэмэлт материал шаардсан',
-  COMPLETE: 'Бүрдэл бүрэн',
-  DELIVERED: 'Эрх бүхий байгууллагад хүргүүлсэн',
-  ACTIVE: 'Идэвхтэй',
-  COMING_SOON: 'Тун удахгүй',
-  DISABLED: 'Хаалттай',
+  DRAFT: t('Ноорог'),
+  SUBMITTED: t('Илгээсэн'),
+  IN_REVIEW: t('Бүрдэл хянаж байна'),
+  INCOMPLETE: t('Нэмэлт материал шаардсан'),
+  COMPLETE: t('Бүрдэл бүрэн'),
+  DELIVERED: t('Эрх бүхий байгууллагад хүргүүлсэн'),
+  ACTIVE: t('Идэвхтэй'),
+  COMING_SOON: t('Тун удахгүй'),
+  DISABLED: t('Хаалттай'),
 };
 export const Badge = ({ status, children, tone }) => (
   <span className={`badge badge-${tone || STATUS_TONE[status] || 'muted'}`}>{children || STATUS_LABEL[status] || status}</span>
 );
-
 export const Empty = ({ title, children, action }) => (
   <div className="empty">
     <div className="empty-icon" aria-hidden>
@@ -142,27 +167,25 @@ export const Empty = ({ title, children, action }) => (
     {action}
   </div>
 );
-
 export function ErrorBox({ error, onRetry }) {
   if (!error) return null;
   const msg =
     error.status === 403
-      ? 'Энэ мэдээллийг үзэх эрхгүй байна.'
+      ? t('Энэ мэдээллийг үзэх эрхгүй байна.')
       : error.status === 404
-        ? 'Мэдээлэл олдсонгүй. Холбоос буруу эсвэл устгагдсан байж болно.'
+        ? t('Мэдээлэл олдсонгүй. Холбоос буруу эсвэл устгагдсан байж болно.')
         : error.message;
   return (
     <div className="alert alert-danger" role="alert">
       <span>{msg}</span>
       {onRetry && error.status !== 403 && error.status !== 404 && (
         <Button variant="ghost" onClick={onRetry}>
-          Дахин оролдох
+          {t('Дахин оролдох')}
         </Button>
       )}
     </div>
   );
 }
-
 export const Alert = ({ tone = 'info', children, title }) => (
   <div className={`alert alert-${tone}`} role={tone === 'danger' ? 'alert' : 'status'}>
     <div>
@@ -172,34 +195,76 @@ export const Alert = ({ tone = 'info', children, title }) => (
     </div>
   </div>
 );
-
-export const Loading = ({ label = 'Уншиж байна…' }) => (
+export const Loading = ({ label = t('Уншиж байна…') }) => (
   <div className="loading">
     <span className="spinner" /> {label}
   </div>
 );
 export const Skeleton = ({ rows = 3 }) => (
-  <div className="skeleton-wrap" aria-busy="true" aria-label="Уншиж байна">
-    {Array.from({ length: rows }).map((_, i) => (
+  <div className="skeleton-wrap" aria-busy="true" aria-label={t('Уншиж байна')}>
+    {Array.from({
+      length: rows,
+    }).map((_, i) => (
       <div key={i} className="skeleton" />
     ))}
   </div>
 );
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
 
+/**
+ * Хүртээмжтэй цонх (WCAG 2.1.2, 2.4.3): нээгдэхэд фокус дотогш, Tab цонхноос гарахгүй (trap),
+ * Escape хаана, хаагдахад фокус өмнөх элемент рүүгээ буцна.
+ */
 export function Modal({ open, title, onClose, children, footer, wide }) {
+  const ref = useRef(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  // Нээсэн элементийг render-ийн үед барина: autoFocus нь effect-ээс өмнө фокусыг цонх руу шилжүүлдэг
+  const prevRef = useRef(null);
+  if (open && prevRef.current === null && typeof document !== 'undefined') prevRef.current = document.activeElement;
+  if (!open) prevRef.current = null;
   useEffect(() => {
     if (!open) return undefined;
-    const onKey = (e) => e.key === 'Escape' && onClose?.();
+    const prev = prevRef.current;
+    const box = ref.current;
+    // autoFocus-тай элемент байвал түүнийг, үгүй бол биеийн эхний оролт/товч, эс бөгөөс “Хаах”
+    if (box && !box.contains(document.activeElement)) {
+      const first =
+        box.querySelector('.modal-body ' + FOCUSABLE) || box.querySelector('.modal-foot ' + FOCUSABLE) || box.querySelector(FOCUSABLE);
+      first?.focus();
+    }
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        closeRef.current?.();
+        return;
+      }
+      if (e.key !== 'Tab' || !box) return;
+      const items = [...box.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);
+      if (!items.length) return;
+      const firstEl = items[0];
+      const lastEl = items[items.length - 1];
+      if (e.shiftKey && (document.activeElement === firstEl || !box.contains(document.activeElement))) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && (document.activeElement === lastEl || !box.contains(document.activeElement))) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) prev.focus();
+    };
+  }, [open]);
   if (!open) return null;
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div className={`modal ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+      <div ref={ref} className={`modal ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <h2>{title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Хаах">
+          <button className="icon-btn" onClick={onClose} aria-label={t('Хаах')}>
             ×
           </button>
         </div>
@@ -209,8 +274,7 @@ export function Modal({ open, title, onClose, children, footer, wide }) {
     </div>
   );
 }
-
-export function Confirm({ open, title, children, confirmLabel = 'Баталгаажуулах', tone = 'primary', onConfirm, onClose, loading }) {
+export function Confirm({ open, title, children, confirmLabel = t('Баталгаажуулах'), tone = 'primary', onConfirm, onClose, loading }) {
   return (
     <Modal
       open={open}
@@ -219,7 +283,7 @@ export function Confirm({ open, title, children, confirmLabel = 'Баталга�
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={loading}>
-            Цуцлах
+            {t('Цуцлах')}
           </Button>
           <Button variant={tone} onClick={onConfirm} loading={loading}>
             {confirmLabel}
@@ -231,20 +295,19 @@ export function Confirm({ open, title, children, confirmLabel = 'Баталга�
     </Modal>
   );
 }
-
 export function Pagination({ page, pageSize, total, onPage }) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
   if (pages <= 1) return null;
   return (
     <div className="pagination">
       <Button variant="ghost" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        ‹ Өмнөх
+        {t('‹ Өмнөх')}
       </Button>
       <span>
-        {page} / {pages} · нийт {total}
+        {page} / {pages} {t('· нийт')} {total}
       </span>
       <Button variant="ghost" disabled={page >= pages} onClick={() => onPage(page + 1)}>
-        Дараах ›
+        {t('Дараах ›')}
       </Button>
     </div>
   );
@@ -256,16 +319,23 @@ export function ToastProvider({ children }) {
   const [items, setItems] = useState([]);
   const push = useCallback((msg, tone = 'ok') => {
     const id = Math.random();
-    setItems((x) => [...x, { id, msg, tone }]);
-    setTimeout(() => setItems((x) => x.filter((t) => t.id !== id)), 4000);
+    setItems((x) => [
+      ...x,
+      {
+        id,
+        msg,
+        tone,
+      },
+    ]);
+    setTimeout(() => setItems((x) => x.filter((tv) => tv.id !== id)), 4000);
   }, []);
   return (
     <ToastCtx.Provider value={push}>
       {children}
       <div className="toasts" aria-live="polite">
-        {items.map((t) => (
-          <div key={t.id} className={`toast toast-${t.tone}`}>
-            {t.msg}
+        {items.map((tv2) => (
+          <div key={tv2.id} className={`toast toast-${tv2.tone}`}>
+            {tv2.msg}
           </div>
         ))}
       </div>
@@ -273,7 +343,6 @@ export function ToastProvider({ children }) {
   );
 }
 export const useToast = () => useContext(ToastCtx);
-
 export const DL = ({ items }) => (
   <dl className="dl">
     {items.filter(Boolean).map(([k, v]) => (

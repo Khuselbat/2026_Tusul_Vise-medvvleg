@@ -2,8 +2,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api.js';
 import { useState } from 'react';
 import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, Field, Button, Pagination, fmtDate } from '../../components/ui.jsx';
-
-const LATEST = { COMPLETE: ['ok', 'Бүрэн'], INCOMPLETE: ['warn', 'Дутуу'] };
+import { t } from '../../i18n.js';
+const LATEST = {
+  COMPLETE: ['ok', t('Бүрэн')],
+  INCOMPLETE: ['warn', t('Дутуу')],
+};
 
 // Зураг 51 Операторын ажлын жагсаалт — зөвхөн өөрт хуваарилсан мэдүүлэг
 export default function Worklist() {
@@ -28,25 +31,32 @@ export default function Worklist() {
     setSp(n);
   };
   const s = stats.data?.byStatus || {};
-
   return (
-    <Page crumb={[{ label: 'Оператор' }]} title="Ажлын жагсаалт" subtitle="Танд хуваарилагдсан мэдүүлгийн бүрдлийг шалгана">
+    <Page
+      crumb={[
+        {
+          label: t('Оператор'),
+        },
+      ]}
+      title={t('Ажлын жагсаалт')}
+      subtitle={t('Танд хуваарилагдсан мэдүүлгийн бүрдлийг шалгана')}
+    >
       <div className="grid grid-4">
         <Card className="stat">
           <div className="num">{s.IN_REVIEW || 0}</div>
-          <div className="lbl">Шалгах хүлээгдэж буй</div>
+          <div className="lbl">{t('Шалгах хүлээгдэж буй')}</div>
         </Card>
         <Card className="stat">
           <div className="num">{s.INCOMPLETE || 0}</div>
-          <div className="lbl">Дутуу гэж үнэлсэн</div>
+          <div className="lbl">{t('Дутуу гэж үнэлсэн')}</div>
         </Card>
         <Card className="stat">
           <div className="num">{s.COMPLETE || 0}</div>
-          <div className="lbl">Бүрэн</div>
+          <div className="lbl">{t('Бүрэн')}</div>
         </Card>
         <Card className="stat">
           <div className="num">{stats.data?.reviewsToday ?? 0}</div>
-          <div className="lbl">Өнөөдрийн үнэлгээ</div>
+          <div className="lbl">{t('Өнөөдрийн үнэлгээ')}</div>
         </Card>
       </div>
       <form
@@ -54,45 +64,49 @@ export default function Worklist() {
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
-          set('q')({ target: { value: q.trim() } });
+          set('q')({
+            target: {
+              value: q.trim(),
+            },
+          });
         }}
       >
-        <Field label="Хайх (лавлах дугаар, мэдүүлэгч)" htmlFor="wq">
+        <Field label={t('Хайх (лавлах дугаар, мэдүүлэгч)')} htmlFor="wq">
           <input id="wq" type="search" value={q} onChange={(e) => setQ(e.target.value)} maxLength={60} />
         </Field>
-        <Field label="Төлөв" htmlFor="ws">
+        <Field label={t('Төлөв')} htmlFor="ws">
           <select id="ws" value={params.status} onChange={set('status')}>
-            <option value="">Бүгд</option>
-            <option value="IN_REVIEW">Бүрдэл хянаж байна</option>
-            <option value="INCOMPLETE">Нэмэлт материал шаардсан</option>
-            <option value="COMPLETE">Бүрдэл бүрэн</option>
-            <option value="DELIVERED">Хүргүүлсэн</option>
+            <option value="">{t('Бүгд')}</option>
+            <option value="IN_REVIEW">{t('Бүрдэл хянаж байна')}</option>
+            <option value="INCOMPLETE">{t('Нэмэлт материал шаардсан')}</option>
+            <option value="COMPLETE">{t('Бүрдэл бүрэн')}</option>
+            <option value="DELIVERED">{t('Хүргүүлсэн')}</option>
           </select>
         </Field>
-        <Field label="Эрэмбэ" htmlFor="wo">
+        <Field label={t('Эрэмбэ')} htmlFor="wo">
           <select id="wo" value={params.sort} onChange={set('sort')}>
-            <option value="submitted_asc">Илгээсэн (эртнээс)</option>
-            <option value="submitted_desc">Илгээсэн (сүүлийнхээс)</option>
-            <option value="status">Төлөвөөр</option>
-            <option value="ref_asc">Лавлах дугаараар</option>
+            <option value="submitted_asc">{t('Илгээсэн (эртнээс)')}</option>
+            <option value="submitted_desc">{t('Илгээсэн (сүүлийнхээс)')}</option>
+            <option value="status">{t('Төлөвөөр')}</option>
+            <option value="ref_asc">{t('Лавлах дугаараар')}</option>
           </select>
         </Field>
-        <Field label="Сүүлийн үнэлгээ" htmlFor="l">
+        <Field label={t('Сүүлийн үнэлгээ')} htmlFor="l">
           <select id="l" value={params.latest} onChange={set('latest')}>
-            <option value="">Бүгд</option>
-            <option value="NONE">Үнэлээгүй</option>
-            <option value="INCOMPLETE">Дутуу</option>
-            <option value="COMPLETE">Бүрэн</option>
+            <option value="">{t('Бүгд')}</option>
+            <option value="NONE">{t('Үнэлээгүй')}</option>
+            <option value="INCOMPLETE">{t('Дутуу')}</option>
+            <option value="COMPLETE">{t('Бүрэн')}</option>
           </select>
         </Field>
-        <Field label="Илгээсэн (эхлэх)" htmlFor="f">
+        <Field label={t('Илгээсэн (эхлэх)')} htmlFor="f">
           <input id="f" type="date" value={params.from} onChange={set('from')} />
         </Field>
-        <Field label="Илгээсэн (дуусах)" htmlFor="t">
+        <Field label={t('Илгээсэн (дуусах)')} htmlFor="t">
           <input id="t" type="date" value={params.to} onChange={set('to')} />
         </Field>
         <Button type="submit" variant="ghost">
-          Хайх
+          {t('Хайх')}
         </Button>
         {sp.toString() && (
           <Button
@@ -103,7 +117,7 @@ export default function Worklist() {
               setSp({});
             }}
           >
-            Шүүлт цэвэрлэх
+            {t('Шүүлт цэвэрлэх')}
           </Button>
         )}
       </form>
@@ -113,18 +127,18 @@ export default function Worklist() {
       ) : (
         data &&
         (data.items.length === 0 ? (
-          <Empty title="Хуваарилсан мэдүүлэг алга">Админ танд мэдүүлэг хуваарилах үед энд харагдана.</Empty>
+          <Empty title={t('Хуваарилсан мэдүүлэг алга')}>{t('Админ танд мэдүүлэг хуваарилах үед энд харагдана.')}</Empty>
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Лавлах дугаар</th>
-                  <th>Мэдүүлэгч</th>
-                  <th>Төрөл</th>
-                  <th>Илгээсэн</th>
-                  <th>Файл</th>
-                  <th>Сүүлийн үнэлгээ</th>
+                  <th>{t('Лавлах дугаар')}</th>
+                  <th>{t('Мэдүүлэгч')}</th>
+                  <th>{t('Төрөл')}</th>
+                  <th>{t('Илгээсэн')}</th>
+                  <th>{t('Файл')}</th>
+                  <th>{t('Сүүлийн үнэлгээ')}</th>
                   <th />
                 </tr>
               </thead>
@@ -142,12 +156,12 @@ export default function Worklist() {
                       {a.latestReview ? (
                         <Badge tone={LATEST[a.latestReview][0]}>{LATEST[a.latestReview][1]}</Badge>
                       ) : (
-                        <Badge tone="info">Үнэлээгүй</Badge>
+                        <Badge tone="info">{t('Үнэлээгүй')}</Badge>
                       )}
                     </td>
                     <td>
                       <Link className="btn btn-primary btn-sm" to={`/operator/applications/${a.publicId}`}>
-                        Шалгах
+                        {t('Шалгах')}
                       </Link>
                     </td>
                   </tr>
@@ -162,7 +176,13 @@ export default function Worklist() {
           page={data.page}
           pageSize={data.pageSize}
           total={data.total}
-          onPage={(p) => set('page')({ target: { value: String(p) } })}
+          onPage={(p) =>
+            set('page')({
+              target: {
+                value: String(p),
+              },
+            })
+          }
         />
       )}
     </Page>

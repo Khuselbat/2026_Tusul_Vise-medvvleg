@@ -127,7 +127,7 @@ test('мэдүүлэгчээс оператор хүртэлх бүтэн урс
 
   // ── Үе 2: мэдэгдлийн хонх (илгээсэн + “Дутуу”) ──
   await page.goto('/app');
-  const bell = page.getByRole('button', { name: /^Мэдэгдэл \(2 уншаагүй\)/ });
+  const bell = page.getByRole('button', { name: /^Мэдэгдэл: 2 уншаагүй/ });
   await expect(bell).toBeVisible();
   await bell.click();
   await page
@@ -135,5 +135,5 @@ test('мэдүүлэгчээс оператор хүртэлх бүтэн урс
     .getByRole('button', { name: /Нэмэлт материал шаардлагатай/ })
     .click();
   await expect(page).toHaveURL(new RegExp(`/app/applications/${ref}$`));
-  await expect(page.getByRole('button', { name: /^Мэдэгдэл \(1 уншаагүй\)/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Мэдэгдэл: 1 уншаагүй/ })).toBeVisible();
 });

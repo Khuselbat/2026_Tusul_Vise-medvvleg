@@ -5,40 +5,40 @@ import { Modal, Button } from './ui.jsx';
 import { NotificationBell, EmailVerifyBanner, OfflineBanner } from './Notifications.jsx';
 
 // Хүснэгт 40: эрх тус бүрийн үндсэн цэс
+import { t, lang, LANGS, setLanguage } from '../i18n.js';
 const MENUS = {
   GUEST: [
-    ['/', 'Нүүр', true],
-    ['/visas', 'Визийн мэдээлэл'],
-    ['/login', 'Нэвтрэх'],
-    ['/register', 'Бүртгүүлэх'],
+    ['/', t('Нүүр'), true],
+    ['/visas', t('Визийн мэдээлэл')],
+    ['/login', t('Нэвтрэх')],
+    ['/register', t('Бүртгүүлэх')],
   ],
   APPLICANT: [
-    ['/app', 'Хянах самбар', true],
-    ['/app/new', 'Шинэ мэдүүлэг'],
-    ['/app/applications', 'Миний архив'],
-    ['/app/imports', 'Өмнөх мэдүүлэг'],
-    ['/app/official-result', 'Үр дүн шалгах'],
-    ['/visas', 'Визийн мэдээлэл'],
-    ['/app/profile', 'Профайл'],
+    ['/app', t('Хянах самбар'), true],
+    ['/app/new', t('Шинэ мэдүүлэг')],
+    ['/app/applications', t('Миний архив')],
+    ['/app/imports', t('Өмнөх мэдүүлэг')],
+    ['/app/official-result', t('Үр дүн шалгах')],
+    ['/visas', t('Визийн мэдээлэл')],
+    ['/app/profile', t('Профайл')],
   ],
   OPERATOR: [
-    ['/operator', 'Ажлын жагсаалт', true],
-    ['/operator/history', 'Үнэлгээний түүх'],
-    ['/operator/profile', 'Профайл'],
+    ['/operator', t('Ажлын жагсаалт'), true],
+    ['/operator/history', t('Үнэлгээний түүх')],
+    ['/operator/profile', t('Профайл')],
   ],
   ADMIN: [
-    ['/admin', 'Самбар', true],
-    ['/admin/countries', 'Улс'],
-    ['/admin/visa-types', 'Визийн төрөл'],
-    ['/admin/users', 'Хэрэглэгчид'],
-    ['/admin/assignments', 'Хуваарилалт'],
-    ['/admin/stats', 'Статистик'],
-    ['/admin/audit', 'Бүртгэл'],
-    ['/admin/deletion-requests', 'Устгах хүсэлт'],
-    ['/admin/profile', 'Профайл'],
+    ['/admin', t('Самбар'), true],
+    ['/admin/countries', t('Улс')],
+    ['/admin/visa-types', t('Визийн төрөл')],
+    ['/admin/users', t('Хэрэглэгчид')],
+    ['/admin/assignments', t('Хуваарилалт')],
+    ['/admin/stats', t('Статистик')],
+    ['/admin/audit', t('Бүртгэл')],
+    ['/admin/deletion-requests', t('Устгах хүсэлт')],
+    ['/admin/profile', t('Профайл')],
   ],
 };
-
 export default function Layout() {
   const { user, logout, expired, setExpired } = useAuth();
   const [open, setOpen] = useState(false);
@@ -46,41 +46,47 @@ export default function Layout() {
   const navigate = useNavigate();
   useEffect(() => setOpen(false), [loc.pathname]);
   const menu = MENUS[user?.role || 'GUEST'];
-
   return (
     <div className="shell">
       <a className="skip" href="#main">
-        Үндсэн агуулга руу шилжих
+        {t('Үндсэн агуулга руу шилжих')}
       </a>
       <header className="topbar">
-        <button className="icon-btn burger" aria-label="Цэс" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <button className="icon-btn burger" aria-label={t('Цэс')} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           ☰
         </button>
         <Link to={user ? HOME_BY_ROLE[user.role] : '/'} className="brand">
           <span className="logo" aria-hidden>
             V
           </span>
-          <span>ЦАХИМ ВИЗ</span>
+          <span>{t('ЦАХИМ ВИЗ')}</span>
         </Link>
         <div className="top-right">
           <span className="role-label" title={user?.email}>
-            {user ? `${ROLE_LABEL[user.role]} · ${user.name}` : 'Зочин'}
+            {user ? `${ROLE_LABEL[user.role]} · ${user.name}` : t('Зочин')}
           </span>
+          <select className="lang-select" aria-label="Хэл / Language" value={lang} onChange={(e) => setLanguage(e.target.value)}>
+            {Object.entries(LANGS).map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </select>
           {user && <NotificationBell />}
           {user ? (
             <button className="link-strong" onClick={logout}>
-              Гарах
+              {t('Гарах')}
             </button>
           ) : (
             <Link className="link-strong" to="/login">
-              Нэвтрэх
+              {t('Нэвтрэх')}
             </Link>
           )}
         </div>
       </header>
       <div className="body">
         <aside className={`sidebar ${open ? 'open' : ''}`}>
-          <div className="side-title">ҮНДСЭН ЦЭС</div>
+          <div className="side-title">{t('ҮНДСЭН ЦЭС')}</div>
           <nav>
             {menu.map(([to, label, end]) => (
               <NavLink key={to} to={to} end={end} className={({ isActive }) => `side-link ${isActive ? 'active' : ''}`}>
@@ -89,8 +95,8 @@ export default function Layout() {
             ))}
           </nav>
           <div className="side-help">
-            <div>Тусламж хэрэгтэй юу?</div>
-            <Link to="/help">Мэдээллийн заавар</Link>
+            <div>{t('Тусламж хэрэгтэй юу?')}</div>
+            <Link to="/help">{t('Мэдээллийн заавар')}</Link>
           </div>
         </aside>
         {open && <div className="side-backdrop" onClick={() => setOpen(false)} />}
@@ -99,13 +105,13 @@ export default function Layout() {
           <EmailVerifyBanner user={user} />
           <Outlet />
           <footer className="site-foot">
-            Цахим виз · Энэхүү систем нь материалын бүрдлийг зохион байгуулна; виз олгох шийдвэрийг эрх бүхий байгууллага гаргана.
+            {t('Цахим виз · Энэхүү систем нь материалын бүрдлийг зохион байгуулна; виз олгох шийдвэрийг эрх бүхий байгууллага гаргана.')}
           </footer>
         </main>
       </div>
       <Modal
         open={expired}
-        title="Сесс дууссан"
+        title={t('Сесс дууссан')}
         onClose={() => setExpired(false)}
         footer={
           <Button
@@ -114,11 +120,11 @@ export default function Layout() {
               navigate(`/login?next=${encodeURIComponent(loc.pathname)}`);
             }}
           >
-            Дахин нэвтрэх
+            {t('Дахин нэвтрэх')}
           </Button>
         }
       >
-        Нэвтрэх хугацаа дууссан эсвэл эрх өөрчлөгдсөн байна. Дахин нэвтэрнэ үү. Илгээгээгүй мэдээлэл хадгалагдаагүй байж болно.
+        {t('Нэвтрэх хугацаа дууссан эсвэл эрх өөрчлөгдсөн байна. Дахин нэвтэрнэ үү. Илгээгээгүй мэдээлэл хадгалагдаагүй байж болно.')}
       </Modal>
     </div>
   );

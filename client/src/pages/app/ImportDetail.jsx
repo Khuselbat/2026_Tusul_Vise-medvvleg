@@ -19,6 +19,7 @@ import {
 import { FileViewer, asEvidence, usePendingScanPoll, FileOpenButton } from '../../components/shared.jsx';
 
 // Үе 1.3 — Импортолсон мэдүүлгийн дэлгэрэнгүй (зөвхөн уншина; устгаж болно)
+import { t, translateServer } from '../../i18n.js';
 export default function ImportDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,13 +30,14 @@ export default function ImportDetail() {
   const [busy, setBusy] = useState(false);
   const [delErr, setDelErr] = useState(null);
   const x = data?.item;
-
   async function remove() {
     setBusy(true);
     setDelErr(null);
     try {
       await api.del(`/api/app/imports/${id}`);
-      navigate('/app/imports', { replace: true });
+      navigate('/app/imports', {
+        replace: true,
+      });
     } catch (ex) {
       setDelErr(ex);
       setConfirm(false);
@@ -43,16 +45,27 @@ export default function ImportDetail() {
       setBusy(false);
     }
   }
-
   return (
     <Page
-      crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Өмнөх мэдүүлэг', to: '/app/imports' }, { label: id }]}
-      title="Өмнөх мэдүүлэг"
+      crumb={[
+        {
+          label: t('Мэдүүлэгч'),
+          to: '/app',
+        },
+        {
+          label: t('Өмнөх мэдүүлэг'),
+          to: '/app/imports',
+        },
+        {
+          label: id,
+        },
+      ]}
+      title={t('Өмнөх мэдүүлэг')}
       subtitle={x && `${x.countryName} · ${x.visaCategory}`}
       actions={
         x && (
           <Button variant="ghost" onClick={() => setConfirm(true)}>
-            Устгах
+            {t('Устгах')}
           </Button>
         )
       }
@@ -65,33 +78,33 @@ export default function ImportDetail() {
           <div className="grid grid-main">
             <Card>
               <div className="between">
-                <h2>Мэдээлэл</h2>
-                <Badge tone="muted">Импортолсон · баталгаажаагүй</Badge>
+                <h2>{t('Мэдээлэл')}</h2>
+                <Badge tone="muted">{t('Импортолсон · баталгаажаагүй')}</Badge>
               </div>
               <DL
                 items={[
                   [
-                    'Дугаар',
+                    t('Дугаар'),
                     <span key="id" className="mono">
                       {x.publicId}
                     </span>,
                   ],
-                  ['Улс', x.countryName],
-                  ['Визийн ангилал', x.visaCategory],
-                  ['Мэдүүлсэн огноо', fmtDate(x.appliedOn)],
-                  x.authority && ['Хаана өгсөн', x.authority],
-                  x.officialRef && ['Хүлээн авсан дугаар', x.officialRef],
-                  ['Үр дүн (таны мэдээлснээр)', x.outcomeLabel],
-                  x.note && ['Тэмдэглэл', x.note],
-                  ['Нэмсэн', fmtDateTime(x.createdAt)],
+                  [t('Улс'), x.countryName],
+                  [t('Визийн ангилал'), x.visaCategory],
+                  [t('Мэдүүлсэн огноо'), fmtDate(x.appliedOn)],
+                  x.authority && [t('Хаана өгсөн'), x.authority],
+                  x.officialRef && [t('Хүлээн авсан дугаар'), x.officialRef],
+                  [t('Үр дүн (таны мэдээлснээр)'), translateServer(x.outcomeLabel)],
+                  x.note && [t('Тэмдэглэл'), x.note],
+                  [t('Нэмсэн'), fmtDateTime(x.createdAt)],
                 ]}
               />
-              <Alert tone="info">Таны оруулсан мэдээлэл — систем үүнийг шалгаж баталгаажуулаагүй, визийн шийдвэр биш.</Alert>
+              <Alert tone="info">{t('Таны оруулсан мэдээлэл — систем үүнийг шалгаж баталгаажуулаагүй, визийн шийдвэр биш.')}</Alert>
             </Card>
             <Card>
-              <h2>Баримт</h2>
+              <h2>{t('Баримт')}</h2>
               {x.files.length === 0 ? (
-                <p className="muted">Баримт хавсаргаагүй.</p>
+                <p className="muted">{t('Баримт хавсаргаагүй.')}</p>
               ) : (
                 x.files.map((f) => (
                   <div key={f.id} className="file-line">
@@ -106,14 +119,14 @@ export default function ImportDetail() {
       )}
       <Confirm
         open={confirm}
-        title="Энэ бичлэгийг устгах уу?"
+        title={t('Энэ бичлэгийг устгах уу?')}
         tone="danger"
-        confirmLabel="Устгах"
+        confirmLabel={t('Устгах')}
         loading={busy}
         onClose={() => !busy && setConfirm(false)}
         onConfirm={remove}
       >
-        Бичлэг болон хавсаргасан бүх баримт бүрмөсөн устна. Буцаах боломжгүй.
+        {t('Бичлэг болон хавсаргасан бүх баримт бүрмөсөн устна. Буцаах боломжгүй.')}
       </Confirm>
       <FileViewer doc={viewing} onClose={() => setViewing(null)} />
     </Page>

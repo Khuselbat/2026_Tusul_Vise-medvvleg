@@ -16,7 +16,7 @@ import {
   fmtDateTime,
 } from '../../components/ui.jsx';
 import { Steps } from '../../components/shared.jsx';
-
+import { t } from '../../i18n.js';
 const today = () => new Date().toISOString().slice(0, 10);
 const EMPTY = {
   familyName: '',
@@ -30,7 +30,11 @@ const EMPTY = {
   travelPurpose: '',
   intendedEntryOn: '',
   intendedExitOn: '',
-  extraFields: { occupation: '', homeAddress: '', stayAddress: '' },
+  extraFields: {
+    occupation: '',
+    homeAddress: '',
+    stayAddress: '',
+  },
 };
 
 /** Клиент талын шалгалт (сервер дээр ижил шалгалт дахин хийгдэнэ) */
@@ -50,19 +54,20 @@ function validate(f) {
     'intendedExitOn',
   ];
   req.forEach((k) => {
-    if (!String(f[k] || '').trim()) e[k] = 'Заавал бөглөнө.';
+    if (!String(f[k] || '').trim()) e[k] = t('Заавал бөглөнө.');
   });
-  if (f.familyName && !/^[A-Za-z][A-Za-z\s'-]*$/.test(f.familyName.trim())) e.familyName = 'Паспорт дээрх латин үсгээр бичнэ үү.';
-  if (f.givenName && !/^[A-Za-z][A-Za-z\s'-]*$/.test(f.givenName.trim())) e.givenName = 'Паспорт дээрх латин үсгээр бичнэ үү.';
-  if (f.birthDate && f.birthDate > today()) e.birthDate = 'Төрсөн огноо ирээдүйд байж болохгүй.';
-  if (f.passportNumber && !/^[A-Za-z0-9]{6,12}$/.test(f.passportNumber.trim())) e.passportNumber = 'Паспортын дугаар 6–12 латин үсэг, тоо.';
-  if (f.passportExpiresOn && f.passportExpiresOn <= today()) e.passportExpiresOn = 'Паспортын хугацаа дууссан байна.';
-  if (f.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.contactEmail.trim())) e.contactEmail = 'Имэйлийн хэлбэр буруу байна.';
-  if (f.intendedEntryOn && f.intendedEntryOn < today()) e.intendedEntryOn = 'Орох огноо өнгөрсөн байна.';
+  if (f.familyName && !/^[A-Za-z][A-Za-z\s'-]*$/.test(f.familyName.trim())) e.familyName = t('Паспорт дээрх латин үсгээр бичнэ үү.');
+  if (f.givenName && !/^[A-Za-z][A-Za-z\s'-]*$/.test(f.givenName.trim())) e.givenName = t('Паспорт дээрх латин үсгээр бичнэ үү.');
+  if (f.birthDate && f.birthDate > today()) e.birthDate = t('Төрсөн огноо ирээдүйд байж болохгүй.');
+  if (f.passportNumber && !/^[A-Za-z0-9]{6,12}$/.test(f.passportNumber.trim()))
+    e.passportNumber = t('Паспортын дугаар 6–12 латин үсэг, тоо.');
+  if (f.passportExpiresOn && f.passportExpiresOn <= today()) e.passportExpiresOn = t('Паспортын хугацаа дууссан байна.');
+  if (f.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.contactEmail.trim())) e.contactEmail = t('Имэйлийн хэлбэр буруу байна.');
+  if (f.intendedEntryOn && f.intendedEntryOn < today()) e.intendedEntryOn = t('Орох огноо өнгөрсөн байна.');
   if (f.intendedEntryOn && f.intendedExitOn && f.intendedExitOn < f.intendedEntryOn)
-    e.intendedExitOn = 'Гарах огноо орох огнооноос хойш байна.';
+    e.intendedExitOn = t('Гарах огноо орох огнооноос хойш байна.');
   if (!e.passportExpiresOn && f.passportExpiresOn && f.intendedExitOn && f.passportExpiresOn <= f.intendedExitOn)
-    e.passportExpiresOn = 'Паспорт аяллын хугацаанд хүчинтэй байх ёстой.';
+    e.passportExpiresOn = t('Паспорт аяллын хугацаанд хүчинтэй байх ёстой.');
   return e;
 }
 
@@ -82,74 +87,118 @@ export default function NewForm() {
   // Үе 4: автомат хадгалалт (серверт шифрлэгдэнэ)
   const createdRef = useRef(null);
   const touched = useRef(false);
-  const [save, setSave] = useState({ status: 'idle', at: null });
+  const [save, setSave] = useState({
+    status: 'idle',
+    at: null,
+  });
   const currentRef = () => draftRef || createdRef.current;
-
   const ctx = useAsync(async () => {
     if (draftRef) {
       const { draft } = await api.get(`/api/app/drafts/${draftRef}`);
-      return { visa: { ...draft.visa, canApply: draft.canSubmit, blockReason: draft.blockReason }, draft };
+      return {
+        visa: {
+          ...draft.visa,
+          canApply: draft.canSubmit,
+          blockReason: draft.blockReason,
+        },
+        draft,
+      };
     }
     if (versionId) {
       const { visa } = await api.get(`/api/visas/${versionId}`);
       const copy = copyFrom ? (await api.get(`/api/app/applications/${copyFrom}/form-copy`)).form : null;
-      return { visa, copy };
+      return {
+        visa,
+        copy,
+      };
     }
     const { visas } = await api.get('/api/visas');
-    return { choices: visas.filter((v) => v.canApply) };
+    return {
+      choices: visas.filter((v) => v.canApply),
+    };
   }, [draftRef, versionId, copyFrom]);
-
   useEffect(() => {
     // Автомат хадгалалт байвал (эцсийн хадгалалтаас шинэ) түүнийг сэргээнэ
     const auto = ctx.data?.draft?.autosave;
-    if (auto) setSave({ status: 'restored', at: auto.savedAt });
+    if (auto)
+      setSave({
+        status: 'restored',
+        at: auto.savedAt,
+      });
     const src = auto?.form || ctx.data?.draft?.form || ctx.data?.copy;
     if (src)
       setForm({
         ...EMPTY,
         ...src,
-        extraFields: { ...EMPTY.extraFields, ...(src.extraFields || {}) },
+        extraFields: {
+          ...EMPTY.extraFields,
+          ...(src.extraFields || {}),
+        },
         intendedEntryOn: src.intendedEntryOn || '',
         intendedExitOn: src.intendedExitOn || '',
       });
   }, [ctx.data]);
-
   const set = (k) => (e) => {
     touched.current = true;
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setForm((f) => ({
+      ...f,
+      [k]: e.target.value,
+    }));
   };
   const setX = (k) => (e) => {
     touched.current = true;
-    setForm((f) => ({ ...f, extraFields: { ...f.extraFields, [k]: e.target.value } }));
+    setForm((f) => ({
+      ...f,
+      extraFields: {
+        ...f.extraFields,
+        [k]: e.target.value,
+      },
+    }));
   };
-
   const canAutosave = !!(draftRef || (versionId && ctx.data?.visa?.canApply));
   async function autosave(data) {
     if (!navigator.onLine) {
-      setSave((s) => ({ ...s, status: 'offline' }));
+      setSave((s) => ({
+        ...s,
+        status: 'offline',
+      }));
       return;
     }
-    setSave((s) => ({ ...s, status: 'saving' }));
+    setSave((s) => ({
+      ...s,
+      status: 'saving',
+    }));
     try {
       let ref = currentRef();
       if (!ref) {
-        ref = (await api.post('/api/app/drafts', { versionId: Number(versionId), idempotencyKey: key })).publicId;
+        ref = (
+          await api.post('/api/app/drafts', {
+            versionId: Number(versionId),
+            idempotencyKey: key,
+          })
+        ).publicId;
         createdRef.current = ref;
         // Дахин ачаалахад ноорог сэргээгдэхийн тулд хаягийг шинэчилнэ (хуудсыг дахин зурахгүйгээр)
         window.history.replaceState(window.history.state, '', `/app/new?draft=${ref}`);
       }
       const r = await api.put(`/api/app/drafts/${ref}/autosave`, data);
-      setSave({ status: 'saved', at: r.savedAt });
+      setSave({
+        status: 'saved',
+        at: r.savedAt,
+      });
     } catch {
-      setSave((s) => ({ ...s, status: navigator.onLine ? 'error' : 'offline' }));
+      setSave((s) => ({
+        ...s,
+        status: navigator.onLine ? 'error' : 'offline',
+      }));
     }
   }
 
   // Бичихээ зогсоосноос 1.5 сек дараа хадгална; сүлжээ сэргэхэд дахин оролдоно
   useEffect(() => {
     if (!touched.current || !canAutosave) return undefined;
-    const t = setTimeout(() => autosave(form), 1500);
-    return () => clearTimeout(t);
+    const tv = setTimeout(() => autosave(form), 1500);
+    return () => clearTimeout(tv);
   }, [form, canAutosave]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const retry = () => touched.current && canAutosave && autosave(form);
@@ -169,7 +218,13 @@ export default function NewForm() {
     setBusy(true);
     try {
       let ref = currentRef();
-      if (!ref) ref = (await api.post('/api/app/drafts', { versionId: Number(versionId), idempotencyKey: key })).publicId;
+      if (!ref)
+        ref = (
+          await api.post('/api/app/drafts', {
+            versionId: Number(versionId),
+            idempotencyKey: key,
+          })
+        ).publicId;
       await api.put(`/api/app/drafts/${ref}/form`, form);
       navigate(`/app/new/documents?draft=${ref}`);
     } catch (ex) {
@@ -179,7 +234,6 @@ export default function NewForm() {
       setBusy(false);
     }
   }
-
   async function cancel() {
     if (currentRef()) {
       try {
@@ -190,16 +244,15 @@ export default function NewForm() {
     }
     navigate('/app');
   }
-
   if (ctx.loading)
     return (
-      <Page title="Мэдүүлгийн анкет бөглөх">
+      <Page title={t('Мэдүүлгийн анкет бөглөх')}>
         <Skeleton rows={5} />
       </Page>
     );
   if (ctx.error)
     return (
-      <Page title="Мэдүүлгийн анкет бөглөх">
+      <Page title={t('Мэдүүлгийн анкет бөглөх')}>
         <ErrorBox error={ctx.error} onRetry={ctx.reload} />
       </Page>
     );
@@ -208,12 +261,20 @@ export default function NewForm() {
   if (ctx.data.choices) {
     return (
       <Page
-        crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Шинэ мэдүүлэг' }]}
-        title="Шинэ мэдүүлэг"
-        subtitle="Мэдүүлэх визийн төрлөө сонгоно уу"
+        crumb={[
+          {
+            label: t('Мэдүүлэгч'),
+            to: '/app',
+          },
+          {
+            label: t('Шинэ мэдүүлэг'),
+          },
+        ]}
+        title={t('Шинэ мэдүүлэг')}
+        subtitle={t('Мэдүүлэх визийн төрлөө сонгоно уу')}
       >
         {ctx.data.choices.length === 0 ? (
-          <Empty title="Одоогоор мэдүүлэг авах ангилал алга" />
+          <Empty title={t('Одоогоор мэдүүлэг авах ангилал алга')} />
         ) : (
           <div className="grid grid-2">
             {ctx.data.choices.map((v) => (
@@ -221,11 +282,17 @@ export default function NewForm() {
                 <div className="small muted">
                   {v.country.name} · {v.code}
                 </div>
-                <h3 style={{ margin: '6px 0 12px' }}>{v.name}</h3>
+                <h3
+                  style={{
+                    margin: '6px 0 12px',
+                  }}
+                >
+                  {v.name}
+                </h3>
                 <div className="row-actions">
-                  <LinkButton to={`/app/new?version=${v.versionId}`}>Сонгох</LinkButton>
+                  <LinkButton to={`/app/new?version=${v.versionId}`}>{t('Сонгох')}</LinkButton>
                   <LinkButton variant="ghost" to={`/visas/${v.versionId}`}>
-                    Шаардлага унших
+                    {t('Шаардлага унших')}
                   </LinkButton>
                 </div>
               </Card>
@@ -235,7 +302,6 @@ export default function NewForm() {
       </Page>
     );
   }
-
   const v = ctx.data.visa;
   const F = (k, label, props = {}) => (
     <Field label={label} htmlFor={k} error={errors[k]} required={props.required !== false} hint={props.hint} className={props.className}>
@@ -250,85 +316,141 @@ export default function NewForm() {
           autoComplete={props.ac || 'off'}
           max={props.max}
           min={props.min}
-          style={props.upper ? { textTransform: 'uppercase' } : undefined}
+          style={
+            props.upper
+              ? {
+                  textTransform: 'uppercase',
+                }
+              : undefined
+          }
         />
       )}
     </Field>
   );
-
   return (
     <Page
-      crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Шинэ мэдүүлэг' }]}
-      title="Мэдүүлгийн анкет бөглөх"
+      crumb={[
+        {
+          label: t('Мэдүүлэгч'),
+          to: '/app',
+        },
+        {
+          label: t('Шинэ мэдүүлэг'),
+        },
+      ]}
+      title={t('Мэдүүлгийн анкет бөглөх')}
       subtitle={`${v.country?.name} · ${v.code} — ${v.name}`}
     >
       <Steps current={0} />
-      {!v.canApply && <Alert tone="danger">{v.blockReason || 'Энэ ангилалд мэдүүлэг хүлээн авахгүй байна.'}</Alert>}
+      {!v.canApply && <Alert tone="danger">{v.blockReason || t('Энэ ангилалд мэдүүлэг хүлээн авахгүй байна.')}</Alert>}
       {ctx.data.copy && (
-        <Alert tone="info">Өмнөх мэдүүлгээс анкетын мэдээллийг хуулсан. Паспорт, огноо зэрэг хугацаатай мэдээллийг дахин шалгана уу.</Alert>
+        <Alert tone="info">
+          {t('Өмнөх мэдүүлгээс анкетын мэдээллийг хуулсан. Паспорт, огноо зэрэг хугацаатай мэдээллийг дахин шалгана уу.')}
+        </Alert>
       )}
       {err && !Object.keys(err.fields || {}).length && <ErrorBox error={err} />}
       <form onSubmit={next} noValidate>
         <Card>
-          <p className="small muted" style={{ marginTop: 0 }}>
-            Албан ёсны анкетыг англи хэлээр бөглөнө — нэрийг паспорт дээрх латин бичлэгээр оруулна уу.
+          <p
+            className="small muted"
+            style={{
+              marginTop: 0,
+            }}
+          >
+            {t('Албан ёсны анкетыг англи хэлээр бөглөнө — нэрийг паспорт дээрх латин бичлэгээр оруулна уу.')}
           </p>
           <div className="form-grid">
-            {F('familyName', 'Овог (Surname)', { upper: true })}
-            {F('givenName', 'Нэр (Given name)', { upper: true })}
-            {F('birthDate', 'Төрсөн огноо', { type: 'date', max: today() })}
-            {F('nationalityCode', 'Иргэншил (ISO код)', { upper: true, hint: 'ж: MN' })}
-            {F('passportNumber', 'Паспортын дугаар', { upper: true, hint: 'Сервер дээр шифрлэж хадгална' })}
-            {F('passportExpiresOn', 'Паспорт дуусах огноо', { type: 'date', min: today() })}
-            {F('contactEmail', 'Имэйл', { type: 'email', ac: 'email' })}
-            {F('contactPhone', 'Утас', { type: 'tel', ac: 'tel', hint: 'ж: +976 9911 2233' })}
-            {F('intendedEntryOn', 'Орох огноо', { type: 'date', min: today() })}
-            {F('intendedExitOn', 'Гарах огноо', { type: 'date', min: form.intendedEntryOn || today() })}
-            {F('travelPurpose', 'Аяллын зорилго', { textarea: true, className: 'span-2' })}
-            <Field label="Ажил эрхлэлт" htmlFor="occ">
+            {F('familyName', t('Овог (Surname)'), {
+              upper: true,
+            })}
+            {F('givenName', t('Нэр (Given name)'), {
+              upper: true,
+            })}
+            {F('birthDate', t('Төрсөн огноо'), {
+              type: 'date',
+              max: today(),
+            })}
+            {F('nationalityCode', t('Иргэншил (ISO код)'), {
+              upper: true,
+              hint: t('ж: MN'),
+            })}
+            {F('passportNumber', t('Паспортын дугаар'), {
+              upper: true,
+              hint: t('Сервер дээр шифрлэж хадгална'),
+            })}
+            {F('passportExpiresOn', t('Паспорт дуусах огноо'), {
+              type: 'date',
+              min: today(),
+            })}
+            {F('contactEmail', t('Имэйл'), {
+              type: 'email',
+              ac: 'email',
+            })}
+            {F('contactPhone', t('Утас'), {
+              type: 'tel',
+              ac: 'tel',
+              hint: t('ж: +976 9911 2233'),
+            })}
+            {F('intendedEntryOn', t('Орох огноо'), {
+              type: 'date',
+              min: today(),
+            })}
+            {F('intendedExitOn', t('Гарах огноо'), {
+              type: 'date',
+              min: form.intendedEntryOn || today(),
+            })}
+            {F('travelPurpose', t('Аяллын зорилго'), {
+              textarea: true,
+              className: 'span-2',
+            })}
+            <Field label={t('Ажил эрхлэлт')} htmlFor="occ">
               <input id="occ" value={form.extraFields.occupation} onChange={setX('occupation')} />
             </Field>
-            <Field label="Байрлах хаяг (очих улсад)" htmlFor="stay">
+            <Field label={t('Байрлах хаяг (очих улсад)')} htmlFor="stay">
               <input id="stay" value={form.extraFields.stayAddress} onChange={setX('stayAddress')} />
             </Field>
-            <Field label="Гэрийн хаяг" htmlFor="home" className="span-2">
+            <Field label={t('Гэрийн хаяг')} htmlFor="home" className="span-2">
               <input id="home" value={form.extraFields.homeAddress} onChange={setX('homeAddress')} />
             </Field>
           </div>
         </Card>
         <div className="page-footer">
           <Button type="submit" loading={busy} disabled={!v.canApply}>
-            Үргэлжлүүлэх
+            {t('Үргэлжлүүлэх')}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setCancelOpen(true)}>
-            Цуцлах
+            {t('Цуцлах')}
           </Button>
           <Link className="btn btn-link" to={`/visas/${v.versionId}`} target="_blank">
-            Шаардлагыг харах ↗
+            {t('Шаардлагыг харах ↗')}
           </Link>
         </div>
         <p className="small muted autosave-status" role="status" aria-live="polite">
           {
             {
               idle: '',
-              saving: 'Хадгалж байна…',
-              saved: `Ноорог автоматаар хадгалагдсан · ${fmtDateTime(save.at)}`,
-              restored: `Өмнө автоматаар хадгалсан ноорог сэргээгдлээ · ${fmtDateTime(save.at)}`,
-              error: 'Автомат хадгалалт амжилтгүй. “Үргэлжлүүлэх” дарж хадгална уу.',
-              offline: 'Сүлжээ тасарсан — өөрчлөлт хадгалагдаагүй. Холболт сэргэхэд автоматаар хадгална.',
+              saving: t('Хадгалж байна…'),
+              saved: t('Ноорог автоматаар хадгалагдсан · {{v0}}', {
+                v0: fmtDateTime(save.at),
+              }),
+              restored: t('Өмнө автоматаар хадгалсан ноорог сэргээгдлээ · {{v0}}', {
+                v0: fmtDateTime(save.at),
+              }),
+              error: t('Автомат хадгалалт амжилтгүй. “Үргэлжлүүлэх” дарж хадгална уу.'),
+              offline: t('Сүлжээ тасарсан — өөрчлөлт хадгалагдаагүй. Холболт сэргэхэд автоматаар хадгална.'),
             }[save.status]
           }
         </p>
       </form>
       <Confirm
         open={cancelOpen}
-        title="Мэдүүлгийг цуцлах уу?"
+        title={t('Мэдүүлгийг цуцлах уу?')}
         tone="danger"
-        confirmLabel="Тийм, цуцлах"
+        confirmLabel={t('Тийм, цуцлах')}
         onClose={() => setCancelOpen(false)}
         onConfirm={cancel}
       >
-        Оруулсан мэдээлэл болон хавсаргасан файлууд устана. Энэ үйлдлийг буцаах боломжгүй.
+        {t('Оруулсан мэдээлэл болон хавсаргасан файлууд устана. Энэ үйлдлийг буцаах боломжгүй.')}
       </Confirm>
     </Page>
   );

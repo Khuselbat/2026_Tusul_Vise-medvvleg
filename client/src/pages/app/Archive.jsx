@@ -3,6 +3,7 @@ import { api, qs } from '../../api.js';
 import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, LinkButton, Field, Pagination, fmtDate } from '../../components/ui.jsx';
 
 // Зураг 47 Миний мэдүүлгийн архив — огноо, төрөл, бүрдлийн төлөвөөр шүүнэ (серверийн шүүлт)
+import { t } from '../../i18n.js';
 export default function Archive() {
   const [sp, setSp] = useSearchParams();
   const params = {
@@ -22,48 +23,55 @@ export default function Archive() {
     setSp(n);
   };
   const filtered = ['status', 'visaTypeId', 'from', 'to', 'q'].some((k) => sp.get(k));
-
   return (
     <Page
-      crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Архив' }]}
-      title="Миний мэдүүлгийн архив"
-      subtitle="Илгээсэн бүх мэдүүлэг, анкет, хавсралт"
+      crumb={[
+        {
+          label: t('Мэдүүлэгч'),
+          to: '/app',
+        },
+        {
+          label: t('Архив'),
+        },
+      ]}
+      title={t('Миний мэдүүлгийн архив')}
+      subtitle={t('Илгээсэн бүх мэдүүлэг, анкет, хавсралт')}
       actions={
         <>
           <LinkButton variant="ghost" to="/app/imports">
-            Өмнөх (импортолсон) мэдүүлэг
+            {t('Өмнөх (импортолсон) мэдүүлэг')}
           </LinkButton>
-          <LinkButton to="/app/new">Шинэ мэдүүлэг</LinkButton>
+          <LinkButton to="/app/new">{t('Шинэ мэдүүлэг')}</LinkButton>
         </>
       }
     >
       <div className="filters">
-        <Field label="Лавлах дугаар" htmlFor="q">
+        <Field label={t('Лавлах дугаар')} htmlFor="q">
           <input id="q" value={params.q} onChange={set('q')} placeholder="KR-…" />
         </Field>
-        <Field label="Төлөв" htmlFor="st">
+        <Field label={t('Төлөв')} htmlFor="st">
           <select id="st" value={params.status} onChange={set('status')}>
-            <option value="">Бүгд</option>
-            <option value="SUBMITTED">Илгээсэн</option>
-            <option value="IN_REVIEW">Бүрдэл хянаж байна</option>
-            <option value="INCOMPLETE">Нэмэлт материал шаардсан</option>
-            <option value="COMPLETE">Бүрдэл бүрэн</option>
+            <option value="">{t('Бүгд')}</option>
+            <option value="SUBMITTED">{t('Илгээсэн')}</option>
+            <option value="IN_REVIEW">{t('Бүрдэл хянаж байна')}</option>
+            <option value="INCOMPLETE">{t('Нэмэлт материал шаардсан')}</option>
+            <option value="COMPLETE">{t('Бүрдэл бүрэн')}</option>
           </select>
         </Field>
-        <Field label="Визийн төрөл" htmlFor="vt">
+        <Field label={t('Визийн төрөл')} htmlFor="vt">
           <select id="vt" value={params.visaTypeId} onChange={set('visaTypeId')}>
-            <option value="">Бүгд</option>
-            {data?.visaTypes.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.code}
+            <option value="">{t('Бүгд')}</option>
+            {data?.visaTypes.map((tv) => (
+              <option key={tv.id} value={tv.id}>
+                {tv.code}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Эхлэх огноо" htmlFor="from">
+        <Field label={t('Эхлэх огноо')} htmlFor="from">
           <input id="from" type="date" value={params.from} onChange={set('from')} />
         </Field>
-        <Field label="Дуусах огноо" htmlFor="to">
+        <Field label={t('Дуусах огноо')} htmlFor="to">
           <input id="to" type="date" value={params.to} onChange={set('to')} />
         </Field>
       </div>
@@ -75,16 +83,16 @@ export default function Archive() {
         (data.items.length === 0 ? (
           filtered ? (
             <Empty
-              title="Шүүлтэд тохирох мэдүүлэг олдсонгүй"
+              title={t('Шүүлтэд тохирох мэдүүлэг олдсонгүй')}
               action={
                 <Button variant="ghost" onClick={() => setSp({})}>
-                  Шүүлт цэвэрлэх
+                  {t('Шүүлт цэвэрлэх')}
                 </Button>
               }
             />
           ) : (
-            <Empty title="Архив хоосон байна" action={<LinkButton to="/app/new">Шинэ мэдүүлэг</LinkButton>}>
-              Илгээсэн мэдүүлэг энд хадгалагдана.
+            <Empty title={t('Архив хоосон байна')} action={<LinkButton to="/app/new">{t('Шинэ мэдүүлэг')}</LinkButton>}>
+              {t('Илгээсэн мэдүүлэг энд хадгалагдана.')}
             </Empty>
           )
         ) : (
@@ -93,10 +101,10 @@ export default function Archive() {
               <table>
                 <thead>
                   <tr>
-                    <th>Лавлах дугаар</th>
-                    <th>Улс · төрөл</th>
-                    <th>Илгээсэн огноо</th>
-                    <th>Бүрдлийн төлөв</th>
+                    <th>{t('Лавлах дугаар')}</th>
+                    <th>{t('Улс · төрөл')}</th>
+                    <th>{t('Илгээсэн огноо')}</th>
+                    <th>{t('Бүрдлийн төлөв')}</th>
                     <th />
                   </tr>
                 </thead>
@@ -113,7 +121,7 @@ export default function Archive() {
                         <Badge status={a.status} />
                       </td>
                       <td>
-                        <Link to={`/app/applications/${a.publicId}`}>Дэлгэрэнгүй</Link>
+                        <Link to={`/app/applications/${a.publicId}`}>{t('Дэлгэрэнгүй')}</Link>
                       </td>
                     </tr>
                   ))}

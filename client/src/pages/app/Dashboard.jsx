@@ -5,20 +5,27 @@ import { NotDecisionNote } from '../../components/shared.jsx';
 import { useAuth } from '../../auth.jsx';
 
 // Зураг 42 Мэдүүлэгчийн хянах самбар
+import { t } from '../../i18n.js';
 export default function Dashboard() {
   const { user } = useAuth();
   const { data, error, loading, reload } = useAsync(() => api.get('/api/app/dashboard'), []);
   const c = data?.counts;
   return (
     <Page
-      crumb={[{ label: 'Мэдүүлэгч' }]}
-      title="Хянах самбар"
-      subtitle={`Сайн байна уу, ${user.name}`}
+      crumb={[
+        {
+          label: t('Мэдүүлэгч'),
+        },
+      ]}
+      title={t('Хянах самбар')}
+      subtitle={t('Сайн байна уу, {{v0}}', {
+        v0: user.name,
+      })}
       actions={
         <>
-          <LinkButton to="/app/new">Шинэ мэдүүлэг</LinkButton>
+          <LinkButton to="/app/new">{t('Шинэ мэдүүлэг')}</LinkButton>
           <LinkButton variant="ghost" to="/app/applications">
-            Архив үзэх
+            {t('Архив үзэх')}
           </LinkButton>
         </>
       }
@@ -32,36 +39,43 @@ export default function Dashboard() {
             <div className="grid grid-4">
               <Card className="stat">
                 <div className="num">{c.submitted}</div>
-                <div className="lbl">Илгээсэн мэдүүлэг</div>
+                <div className="lbl">{t('Илгээсэн мэдүүлэг')}</div>
               </Card>
               <Card className="stat">
                 <div className="num">{c.inReview}</div>
-                <div className="lbl">Бүрдэл хянаж байна</div>
+                <div className="lbl">{t('Бүрдэл хянаж байна')}</div>
               </Card>
               <Card className="stat">
-                <div className="num" style={{ color: c.incomplete ? 'var(--warn)' : undefined }}>
+                <div
+                  className="num"
+                  style={{
+                    color: c.incomplete ? 'var(--warn)' : undefined,
+                  }}
+                >
                   {c.incomplete}
                 </div>
-                <div className="lbl">Нэмэлт материал шаардсан</div>
+                <div className="lbl">{t('Нэмэлт материал шаардсан')}</div>
               </Card>
               <Card className="stat">
                 <div className="num">{c.complete + (c.delivered || 0)}</div>
-                <div className="lbl">Бүрдэл бүрэн · хүргүүлсэн</div>
+                <div className="lbl">{t('Бүрдэл бүрэн · хүргүүлсэн')}</div>
               </Card>
             </div>
 
             {data.drafts.length > 0 && (
               <Card className="mt">
-                <h2>Дуусаагүй ноорог</h2>
+                <h2>{t('Дуусаагүй ноорог')}</h2>
                 <div className="stack">
                   {data.drafts.map((d) => (
                     <div key={d.publicId} className="between">
                       <div>
                         <strong>{d.visaName}</strong>
-                        <div className="small muted">Үүсгэсэн {fmtDate(d.createdAt)}</div>
+                        <div className="small muted">
+                          {t('Үүсгэсэн')} {fmtDate(d.createdAt)}
+                        </div>
                       </div>
                       <LinkButton variant="ghost" className="btn-sm" to={`/app/new?draft=${d.publicId}`}>
-                        Үргэлжлүүлэх
+                        {t('Үргэлжлүүлэх')}
                       </LinkButton>
                     </div>
                   ))}
@@ -71,22 +85,27 @@ export default function Dashboard() {
 
             <Card className="mt">
               <div className="between">
-                <h2>Сүүлийн мэдүүлгүүд</h2>
-                <Link to="/app/applications">Бүгдийг харах →</Link>
+                <h2>{t('Сүүлийн мэдүүлгүүд')}</h2>
+                <Link to="/app/applications">{t('Бүгдийг харах →')}</Link>
               </div>
               {data.recent.length === 0 ? (
-                <Empty title="Мэдүүлэг алга" action={<LinkButton to="/app/new">Анхны мэдүүлгээ үүсгэх</LinkButton>}>
-                  Визийн мэдээллээ уншаад анхны мэдүүлгээ илгээгээрэй.
+                <Empty title={t('Мэдүүлэг алга')} action={<LinkButton to="/app/new">{t('Анхны мэдүүлгээ үүсгэх')}</LinkButton>}>
+                  {t('Визийн мэдээллээ уншаад анхны мэдүүлгээ илгээгээрэй.')}
                 </Empty>
               ) : (
-                <div className="table-wrap" style={{ boxShadow: 'none' }}>
+                <div
+                  className="table-wrap"
+                  style={{
+                    boxShadow: 'none',
+                  }}
+                >
                   <table>
                     <thead>
                       <tr>
-                        <th>Лавлах дугаар</th>
-                        <th>Визийн төрөл</th>
-                        <th>Илгээсэн</th>
-                        <th>Бүрдлийн төлөв</th>
+                        <th>{t('Лавлах дугаар')}</th>
+                        <th>{t('Визийн төрөл')}</th>
+                        <th>{t('Илгээсэн')}</th>
+                        <th>{t('Бүрдлийн төлөв')}</th>
                         <th />
                       </tr>
                     </thead>
@@ -102,7 +121,7 @@ export default function Dashboard() {
                             <Badge status={a.status} />
                           </td>
                           <td>
-                            <Link to={`/app/applications/${a.publicId}`}>Дэлгэрэнгүй</Link>
+                            <Link to={`/app/applications/${a.publicId}`}>{t('Дэлгэрэнгүй')}</Link>
                           </td>
                         </tr>
                       ))}

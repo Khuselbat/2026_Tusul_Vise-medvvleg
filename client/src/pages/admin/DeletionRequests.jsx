@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Field, Confirm, Alert, useToast, fmtDateTime } from '../../components/ui.jsx';
-
+import { t } from '../../i18n.js';
 const TABS = [
-  ['PENDING', 'Хүлээгдэж буй'],
-  ['APPROVED', 'Устгасан'],
-  ['REJECTED', 'Татгалзсан'],
-  ['CANCELLED', 'Цуцалсан'],
+  ['PENDING', t('Хүлээгдэж буй')],
+  ['APPROVED', t('Устгасан')],
+  ['REJECTED', t('Татгалзсан')],
+  ['CANCELLED', t('Цуцалсан')],
 ];
 
 // Үе 3 — бүртгэл устгах хүсэлт (тайлан 4.5). Админ хувийн агуулга харахгүй; зөвхөн хүсэлтийн мэдээлэл.
@@ -20,13 +20,20 @@ export default function DeletionRequests() {
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
-
   async function apply() {
     setBusy(true);
     setErr('');
     try {
-      const r = await api.post(`/api/admin/deletion-requests/${action.item.id}/${action.kind}`, { note });
-      toast(action.kind === 'approve' ? `Бүртгэл устгагдлаа (${r.files} файл).` : 'Хүсэлтийг татгалзлаа.');
+      const r = await api.post(`/api/admin/deletion-requests/${action.item.id}/${action.kind}`, {
+        note,
+      });
+      toast(
+        action.kind === 'approve'
+          ? t('Бүртгэл устгагдлаа ({{v0}} файл).', {
+              v0: r.files,
+            })
+          : t('Хүсэлтийг татгалзлаа.'),
+      );
       setAction(null);
       reload();
     } catch (ex) {
@@ -35,12 +42,19 @@ export default function DeletionRequests() {
       setBusy(false);
     }
   }
-
   return (
     <Page
-      crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Устгах хүсэлт' }]}
-      title="Бүртгэл устгах хүсэлт"
-      subtitle="Мэдүүлэгчийн хувийн мэдээллийг устгах хүсэлтийг шийдвэрлэнэ"
+      crumb={[
+        {
+          label: t('Админ'),
+          to: '/admin',
+        },
+        {
+          label: t('Устгах хүсэлт'),
+        },
+      ]}
+      title={t('Бүртгэл устгах хүсэлт')}
+      subtitle={t('Мэдүүлэгчийн хувийн мэдээллийг устгах хүсэлтийг шийдвэрлэнэ')}
     >
       <div className="row-actions" role="tablist">
         {TABS.map(([k, l]) => (
@@ -49,7 +63,11 @@ export default function DeletionRequests() {
             role="tab"
             aria-selected={k === status}
             className={`btn ${k === status ? 'btn-primary' : 'btn-ghost'} btn-sm`}
-            onClick={() => setSp({ status: k })}
+            onClick={() =>
+              setSp({
+                status: k,
+              })
+            }
           >
             {l}
           </button>
@@ -61,17 +79,17 @@ export default function DeletionRequests() {
       ) : (
         data &&
         (data.items.length === 0 ? (
-          <Empty title="Хүсэлт алга" />
+          <Empty title={t('Хүсэлт алга')} />
         ) : (
           <div className="table-wrap mt">
             <table>
               <thead>
                 <tr>
-                  <th>Хэрэглэгч</th>
-                  <th>Хүссэн</th>
-                  <th>Шалтгаан</th>
-                  <th>Мэдүүлэг</th>
-                  <th>{status === 'PENDING' ? '' : 'Шийдвэр'}</th>
+                  <th>{t('Хэрэглэгч')}</th>
+                  <th>{t('Хүссэн')}</th>
+                  <th>{t('Шалтгаан')}</th>
+                  <th>{t('Мэдүүлэг')}</th>
+                  <th>{status === 'PENDING' ? '' : t('Шийдвэр')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,7 +103,11 @@ export default function DeletionRequests() {
                     <td className="small">{x.reason || '—'}</td>
                     <td>
                       {x.applications}
-                      {x.activeApplications > 0 && <Badge tone="warn">{x.activeApplications} хянагдаж буй</Badge>}
+                      {x.activeApplications > 0 && (
+                        <Badge tone="warn">
+                          {x.activeApplications} {t('хянагдаж буй')}
+                        </Badge>
+                      )}
                     </td>
                     <td className="row-actions">
                       {status === 'PENDING' ? (
@@ -93,24 +115,30 @@ export default function DeletionRequests() {
                           <button
                             className="btn-link danger"
                             disabled={x.activeApplications > 0}
-                            title={x.activeApplications > 0 ? 'Хянагдаж буй мэдүүлэг дууссаны дараа' : undefined}
+                            title={x.activeApplications > 0 ? t('Хянагдаж буй мэдүүлэг дууссаны дараа') : undefined}
                             onClick={() => {
-                              setAction({ item: x, kind: 'approve' });
+                              setAction({
+                                item: x,
+                                kind: 'approve',
+                              });
                               setNote('');
                               setErr('');
                             }}
                           >
-                            Баталгаажуулж устгах
+                            {t('Баталгаажуулж устгах')}
                           </button>
                           <button
                             className="btn-link"
                             onClick={() => {
-                              setAction({ item: x, kind: 'reject' });
+                              setAction({
+                                item: x,
+                                kind: 'reject',
+                              });
                               setNote('');
                               setErr('');
                             }}
                           >
-                            Татгалзах
+                            {t('Татгалзах')}
                           </button>
                         </>
                       ) : (
@@ -129,21 +157,21 @@ export default function DeletionRequests() {
       )}
       <Confirm
         open={!!action}
-        title={action?.kind === 'approve' ? 'Бүртгэлийг бүрмөсөн устгах уу?' : 'Хүсэлтийг татгалзах уу?'}
+        title={action?.kind === 'approve' ? t('Бүртгэлийг бүрмөсөн устгах уу?') : t('Хүсэлтийг татгалзах уу?')}
         tone={action?.kind === 'approve' ? 'danger' : 'primary'}
-        confirmLabel={action?.kind === 'approve' ? 'Устгах' : 'Татгалзах'}
+        confirmLabel={action?.kind === 'approve' ? t('Устгах') : t('Татгалзах')}
         loading={busy}
         onClose={() => !busy && setAction(null)}
         onConfirm={apply}
       >
         {action?.kind === 'approve' && (
           <Alert tone="danger">
-            <strong>{action.item.email}</strong>-ийн анкет, бүх хавсралт, импорт, мэдэгдэл бүрмөсөн устаж, бүртгэл нэргүй болно. Буцаах
-            боломжгүй.
+            <strong>{action.item.email}</strong>
+            {t('-ийн анкет, бүх хавсралт, импорт, мэдэгдэл бүрмөсөн устаж, бүртгэл нэргүй болно. Буцаах боломжгүй.')}
           </Alert>
         )}
         <Field
-          label={action?.kind === 'reject' ? 'Татгалзсан шалтгаан' : 'Тэмдэглэл (сонголттой)'}
+          label={action?.kind === 'reject' ? t('Татгалзсан шалтгаан') : t('Тэмдэглэл (сонголттой)')}
           htmlFor="dr-note"
           error={err}
           required={action?.kind === 'reject'}

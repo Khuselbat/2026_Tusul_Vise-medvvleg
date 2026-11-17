@@ -4,51 +4,76 @@ import { api } from '../../api.js';
 import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, Modal, Field, useToast, Alert } from '../../components/ui.jsx';
 
 // Зураг 56 Визийн төрөл удирдах
+import { t } from '../../i18n.js';
 export default function VisaTypes() {
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get('/api/admin/visa-types'), []);
   const countries = useAsync(() => api.get('/api/admin/countries'), []);
   const [edit, setEdit] = useState(null);
-  const [f, setF] = useState({ countryId: '', code: '', isActive: true });
+  const [f, setF] = useState({
+    countryId: '',
+    code: '',
+    isActive: true,
+  });
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState(false);
-
-  const open = (t) => {
-    setEdit(t || {});
+  const open = (tv) => {
+    setEdit(tv || {});
     setF(
-      t
-        ? { countryId: t.country.id, code: t.code, isActive: t.isActive }
-        : { countryId: countries.data?.countries[0]?.id || '', code: '', isActive: true },
+      tv
+        ? {
+            countryId: tv.country.id,
+            code: tv.code,
+            isActive: tv.isActive,
+          }
+        : {
+            countryId: countries.data?.countries[0]?.id || '',
+            code: '',
+            isActive: true,
+          },
     );
     setErrs({});
   };
   async function save() {
     const fe = {};
-    if (!f.countryId) fe.countryId = 'Улс сонгоно уу.';
-    if (!/^[A-Za-z0-9-]+$/.test(f.code)) fe.code = 'Латин үсэг, тоо, зураас.';
+    if (!f.countryId) fe.countryId = t('Улс сонгоно уу.');
+    if (!/^[A-Za-z0-9-]+$/.test(f.code)) fe.code = t('Латин үсэг, тоо, зураас.');
     setErrs(fe);
     if (Object.keys(fe).length) return;
     setBusy(true);
     try {
-      const body = { ...f, countryId: Number(f.countryId) };
+      const body = {
+        ...f,
+        countryId: Number(f.countryId),
+      };
       if (edit.id) await api.put(`/api/admin/visa-types/${edit.id}`, body);
       else await api.post('/api/admin/visa-types', body);
-      toast('Хадгалагдлаа.');
+      toast(t('Хадгалагдлаа.'));
       setEdit(null);
       reload();
     } catch (ex) {
-      setErrs({ ...ex.fields, _: Object.keys(ex.fields || {}).length ? '' : ex.message });
+      setErrs({
+        ...ex.fields,
+        _: Object.keys(ex.fields || {}).length ? '' : ex.message,
+      });
     } finally {
       setBusy(false);
     }
   }
-
   return (
     <Page
-      crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Визийн төрөл' }]}
-      title="Визийн төрөл удирдах"
-      subtitle="Төрөл, нийтэлсэн болон ноорог хувилбарууд"
-      actions={<Button onClick={() => open(null)}>Төрөл нэмэх</Button>}
+      crumb={[
+        {
+          label: t('Админ'),
+          to: '/admin',
+        },
+        {
+          label: t('Визийн төрөл'),
+        },
+      ]}
+      title={t('Визийн төрөл удирдах')}
+      subtitle={t('Төрөл, нийтэлсэн болон ноорог хувилбарууд')}
+      actions={<Button onClick={() => open(null)}>{t('Төрөл нэмэх')}</Button>}
     >
       <ErrorBox error={error} onRetry={reload} />
       {loading ? (
@@ -56,36 +81,36 @@ export default function VisaTypes() {
       ) : (
         data &&
         (data.visaTypes.length === 0 ? (
-          <Empty title="Визийн төрөл алга" />
+          <Empty title={t('Визийн төрөл алга')} />
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Улс</th>
-                  <th>Код</th>
-                  <th>Сүүлийн нэр</th>
-                  <th>Төлөв</th>
-                  <th>Нийтэлсэн</th>
-                  <th>Хувилбар</th>
+                  <th>{t('Улс')}</th>
+                  <th>{t('Код')}</th>
+                  <th>{t('Сүүлийн нэр')}</th>
+                  <th>{t('Төлөв')}</th>
+                  <th>{t('Нийтэлсэн')}</th>
+                  <th>{t('Хувилбар')}</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
-                {data.visaTypes.map((t) => (
-                  <tr key={t.id}>
-                    <td>{t.country.name}</td>
+                {data.visaTypes.map((tv2) => (
+                  <tr key={tv2.id}>
+                    <td>{tv2.country.name}</td>
                     <td className="mono">
-                      <strong>{t.code}</strong>
+                      <strong>{tv2.code}</strong>
                     </td>
-                    <td>{t.latestName || '—'}</td>
-                    <td>{t.isActive ? <Badge tone="ok">Идэвхтэй</Badge> : <Badge tone="muted">Идэвхгүй</Badge>}</td>
-                    <td>{t.publishedVersionNo ? `v${t.publishedVersionNo}` : <span className="muted">—</span>}</td>
-                    <td>{t.versionCount}</td>
+                    <td>{tv2.latestName || '—'}</td>
+                    <td>{tv2.isActive ? <Badge tone="ok">{t('Идэвхтэй')}</Badge> : <Badge tone="muted">{t('Идэвхгүй')}</Badge>}</td>
+                    <td>{tv2.publishedVersionNo ? `v${tv2.publishedVersionNo}` : <span className="muted">—</span>}</td>
+                    <td>{tv2.versionCount}</td>
                     <td className="row-actions">
-                      <Link to={`/admin/visa-types/${t.id}/versions`}>Хувилбарууд</Link>
-                      <button className="btn-link" onClick={() => open(t)}>
-                        Засах
+                      <Link to={`/admin/visa-types/${tv2.id}/versions`}>{t('Хувилбарууд')}</Link>
+                      <button className="btn-link" onClick={() => open(tv2)}>
+                        {t('Засах')}
                       </button>
                     </td>
                   </tr>
@@ -97,24 +122,33 @@ export default function VisaTypes() {
       )}
       <Modal
         open={!!edit}
-        title={edit?.id ? 'Төрөл засах' : 'Төрөл нэмэх'}
+        title={edit?.id ? t('Төрөл засах') : t('Төрөл нэмэх')}
         onClose={() => setEdit(null)}
         footer={
           <>
             <Button variant="ghost" onClick={() => setEdit(null)}>
-              Цуцлах
+              {t('Цуцлах')}
             </Button>
             <Button loading={busy} onClick={save}>
-              Хадгалах
+              {t('Хадгалах')}
             </Button>
           </>
         }
       >
         <div className="stack">
           {errs._ && <Alert tone="danger">{errs._}</Alert>}
-          <Field label="Улс" htmlFor="c" error={errs.countryId} required>
-            <select id="c" value={f.countryId} onChange={(e) => setF({ ...f, countryId: e.target.value })}>
-              <option value="">— сонгох —</option>
+          <Field label={t('Улс')} htmlFor="c" error={errs.countryId} required>
+            <select
+              id="c"
+              value={f.countryId}
+              onChange={(e) =>
+                setF({
+                  ...f,
+                  countryId: e.target.value,
+                })
+              }
+            >
+              <option value="">{t('— сонгох —')}</option>
               {countries.data?.countries.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nameMn}
@@ -122,12 +156,33 @@ export default function VisaTypes() {
               ))}
             </select>
           </Field>
-          <Field label="Код" htmlFor="code" error={errs.code} hint="ж: C-3-9" required>
-            <input id="code" style={{ textTransform: 'uppercase' }} value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} />
+          <Field label={t('Код')} htmlFor="code" error={errs.code} hint={t('ж: C-3-9')} required>
+            <input
+              id="code"
+              style={{
+                textTransform: 'uppercase',
+              }}
+              value={f.code}
+              onChange={(e) =>
+                setF({
+                  ...f,
+                  code: e.target.value,
+                })
+              }
+            />
           </Field>
           <label className="check">
-            <input type="checkbox" checked={f.isActive} onChange={(e) => setF({ ...f, isActive: e.target.checked })} />
-            <span>Идэвхтэй — шинэ мэдүүлэг хүлээн авна. Идэвхгүй болгоход хуучин архив хэвээр үлдэнэ.</span>
+            <input
+              type="checkbox"
+              checked={f.isActive}
+              onChange={(e) =>
+                setF({
+                  ...f,
+                  isActive: e.target.checked,
+                })
+              }
+            />
+            <span>{t('Идэвхтэй — шинэ мэдүүлэг хүлээн авна. Идэвхгүй болгоход хуучин архив хэвээр үлдэнэ.')}</span>
           </label>
         </div>
       </Modal>

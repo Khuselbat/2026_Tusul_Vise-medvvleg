@@ -1,14 +1,22 @@
 import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, fmtDateTime } from '../../components/ui.jsx';
-
+import { t } from '../../i18n.js';
 export default function MyReviews() {
   const { data, error, loading, reload } = useAsync(() => api.get('/api/operator/reviews'), []);
   return (
     <Page
-      crumb={[{ label: 'Оператор', to: '/operator' }, { label: 'Үнэлгээний түүх' }]}
-      title="Миний үнэлгээний түүх"
-      subtitle="Таны оруулсан бүх бүрдлийн үнэлгээ"
+      crumb={[
+        {
+          label: t('Оператор'),
+          to: '/operator',
+        },
+        {
+          label: t('Үнэлгээний түүх'),
+        },
+      ]}
+      title={t('Миний үнэлгээний түүх')}
+      subtitle={t('Таны оруулсан бүх бүрдлийн үнэлгээ')}
     >
       <ErrorBox error={error} onRetry={reload} />
       {loading ? (
@@ -16,18 +24,18 @@ export default function MyReviews() {
       ) : (
         data &&
         (data.items.length === 0 ? (
-          <Empty title="Үнэлгээ оруулаагүй байна" />
+          <Empty title={t('Үнэлгээ оруулаагүй байна')} />
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Огноо</th>
-                  <th>Лавлах дугаар</th>
-                  <th>Төрөл</th>
+                  <th>{t('Огноо')}</th>
+                  <th>{t('Лавлах дугаар')}</th>
+                  <th>{t('Төрөл')}</th>
                   <th>#</th>
-                  <th>Үнэлгээ</th>
-                  <th>Тайлбар</th>
+                  <th>{t('Үнэлгээ')}</th>
+                  <th>{t('Тайлбар')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -41,7 +49,7 @@ export default function MyReviews() {
                     <td>{r.reviewNo}</td>
                     <td>
                       <Badge tone={r.completeness === 'COMPLETE' ? 'ok' : 'warn'}>
-                        {r.completeness === 'COMPLETE' ? 'Бүрэн' : 'Дутуу'}
+                        {r.completeness === 'COMPLETE' ? t('Бүрэн') : t('Дутуу')}
                       </Badge>
                     </td>
                     <td className="small">{r.comment || '—'}</td>

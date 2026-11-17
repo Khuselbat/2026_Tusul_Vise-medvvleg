@@ -14,19 +14,24 @@ import {
   fmtDate,
   fmtDateTime,
 } from '../../components/ui.jsx';
-
+import { t } from '../../i18n.js';
 export default function Versions() {
   const { id } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/admin/visa-types/${id}/versions`), [id]);
   const [busy, setBusy] = useState(null);
-
   async function copy(v) {
     setBusy(v.id);
     try {
-      const r = await api.post(`/api/admin/visa-types/${id}/versions`, { copyFromVersionId: v.id });
-      toast(`v${r.versionNo} ноорог үүслээ.`);
+      const r = await api.post(`/api/admin/visa-types/${id}/versions`, {
+        copyFromVersionId: v.id,
+      });
+      toast(
+        t('v{{v0}} ноорог үүслээ.', {
+          v0: r.versionNo,
+        }),
+      );
       navigate(`/admin/versions/${r.id}`);
     } catch (ex) {
       toast(ex.message, 'danger');
@@ -34,14 +39,32 @@ export default function Versions() {
       setBusy(null);
     }
   }
-
-  const t = data?.visaType;
+  const tv = data?.visaType;
   return (
     <Page
-      crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Визийн төрөл', to: '/admin/visa-types' }, { label: t?.code || '…' }]}
-      title={`Мэдээллийн хувилбарууд${t ? ` · ${t.code}` : ''}`}
-      subtitle={t && `${t.country.name} · нийтэлсэн хувилбарыг засахгүй — хуулж шинэ хувилбар үүсгэнэ`}
-      actions={<LinkButton to={`/admin/visa-types/${id}/versions/new`}>Шинэ хувилбар</LinkButton>}
+      crumb={[
+        {
+          label: t('Админ'),
+          to: '/admin',
+        },
+        {
+          label: t('Визийн төрөл'),
+          to: '/admin/visa-types',
+        },
+        {
+          label: tv?.code || '…',
+        },
+      ]}
+      title={t('Мэдээллийн хувилбарууд{{v0}}', {
+        v0: tv ? ` · ${tv.code}` : '',
+      })}
+      subtitle={
+        tv &&
+        t('{{v0}} · нийтэлсэн хувилбарыг засахгүй — хуулж шинэ хувилбар үүсгэнэ', {
+          v0: tv.country.name,
+        })
+      }
+      actions={<LinkButton to={`/admin/visa-types/${id}/versions/new`}>{t('Шинэ хувилбар')}</LinkButton>}
     >
       <ErrorBox error={error} onRetry={reload} />
       {loading ? (
@@ -49,19 +72,19 @@ export default function Versions() {
       ) : (
         data &&
         (data.versions.length === 0 ? (
-          <Empty title="Хувилбар алга" />
+          <Empty title={t('Хувилбар алга')} />
         ) : (
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
                   <th>№</th>
-                  <th>Нэр</th>
-                  <th>Төлөв</th>
-                  <th>Шалгасан</th>
-                  <th>Шаардлага</th>
-                  <th>Мэдүүлэг</th>
-                  <th>Үүсгэсэн</th>
+                  <th>{t('Нэр')}</th>
+                  <th>{t('Төлөв')}</th>
+                  <th>{t('Шалгасан')}</th>
+                  <th>{t('Шаардлага')}</th>
+                  <th>{t('Мэдүүлэг')}</th>
+                  <th>{t('Үүсгэсэн')}</th>
                   <th />
                 </tr>
               </thead>
@@ -71,7 +94,13 @@ export default function Versions() {
                     <td>v{v.versionNo}</td>
                     <td>{v.nameMn}</td>
                     <td>
-                      {v.publishedAt ? <Badge tone="ok">Нийтэлсэн {fmtDate(v.publishedAt)}</Badge> : <Badge tone="muted">Ноорог</Badge>}
+                      {v.publishedAt ? (
+                        <Badge tone="ok">
+                          {t('Нийтэлсэн')} {fmtDate(v.publishedAt)}
+                        </Badge>
+                      ) : (
+                        <Badge tone="muted">{t('Ноорог')}</Badge>
+                      )}
                     </td>
                     <td>{fmtDate(v.verifiedAt)}</td>
                     <td>{v.requirementCount}</td>
@@ -82,10 +111,10 @@ export default function Versions() {
                       <span className="muted">{fmtDateTime(v.createdAt)}</span>
                     </td>
                     <td className="row-actions">
-                      <Link to={`/admin/versions/${v.id}`}>{v.publishedAt ? 'Үзэх' : 'Засах'}</Link>
-                      <Link to={`/admin/versions/${v.id}/requirements`}>Шаардлага</Link>
+                      <Link to={`/admin/versions/${v.id}`}>{v.publishedAt ? t('Үзэх') : t('Засах')}</Link>
+                      <Link to={`/admin/versions/${v.id}/requirements`}>{t('Шаардлага')}</Link>
                       <Button variant="ghost" className="btn-sm" loading={busy === v.id} onClick={() => copy(v)}>
-                        Хуулж шинэ
+                        {t('Хуулж шинэ')}
                       </Button>
                     </td>
                   </tr>

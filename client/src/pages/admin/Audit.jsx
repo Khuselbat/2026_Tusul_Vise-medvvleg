@@ -2,75 +2,75 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api.js';
 import { Page, useAsync, ErrorBox, Skeleton, Empty, Field, Pagination, Modal, DL, Button, fmtDateTime } from '../../components/ui.jsx';
-
+import { t } from '../../i18n.js';
 const ACTION_MN = {
-  LOGIN: 'Нэвтэрсэн',
-  LOGIN_FAILED: 'Нэвтрэх оролдлого амжилтгүй',
-  LOGOUT: 'Гарсан',
-  USER_REGISTER: 'Бүртгүүлсэн',
-  PROFILE_UPDATE: 'Профайл зассан',
-  PASSWORD_CHANGE: 'Нууц үг солисон',
-  DRAFT_CREATE: 'Ноорог үүсгэсэн',
-  DRAFT_FORM_SAVE: 'Анкет хадгалсан',
-  DRAFT_DELETE: 'Ноорог цуцалсан',
-  DOC_UPLOAD: 'Файл хавсаргасан',
-  DOC_DELETE: 'Файл арилгасан',
-  APP_SUBMIT: 'Мэдүүлэг илгээсэн',
-  APP_VIEW: 'Мэдүүлэг үзсэн',
-  APP_ACCESS_DENIED: 'Хандалт хориглогдсон',
-  FILE_VIEW: 'Файл үзсэн',
-  FILE_DOWNLOAD: 'Файл татсан',
-  FILE_DENIED: 'Файлд хандах эрхгүй',
-  REVIEW_CREATE: 'Бүрдлийн үнэлгээ',
-  SUPPLEMENT_CREATE: 'Нэмэлт багц эхлүүлсэн',
-  SUPPLEMENT_NOTE: 'Нэмэлт багцын тайлбар',
-  SUPPLEMENT_DOC_UPLOAD: 'Нэмэлт файл хавсаргасан',
-  SUPPLEMENT_DOC_DELETE: 'Нэмэлт файл арилгасан',
-  SUPPLEMENT_CANCEL: 'Нэмэлт багц цуцалсан',
-  SUPPLEMENT_SUBMIT: 'Нэмэлт материал илгээсэн',
-  HANDOVER_RECORD: 'Хүргүүлсэн гэж бүртгэсэн',
-  OFFICIAL_RESULT_RECORD: 'Албан үр дүн бүртгэсэн (мэдүүлэгч)',
-  OFFICIAL_RESULT_VERIFY: 'Албан үр дүнг тулгасан',
-  IMPORT_CREATE: 'Өмнөх мэдүүлэг нэмсэн',
-  IMPORT_VIEW: 'Өмнөх мэдүүлэг үзсэн',
-  IMPORT_DELETE: 'Өмнөх мэдүүлэг устгасан',
-  ADMIN_BOOTSTRAP: 'Анхны админ үүсгэсэн',
-  LOGIN_MFA_CHALLENGE: 'Нууц үг зөв — 2FA хүлээж байна',
-  MFA_ENABLE: '2FA идэвхжүүлсэн',
-  MFA_RECOVERY_USED: 'Нөөц кодоор нэвтэрсэн',
-  MFA_RESET: '2FA дахин тохируулсан',
-  EMAIL_VERIFY: 'Имэйл баталгаажуулсан',
-  EMAIL_VERIFY_RESEND: 'Баталгаажуулах холбоос дахин илгээсэн',
-  PASSWORD_RESET_REQUEST: 'Нууц үг сэргээх хүсэлт',
-  PASSWORD_RESET: 'Нууц үг сэргээсэн',
-  SESSION_REVOKE: 'Сесс хаасан',
-  SESSION_REVOKE_ALL: 'Бүх төхөөрөмжөөс гарсан',
-  FILE_REJECTED: 'Вирус илэрсэн файл устгасан',
-  RETENTION_RUN: 'Хадгалах хугацааны цэвэрлэгээ',
-  DATA_EXPORT: 'Мэдээллээ татсан (ZIP)',
-  DELETION_REQUEST: 'Бүртгэл устгах хүсэлт',
-  DELETION_CANCEL: 'Устгах хүсэлт цуцалсан',
-  DELETION_REJECT: 'Устгах хүсэлт татгалзсан',
-  ACCOUNT_ERASE: 'Бүртгэл устгасан',
-  APP_SUMMARY_PDF: 'PDF хураангуй татсан',
-  APP_ASSIGN: 'Хуваарилсан',
-  APP_REASSIGN: 'Дахин хуваарилсан',
-  APP_UNASSIGN: 'Хуваарилалт цуцалсан',
-  COUNTRY_CREATE: 'Улс нэмсэн',
-  COUNTRY_UPDATE: 'Улс зассан',
-  COUNTRY_DELETE: 'Улс устгасан',
-  VISA_TYPE_CREATE: 'Визийн төрөл нэмсэн',
-  VISA_TYPE_UPDATE: 'Визийн төрөл зассан',
-  VERSION_CREATE: 'Хувилбар үүсгэсэн',
-  VERSION_UPDATE: 'Хувилбар зассан',
-  VERSION_PUBLISH: 'Хувилбар нийтэлсэн',
-  VERSION_DELETE: 'Хувилбар устгасан',
-  REQUIREMENT_CREATE: 'Шаардлага нэмсэн',
-  REQUIREMENT_UPDATE: 'Шаардлага зассан',
-  REQUIREMENT_DELETE: 'Шаардлага устгасан',
-  STAFF_CREATE: 'Ажилтан бүртгэсэн',
-  USER_ACTIVATE: 'Хэрэглэгч идэвхжүүлсэн',
-  USER_DEACTIVATE: 'Хэрэглэгч хаасан',
+  LOGIN: t('Нэвтэрсэн'),
+  LOGIN_FAILED: t('Нэвтрэх оролдлого амжилтгүй'),
+  LOGOUT: t('Гарсан'),
+  USER_REGISTER: t('Бүртгүүлсэн'),
+  PROFILE_UPDATE: t('Профайл зассан'),
+  PASSWORD_CHANGE: t('Нууц үг солисон'),
+  DRAFT_CREATE: t('Ноорог үүсгэсэн'),
+  DRAFT_FORM_SAVE: t('Анкет хадгалсан'),
+  DRAFT_DELETE: t('Ноорог цуцалсан'),
+  DOC_UPLOAD: t('Файл хавсаргасан'),
+  DOC_DELETE: t('Файл арилгасан'),
+  APP_SUBMIT: t('Мэдүүлэг илгээсэн'),
+  APP_VIEW: t('Мэдүүлэг үзсэн'),
+  APP_ACCESS_DENIED: t('Хандалт хориглогдсон'),
+  FILE_VIEW: t('Файл үзсэн'),
+  FILE_DOWNLOAD: t('Файл татсан'),
+  FILE_DENIED: t('Файлд хандах эрхгүй'),
+  REVIEW_CREATE: t('Бүрдлийн үнэлгээ'),
+  SUPPLEMENT_CREATE: t('Нэмэлт багц эхлүүлсэн'),
+  SUPPLEMENT_NOTE: t('Нэмэлт багцын тайлбар'),
+  SUPPLEMENT_DOC_UPLOAD: t('Нэмэлт файл хавсаргасан'),
+  SUPPLEMENT_DOC_DELETE: t('Нэмэлт файл арилгасан'),
+  SUPPLEMENT_CANCEL: t('Нэмэлт багц цуцалсан'),
+  SUPPLEMENT_SUBMIT: t('Нэмэлт материал илгээсэн'),
+  HANDOVER_RECORD: t('Хүргүүлсэн гэж бүртгэсэн'),
+  OFFICIAL_RESULT_RECORD: t('Албан үр дүн бүртгэсэн (мэдүүлэгч)'),
+  OFFICIAL_RESULT_VERIFY: t('Албан үр дүнг тулгасан'),
+  IMPORT_CREATE: t('Өмнөх мэдүүлэг нэмсэн'),
+  IMPORT_VIEW: t('Өмнөх мэдүүлэг үзсэн'),
+  IMPORT_DELETE: t('Өмнөх мэдүүлэг устгасан'),
+  ADMIN_BOOTSTRAP: t('Анхны админ үүсгэсэн'),
+  LOGIN_MFA_CHALLENGE: t('Нууц үг зөв — 2FA хүлээж байна'),
+  MFA_ENABLE: t('2FA идэвхжүүлсэн'),
+  MFA_RECOVERY_USED: t('Нөөц кодоор нэвтэрсэн'),
+  MFA_RESET: t('2FA дахин тохируулсан'),
+  EMAIL_VERIFY: t('Имэйл баталгаажуулсан'),
+  EMAIL_VERIFY_RESEND: t('Баталгаажуулах холбоос дахин илгээсэн'),
+  PASSWORD_RESET_REQUEST: t('Нууц үг сэргээх хүсэлт'),
+  PASSWORD_RESET: t('Нууц үг сэргээсэн'),
+  SESSION_REVOKE: t('Сесс хаасан'),
+  SESSION_REVOKE_ALL: t('Бүх төхөөрөмжөөс гарсан'),
+  FILE_REJECTED: t('Вирус илэрсэн файл устгасан'),
+  RETENTION_RUN: t('Хадгалах хугацааны цэвэрлэгээ'),
+  DATA_EXPORT: t('Мэдээллээ татсан (ZIP)'),
+  DELETION_REQUEST: t('Бүртгэл устгах хүсэлт'),
+  DELETION_CANCEL: t('Устгах хүсэлт цуцалсан'),
+  DELETION_REJECT: t('Устгах хүсэлт татгалзсан'),
+  ACCOUNT_ERASE: t('Бүртгэл устгасан'),
+  APP_SUMMARY_PDF: t('PDF хураангуй татсан'),
+  APP_ASSIGN: t('Хуваарилсан'),
+  APP_REASSIGN: t('Дахин хуваарилсан'),
+  APP_UNASSIGN: t('Хуваарилалт цуцалсан'),
+  COUNTRY_CREATE: t('Улс нэмсэн'),
+  COUNTRY_UPDATE: t('Улс зассан'),
+  COUNTRY_DELETE: t('Улс устгасан'),
+  VISA_TYPE_CREATE: t('Визийн төрөл нэмсэн'),
+  VISA_TYPE_UPDATE: t('Визийн төрөл зассан'),
+  VERSION_CREATE: t('Хувилбар үүсгэсэн'),
+  VERSION_UPDATE: t('Хувилбар зассан'),
+  VERSION_PUBLISH: t('Хувилбар нийтэлсэн'),
+  VERSION_DELETE: t('Хувилбар устгасан'),
+  REQUIREMENT_CREATE: t('Шаардлага нэмсэн'),
+  REQUIREMENT_UPDATE: t('Шаардлага зассан'),
+  REQUIREMENT_DELETE: t('Шаардлага устгасан'),
+  STAFF_CREATE: t('Ажилтан бүртгэсэн'),
+  USER_ACTIVATE: t('Хэрэглэгч идэвхжүүлсэн'),
+  USER_DEACTIVATE: t('Хэрэглэгч хаасан'),
 };
 
 // Зураг 61 Үйлдлийн бүртгэл — засах/устгах товчгүй; нууц мэдээлэл харуулахгүй
@@ -92,23 +92,30 @@ export default function Audit() {
     n.delete('page');
     setSp(n);
   };
-
   return (
     <Page
-      crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Үйлдлийн бүртгэл' }]}
-      title="Үйлдлийн бүртгэл"
-      subtitle="Хэн, хэзээ, ямар үйлдэл хийсэн (зөвхөн унших)"
+      crumb={[
+        {
+          label: t('Админ'),
+          to: '/admin',
+        },
+        {
+          label: t('Үйлдлийн бүртгэл'),
+        },
+      ]}
+      title={t('Үйлдлийн бүртгэл')}
+      subtitle={t('Хэн, хэзээ, ямар үйлдэл хийсэн (зөвхөн унших)')}
     >
       <div className="filters">
-        <Field label="Эхлэх" htmlFor="f">
+        <Field label={t('Эхлэх')} htmlFor="f">
           <input id="f" type="date" value={p.from} onChange={set('from')} />
         </Field>
-        <Field label="Дуусах" htmlFor="t">
+        <Field label={t('Дуусах')} htmlFor="t">
           <input id="t" type="date" value={p.to} onChange={set('to')} />
         </Field>
-        <Field label="Үйлдэл" htmlFor="a">
+        <Field label={t('Үйлдэл')} htmlFor="a">
           <select id="a" value={p.action} onChange={set('action')}>
-            <option value="">Бүгд</option>
+            <option value="">{t('Бүгд')}</option>
             {data?.actions.map((x) => (
               <option key={x} value={x}>
                 {ACTION_MN[x] || x}
@@ -116,12 +123,12 @@ export default function Audit() {
             ))}
           </select>
         </Field>
-        <Field label="Ажилтан (имэйл)" htmlFor="ac">
+        <Field label={t('Ажилтан (имэйл)')} htmlFor="ac">
           <input id="ac" value={p.actor} onChange={set('actor')} />
         </Field>
         {sp.toString() && (
           <Button variant="ghost" onClick={() => setSp({})}>
-            Цэвэрлэх
+            {t('Цэвэрлэх')}
           </Button>
         )}
       </div>
@@ -131,25 +138,27 @@ export default function Audit() {
       ) : (
         data &&
         (data.items.length === 0 ? (
-          <Empty title="Бүртгэл алга" />
+          <Empty title={t('Бүртгэл алга')} />
         ) : (
           <>
             <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Огноо</th>
-                    <th>Үйлдэл</th>
-                    <th>Объект</th>
-                    <th>Гүйцэтгэгч</th>
-                    <th>Мэдүүлэг</th>
+                    <th>{t('Огноо')}</th>
+                    <th>{t('Үйлдэл')}</th>
+                    <th>{t('Объект')}</th>
+                    <th>{t('Гүйцэтгэгч')}</th>
+                    <th>{t('Мэдүүлэг')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((e) => (
                     <tr
                       key={e.id}
-                      style={{ cursor: 'pointer' }}
+                      style={{
+                        cursor: 'pointer',
+                      }}
                       onClick={() => setRow(e)}
                       tabIndex={0}
                       onKeyDown={(k) => k.key === 'Enter' && setRow(e)}
@@ -157,7 +166,12 @@ export default function Audit() {
                       <td className="small">{fmtDateTime(e.occurredAt)}</td>
                       <td className="small">
                         {ACTION_MN[e.action] || e.action}
-                        <div className="mono muted" style={{ fontSize: 11 }}>
+                        <div
+                          className="mono muted"
+                          style={{
+                            fontSize: 11,
+                          }}
+                        >
                           {e.action}
                         </div>
                       </td>
@@ -185,11 +199,11 @@ export default function Audit() {
           </>
         ))
       )}
-      <Modal open={!!row} title="Бүртгэлийн мөр" onClose={() => setRow(null)}>
+      <Modal open={!!row} title={t('Бүртгэлийн мөр')} onClose={() => setRow(null)}>
         {row && (
           <DL
             items={[
-              ['Үйлдэл', `${ACTION_MN[row.action] || ''} (${row.action})`],
+              [t('Үйлдэл'), `${ACTION_MN[row.action] || ''} (${row.action})`],
               ['entity_type', row.entityType],
               ['entity_key', row.entityKey],
               [
@@ -198,9 +212,9 @@ export default function Audit() {
                   {row.requestId}
                 </span>,
               ],
-              ['Гүйцэтгэгч', row.actor],
-              ['Огноо', fmtDateTime(row.occurredAt)],
-              ['Мэдүүлэг', row.applicationRef],
+              [t('Гүйцэтгэгч'), row.actor],
+              [t('Огноо'), fmtDateTime(row.occurredAt)],
+              [t('Мэдүүлэг'), row.applicationRef],
             ]}
           />
         )}

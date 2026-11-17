@@ -4,17 +4,30 @@ import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, LinkButton } from '../
 import { ReviewTimeline } from '../../components/shared.jsx';
 
 // Зураг 53 Бүрдлийн үнэлгээний түүх — review_no буурахаар; засах/устгах үйлдэлгүй
+import { t } from '../../i18n.js';
 export default function ReviewHistory() {
   const { id } = useParams();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/operator/applications/${id}/reviews`), [id]);
   return (
     <Page
-      crumb={[{ label: 'Оператор', to: '/operator' }, { label: id, to: `/operator/applications/${id}` }, { label: 'Түүх' }]}
-      title="Бүрдлийн үнэлгээний түүх"
+      crumb={[
+        {
+          label: t('Оператор'),
+          to: '/operator',
+        },
+        {
+          label: id,
+          to: `/operator/applications/${id}`,
+        },
+        {
+          label: t('Түүх'),
+        },
+      ]}
+      title={t('Бүрдлийн үнэлгээний түүх')}
       subtitle={id}
       actions={
         <LinkButton variant="ghost" to={`/operator/applications/${id}`}>
-          Мэдүүлэг рүү
+          {t('Мэдүүлэг рүү')}
         </LinkButton>
       }
     >
@@ -24,7 +37,7 @@ export default function ReviewHistory() {
       ) : (
         data &&
         (data.reviews.length === 0 ? (
-          <Empty title="Үнэлгээ оруулаагүй" />
+          <Empty title={t('Үнэлгээ оруулаагүй')} />
         ) : (
           <Card>
             <ReviewTimeline reviews={data.reviews} />

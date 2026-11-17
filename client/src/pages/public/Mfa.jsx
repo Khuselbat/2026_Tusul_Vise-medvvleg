@@ -5,6 +5,7 @@ import { Page, Card, Field, Button, Alert, Skeleton } from '../../components/ui.
 import { useAuth, HOME_BY_ROLE } from '../../auth.jsx';
 
 // Үе 2 — ажилтны хоёр шатлалт баталгаажуулалт (TOTP). mode=ENROLL: QR уншуулж бүртгүүлэх; VERIFY: код оруулах.
+import { t } from '../../i18n.js';
 export default function Mfa() {
   const [sp] = useSearchParams();
   const mode = sp.get('mode') === 'ENROLL' ? 'ENROLL' : 'VERIFY';
@@ -17,8 +18,11 @@ export default function Mfa() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null); // { user, recoveryCodes }
 
-  const expired = (ex) => ex?.code === 'MFA_EXPIRED' && navigate('/login?mfa=expired', { replace: true });
-
+  const expired = (ex) =>
+    ex?.code === 'MFA_EXPIRED' &&
+    navigate('/login?mfa=expired', {
+      replace: true,
+    });
   const started = useRef(false); // StrictMode: нууцыг давхар үүсгэхгүй
   useEffect(() => {
     if (mode !== 'ENROLL' || started.current) return;
@@ -33,23 +37,37 @@ export default function Mfa() {
     const next = sp.get('next');
     const home = HOME_BY_ROLE[u.role];
     completeLogin(u);
-    navigate(next && next.startsWith(home) ? next : home, { replace: true });
+    navigate(next && next.startsWith(home) ? next : home, {
+      replace: true,
+    });
   };
-
   async function submit(e) {
     e.preventDefault();
     setErr(null);
     if (!code.trim()) {
-      setErr({ message: useRecovery ? 'Нөөц кодоо оруулна уу.' : '6 оронтой кодоо оруулна уу.' });
+      setErr({
+        message: useRecovery ? t('Нөөц кодоо оруулна уу.') : t('6 оронтой кодоо оруулна уу.'),
+      });
       return;
     }
     setBusy(true);
     try {
       if (mode === 'ENROLL') {
-        const r = await api.post('/api/auth/mfa/enable', { code });
+        const r = await api.post('/api/auth/mfa/enable', {
+          code,
+        });
         setDone(r); // нөөц кодыг нэг удаа харуулна
       } else {
-        const r = await api.post('/api/auth/mfa/verify', useRecovery ? { recoveryCode: code } : { code });
+        const r = await api.post(
+          '/api/auth/mfa/verify',
+          useRecovery
+            ? {
+                recoveryCode: code,
+              }
+            : {
+                code,
+              },
+        );
         finish(r.user);
       }
     } catch (ex) {
@@ -59,47 +77,71 @@ export default function Mfa() {
       setBusy(false);
     }
   }
-
   if (user && !done) return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
-
   if (done) {
     return (
-      <Page crumb={[{ label: 'Нэвтрэх' }]} title="Нөөц кодоо хадгална уу">
+      <Page
+        crumb={[
+          {
+            label: t('Нэвтрэх'),
+          },
+        ]}
+        title={t('Нөөц кодоо хадгална уу')}
+      >
         <Card className="auth-card">
-          <Alert tone="warn" title="Эдгээр кодыг зөвхөн одоо харуулна">
-            Утсаа гээвэл нэвтрэхэд хэрэглэнэ. Код бүр нэг удаа ажиллана. Аюулгүй газар (цаасан дээр, нууц үгийн менежерт) хадгална уу.
+          <Alert tone="warn" title={t('Эдгээр кодыг зөвхөн одоо харуулна')}>
+            {t(
+              'Утсаа гээвэл нэвтрэхэд хэрэглэнэ. Код бүр нэг удаа ажиллана. Аюулгүй газар (цаасан дээр, нууц үгийн менежерт) хадгална уу.',
+            )}
           </Alert>
           <ul className="recovery-codes mono">
             {done.recoveryCodes.map((c) => (
               <li key={c}>{c}</li>
             ))}
           </ul>
-          <Button onClick={() => finish(done.user)}>Хадгалсан, үргэлжлүүлэх</Button>
+          <Button onClick={() => finish(done.user)}>{t('Хадгалсан, үргэлжлүүлэх')}</Button>
         </Card>
       </Page>
     );
   }
-
   return (
     <Page
-      crumb={[{ label: 'Нэвтрэх' }]}
-      title={mode === 'ENROLL' ? 'Хоёр шатлалт баталгаажуулалт тохируулах' : 'Баталгаажуулах код'}
-      subtitle="Оператор, админ эрхэд заавал"
+      crumb={[
+        {
+          label: t('Нэвтрэх'),
+        },
+      ]}
+      title={mode === 'ENROLL' ? t('Хоёр шатлалт баталгаажуулалт тохируулах') : t('Баталгаажуулах код')}
+      subtitle={t('Оператор, админ эрхэд заавал')}
     >
       <Card className="auth-card">
         {mode === 'ENROLL' &&
           (setup ? (
             <>
-              <ol className="small" style={{ paddingLeft: 18 }}>
-                <li>Утсандаа Google Authenticator, Microsoft Authenticator зэрэг апп суулгана.</li>
-                <li>Доорх QR кодыг уншуулна (эсвэл нууц түлхүүрийг гараар оруулна).</li>
-                <li>Апп-д гарсан 6 оронтой кодыг оруулна.</li>
+              <ol
+                className="small"
+                style={{
+                  paddingLeft: 18,
+                }}
+              >
+                <li>{t('Утсандаа Google Authenticator, Microsoft Authenticator зэрэг апп суулгана.')}</li>
+                <li>{t('Доорх QR кодыг уншуулна (эсвэл нууц түлхүүрийг гараар оруулна).')}</li>
+                <li>{t('Апп-д гарсан 6 оронтой кодыг оруулна.')}</li>
               </ol>
-              <div style={{ textAlign: 'center' }}>
-                <img src={setup.qr} alt="2FA QR код" width={220} height={220} />
+              <div
+                style={{
+                  textAlign: 'center',
+                }}
+              >
+                <img src={setup.qr} alt={t('2FA QR код')} width={220} height={220} />
               </div>
-              <p className="small muted" style={{ wordBreak: 'break-all' }}>
-                Нууц түлхүүр:{' '}
+              <p
+                className="small muted"
+                style={{
+                  wordBreak: 'break-all',
+                }}
+              >
+                {t('Нууц түлхүүр:')}{' '}
                 <span className="mono" data-testid="mfa-secret">
                   {setup.secret}
                 </span>
@@ -111,9 +153,9 @@ export default function Mfa() {
         {err && <Alert tone="danger">{err.message}</Alert>}
         <form onSubmit={submit} className="stack" noValidate>
           <Field
-            label={useRecovery ? 'Нөөц код' : '6 оронтой код'}
+            label={useRecovery ? t('Нөөц код') : t('6 оронтой код')}
             htmlFor="mfa-code"
-            hint={useRecovery ? 'ж: ABCD-EFGH' : 'Апп-д харагдаж буй код'}
+            hint={useRecovery ? t('ж: ABCD-EFGH') : t('Апп-д харагдаж буй код')}
           >
             <input
               id="mfa-code"
@@ -127,7 +169,7 @@ export default function Mfa() {
           </Field>
           <div className="row-actions">
             <Button type="submit" loading={busy}>
-              Баталгаажуулах
+              {t('Баталгаажуулах')}
             </Button>
             {mode === 'VERIFY' && (
               <Button
@@ -139,12 +181,14 @@ export default function Mfa() {
                   setErr(null);
                 }}
               >
-                {useRecovery ? 'Апп-ийн код ашиглах' : 'Нөөц код ашиглах'}
+                {useRecovery ? t('Апп-ийн код ашиглах') : t('Нөөц код ашиглах')}
               </Button>
             )}
           </div>
         </form>
-        {mode === 'VERIFY' && <p className="small muted mt mb0">Утсаа гээж, нөөц кодгүй бол админд хандаж 2FA-г дахин тохируулуулна уу.</p>}
+        {mode === 'VERIFY' && (
+          <p className="small muted mt mb0">{t('Утсаа гээж, нөөц кодгүй бол админд хандаж 2FA-г дахин тохируулуулна уу.')}</p>
+        )}
       </Card>
     </Page>
   );

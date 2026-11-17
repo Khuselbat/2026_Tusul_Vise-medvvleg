@@ -13,6 +13,8 @@ test('2FA бүртгэл, нөөц код, бүх төхөөрөмжөөс га�
   await uiLogin(admin, 'admin@civiz.mn', 'Admin1234', { staff: true });
   await admin.goto('/admin/users');
   const row = admin.locator('tr', { hasText: opEmail });
+  await expect(row).toBeVisible(); // count() хүлээдэггүй — хүснэгт ачаалагдахыг хүлээнэ
+  await expect(row.getByText(/Идэвхтэй|Тохируулаагүй/).last()).toBeVisible();
   const resetBtn = row.getByRole('button', { name: '2FA дахин тохируулах' });
   if (await resetBtn.count()) {
     await resetBtn.click();

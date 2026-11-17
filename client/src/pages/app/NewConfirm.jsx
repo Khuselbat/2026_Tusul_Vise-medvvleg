@@ -5,6 +5,7 @@ import { Page, Card, Button, Alert, ErrorBox, Skeleton, useAsync, Confirm } from
 import { Steps, FormSummary, DocumentList, FileViewer } from '../../components/shared.jsx';
 
 // Зураг 45 Мэдүүлгээ хянаж илгээх — нэг транзакц, давтан дарахад давхар үүсэхгүй
+import { t } from '../../i18n.js';
 export default function NewConfirm() {
   const [sp] = useSearchParams();
   const ref = sp.get('draft');
@@ -17,29 +18,39 @@ export default function NewConfirm() {
   const [viewing, setViewing] = useState(null);
   if (!ref) return <Navigate to="/app/new" replace />;
   const d = data?.draft;
-
   async function submit() {
     setBusy(true);
     setSubmitErr(null);
     try {
       const r = await api.post(`/api/app/drafts/${ref}/submit`);
-      navigate(`/app/submitted/${r.publicId}`, { replace: true });
+      navigate(`/app/submitted/${r.publicId}`, {
+        replace: true,
+      });
     } catch (ex) {
       setSubmitErr(ex);
       setOpen(false);
       if (ex.status === 404) {
         // Өмнө илгээгдсэн байж болно
-        navigate(`/app/applications/${ref}`, { replace: true });
+        navigate(`/app/applications/${ref}`, {
+          replace: true,
+        });
       }
     } finally {
       setBusy(false);
     }
   }
-
   return (
     <Page
-      crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Шинэ мэдүүлэг' }]}
-      title="Мэдүүлгээ хянаж илгээх"
+      crumb={[
+        {
+          label: t('Мэдүүлэгч'),
+          to: '/app',
+        },
+        {
+          label: t('Шинэ мэдүүлэг'),
+        },
+      ]}
+      title={t('Мэдүүлгээ хянаж илгээх')}
       subtitle={d && `${d.visa.country.name} · ${d.visa.code} — ${d.visa.name}`}
     >
       <Steps current={2} />
@@ -47,15 +58,21 @@ export default function NewConfirm() {
       {submitErr && (
         <Alert tone="danger" title={submitErr.message}>
           {submitErr.missing?.length ? (
-            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+            <ul
+              style={{
+                margin: '6px 0 0',
+                paddingLeft: 18,
+              }}
+            >
               {submitErr.missing.map((m, i) => (
                 <li key={i}>
-                  {m.message} — <Link to={m.step === 'form' ? `/app/new?draft=${ref}` : `/app/new/documents?draft=${ref}`}>засах</Link>
+                  {m.message} —{' '}
+                  <Link to={m.step === 'form' ? `/app/new?draft=${ref}` : `/app/new/documents?draft=${ref}`}>{t('засах')}</Link>
                 </li>
               ))}
             </ul>
           ) : (
-            'Таны оруулсан мэдээлэл хадгалагдсан хэвээр байна. Дахин оролдоно уу.'
+            t('Таны оруулсан мэдээлэл хадгалагдсан хэвээр байна. Дахин оролдоно уу.')
           )}
         </Alert>
       )}
@@ -66,15 +83,15 @@ export default function NewConfirm() {
           <>
             <Card>
               <div className="between">
-                <h2>Анкет</h2>
-                <Link to={`/app/new?draft=${ref}`}>Засах</Link>
+                <h2>{t('Анкет')}</h2>
+                <Link to={`/app/new?draft=${ref}`}>{t('Засах')}</Link>
               </div>
               <FormSummary form={d.form} />
             </Card>
             <Card>
               <div className="between">
-                <h2>Хавсралт</h2>
-                <Link to={`/app/new/documents?draft=${ref}`}>Засах</Link>
+                <h2>{t('Хавсралт')}</h2>
+                <Link to={`/app/new/documents?draft=${ref}`}>{t('Засах')}</Link>
               </div>
               <DocumentList requirements={d.requirements} documents={d.documents} onOpen={setViewing} />
             </Card>
@@ -82,17 +99,18 @@ export default function NewConfirm() {
               <label className="check">
                 <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
                 <span>
-                  Оруулсан мэдээлэл үнэн зөв болохыг баталж байна. Илгээсний дараа анкет, хавсралтыг засах боломжгүй, архивт хадгалагдана
-                  гэдгийг ойлгосон. Энэ нь ЭСЯ-нд албан ёсоор мэдүүлсэн гэсэн үг биш болохыг ойлгосон.
+                  {t(
+                    'Оруулсан мэдээлэл үнэн зөв болохыг баталж байна. Илгээсний дараа анкет, хавсралтыг засах боломжгүй, архивт хадгалагдана гэдгийг ойлгосон. Энэ нь ЭСЯ-нд албан ёсоор мэдүүлсэн гэсэн үг биш болохыг ойлгосон.',
+                  )}
                 </span>
               </label>
             </Card>
             <div className="page-footer">
               <Button disabled={!agree || !d.canSubmit} onClick={() => setOpen(true)}>
-                Илгээх
+                {t('Илгээх')}
               </Button>
               <Button variant="ghost" onClick={() => navigate(`/app/new/documents?draft=${ref}`)}>
-                Буцах
+                {t('Буцах')}
               </Button>
             </div>
           </>
@@ -100,13 +118,13 @@ export default function NewConfirm() {
       )}
       <Confirm
         open={open}
-        title="Мэдүүлгийг илгээх үү?"
-        confirmLabel="Илгээх"
+        title={t('Мэдүүлгийг илгээх үү?')}
+        confirmLabel={t('Илгээх')}
         loading={busy}
         onClose={() => !busy && setOpen(false)}
         onConfirm={submit}
       >
-        Илгээсний дараа дотоод лавлах дугаар олгогдож, мэдүүлэг операторын хяналтад шилжинэ.
+        {t('Илгээсний дараа дотоод лавлах дугаар олгогдож, мэдүүлэг операторын хяналтад шилжинэ.')}
       </Confirm>
       <FileViewer doc={viewing} onClose={() => setViewing(null)} />
     </Page>

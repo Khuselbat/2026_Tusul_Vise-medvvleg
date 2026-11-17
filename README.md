@@ -4,11 +4,11 @@
 
 | Давхарга | Технологи |
 |---|---|
-| Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
+| Frontend | React 18 + Vite 8, React Router 7 (SPA, responsive), монгол/англи (i18next), WCAG 2.1 AA (axe) |
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас эсвэл S3-тэй нийцтэй сан (MinIO), сонголтоор AES-256-GCM (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 128 интеграцын тест бодит MySQL дээр (+ S3 драйверийн тест CI-д); Playwright E2E 5 урсгал × (desktop + mobile) |
+| Тест | Node test runner + Supertest — 135 интеграцын тест бодит MySQL дээр (+ S3 драйверийн тест CI-д); Playwright E2E 10 тест × (desktop + mobile), axe хүртээмж |
 | Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, ZIP татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
 | Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
@@ -85,7 +85,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 128 интеграцын тест (API, migration, лог, Үе 1–3, аюулгүй байдал, UC A/E урсгал)
+cd server && npm test     # civiz_test сан дээр 135 интеграцын тест (API, migration, лог, Үе 1–4, аюулгүй байдал, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -124,6 +124,22 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
   мэдэгдэл бүрмөсөн устаж, илгээсэн мэдүүлэг нэргүй статистик болж үлдэнэ (хянагдаж буй мэдүүлэгтэй бол хүлээнэ).
 * **Түлхүүр эргүүлэх:** шинэ түлхүүрийг `PASSPORT_KEY/_ID` (`FILE_KEY/_ID`), хуучныг `PASSPORT_KEYS_OLD=k1:hex` (`FILE_KEYS_OLD`)-д тавиад
   `npm run keys:rotate -- --dry-run` → `npm run keys:rotate -- --files` → `node scripts/verify-storage.js` → хуучин түлхүүрийг хасна.
+
+### Хэрэглэгчийн туршлага (Үе 4)
+
+* **PDF хураангуй:** мэдүүлгийн дэлгэрэнгүй → “PDF хураангуй” — анкет, хавсралтын жагсаалт, лавлах дугаар; хуудас бүрт
+  “АЛБАН БАРИМТ БИШ” усан тэмдэг, паспорт нууцлагдсан.
+* **Автомат хадгалалт:** анкет бичихээ зогсоосноос 1.5 сек дараа серверт **шифрлэгдэж** хадгалагдана; хуудсаа дахин ачаалахад сэргэнэ.
+  Сүлжээ тасарвал анхааруулга гарч, сэргэхэд автоматаар хадгална.
+* **Хэл:** дээд мөрний сонголтоор монгол (үндсэн) / англи. Монгол текст өөрөө түлхүүр (`client/src/locales/en.json`); орчуулгагүй
+  бол монголоор харагдана. Серверийн алдааны мессеж мөн орчуулагдана; имэйл, PDF монголоор.
+* **Хүртээмж (WCAG 2.1 AA):** axe-core E2E нь 25 дэлгэцийг шалгана (зөрчил 0); цонхны фокус хавх, Escape, фокус буцаах; skip link;
+  контраст ≥4.5:1; график бүр хүснэгт хувилбартай, гараар сонгогдоно.
+* **Статистик** (`/admin/stats`): долоо хоног/сараар илгээлт, эхний үнэлгээ хүртэлх хугацаа (медиан, 90%), операторын ачаалал —
+  зөвхөн нэгтгэсэн тоо.
+* **Оператор:** хайлт (лавлах дугаар, мэдүүлэгч), төлөв, эрэмбэ, хуудаслалт. **Админ:** олноор сонгож хуваарилах (≤100, бүгд эсвэл юу ч биш).
+* **Олон улс:** шинэ улсыг админы “Улс” → “Визийн төрөл” → хувилбар нийтлэх + `SUBMITTABLE_COUNTRIES=KR,JP` л хангалттай —
+  код өөрчлөхгүй (`test/stage4.test.js` баталгаажуулна).
 
 ### Лог
 
@@ -229,6 +245,7 @@ visa-system/
 | 47 | `/app/applications` | 60 | `/admin/assignments` |
 | 48 | `/app/applications/:id` | 61 | `/admin/audit` |
 | 49 | `/app/profile` (+ operator, admin) | + | `/operator/history`, `/help` |
+| Үе 4 | `/admin/stats`; хэл сонгох; PDF хураангуй | Үе 4 | Ажлын жагсаалтын хайлт, олноор хуваарилах |
 | Үе 3 | `/admin/deletion-requests`; профайлд “Миний мэдээлэл” | Үе 3 | Файлын “Вирус шалгаж байна” төлөв |
 | Үе 2 | `/login/mfa`, `/forgot-password`, `/reset-password`, `/verify-email` | Үе 2 | Мэдэгдлийн хонх (дээд мөр), профайлд сесс |
 | Үе 1 | `/app/imports`, `/app/imports/new`, `/app/imports/:id` | Үе 1 | Нэмэлт багц, хүргүүлсэн, албан үр дүн — `/app/applications/:id`, `/operator/applications/:id` дотор |
@@ -261,7 +278,8 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/app/drafts   GET/DELETE /api/app/drafts/:id   PUT /api/app/drafts/:id/form
           POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId
           POST /api/app/drafts/:id/submit
-          GET  /api/app/applications · /api/app/applications/:id · /:id/form-copy
+          GET  /api/app/applications · /api/app/applications/:id · /:id/form-copy · /:id/summary.pdf
+          PUT  /api/app/drafts/:id/autosave   (бүрэн бус анкет, шифрлэгдэнэ)
           POST /api/app/applications/:id/supplements                     (нэмэлт багц эхлүүлэх)
           PUT  /api/app/applications/:id/supplements/:round              {note}
           POST/DELETE /api/app/applications/:id/supplements/:round/documents[/:docId]
@@ -269,7 +287,7 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/app/applications/:id/official-results            multipart {outcome, checkedOn, source, sourceUrl?, idempotencyKey, file?}
           GET/POST /api/app/imports   GET/DELETE /api/app/imports/:id   (POST multipart, files[] ≤10)
 Файл      GET  /api/files/:documentId[?download=1] · /api/files/evidence/:fileId[?download=1]
-Оператор  GET  /api/operator/applications · /stats · /reviews · /applications/:id · /applications/:id/reviews
+Оператор  GET  /api/operator/applications?q&status&sort&page&pageSize · /stats · /reviews · /applications/:id · /applications/:id/reviews
           POST /api/operator/applications/:id/reviews   {completeness, comment, expectedReviewNo}
           POST /api/operator/applications/:id/handover   multipart {authority, officialRef, deliveredOn, note?, file}
           POST /api/operator/applications/:id/official-results/:entryNo/verification   {verdict: MATCHES|MISMATCH, note}
@@ -278,7 +296,9 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/admin/versions/:id/publish
           GET/POST /api/admin/users   PUT /api/admin/users/:id/status   POST /api/admin/users/:id/mfa-reset
           GET  /api/admin/deletion-requests?status=   POST /api/admin/deletion-requests/:id/approve · reject {note}
-          GET  /api/admin/assignments   PUT /api/admin/assignments/:publicId {operatorId, expectedOperatorId}
+          GET  /api/admin/assignments?filter&q   PUT /api/admin/assignments/:publicId {operatorId, expectedOperatorId}
+          PUT  /api/admin/assignments {operatorId, items:[{publicId, expectedOperatorId}]}   (олноор)
+          GET  /api/admin/stats?period=week|month&count=
 ```
 Өөрчлөх хүсэлт бүр `X-Requested-With: civiz` толгойтой байна (CSRF хамгаалалт).
 

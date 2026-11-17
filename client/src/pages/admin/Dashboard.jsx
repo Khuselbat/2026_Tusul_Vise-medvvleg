@@ -3,19 +3,24 @@ import { api } from '../../api.js';
 import { Page, Card, useAsync, ErrorBox, Skeleton, LinkButton } from '../../components/ui.jsx';
 
 // Зураг 54 Админы хянах самбар — нэгтгэл тоо; хувийн анкет/файл нээх холбоосгүй
+import { t } from '../../i18n.js';
 export default function AdminDashboard() {
   const { data: d, error, loading, reload } = useAsync(() => api.get('/api/admin/dashboard'), []);
   const n = (x) => x ?? 0;
   return (
     <Page
-      crumb={[{ label: 'Админ' }]}
-      title="Админы хянах самбар"
-      subtitle="Лавлах болон үйл ажиллагааны нэгтгэл"
+      crumb={[
+        {
+          label: t('Админ'),
+        },
+      ]}
+      title={t('Админы хянах самбар')}
+      subtitle={t('Лавлах болон үйл ажиллагааны нэгтгэл')}
       actions={
         <>
-          <LinkButton to="/admin/assignments">Хуваарилалт</LinkButton>
+          <LinkButton to="/admin/assignments">{t('Хуваарилалт')}</LinkButton>
           <LinkButton variant="ghost" to="/admin/visa-types">
-            Визийн лавлах
+            {t('Визийн лавлах')}
           </LinkButton>
         </>
       }
@@ -28,55 +33,62 @@ export default function AdminDashboard() {
           <>
             <div className="grid grid-4">
               <Card className="stat">
-                <div className="num" style={{ color: d.unassigned ? 'var(--warn)' : undefined }}>
+                <div
+                  className="num"
+                  style={{
+                    color: d.unassigned ? 'var(--warn)' : undefined,
+                  }}
+                >
                   {d.unassigned}
                 </div>
                 <div className="lbl">
-                  <Link to="/admin/assignments">Хуваарилаагүй мэдүүлэг →</Link>
+                  <Link to="/admin/assignments">{t('Хуваарилаагүй мэдүүлэг →')}</Link>
                 </div>
               </Card>
               <Card className="stat">
                 <div className="num">{n(d.applications.SUBMITTED) + n(d.applications.IN_REVIEW)}</div>
-                <div className="lbl">Хянагдаж буй</div>
+                <div className="lbl">{t('Хянагдаж буй')}</div>
               </Card>
               <Card className="stat">
                 <div className="num">{n(d.applications.INCOMPLETE)}</div>
-                <div className="lbl">Нэмэлт материал шаардсан</div>
+                <div className="lbl">{t('Нэмэлт материал шаардсан')}</div>
               </Card>
               <Card className="stat">
                 <div className="num">{n(d.applications.COMPLETE)}</div>
-                <div className="lbl">Бүрдэл бүрэн</div>
+                <div className="lbl">{t('Бүрдэл бүрэн')}</div>
               </Card>
             </div>
             <div className="grid grid-3 mt">
               <Card>
-                <h2>Улс</h2>
+                <h2>{t('Улс')}</h2>
                 <p className="mb0">
-                  Идэвхтэй: <strong>{n(d.countries.ACTIVE)}</strong> · Тун удахгүй: <strong>{n(d.countries.COMING_SOON)}</strong> ·
-                  Хаалттай: <strong>{n(d.countries.DISABLED)}</strong>
+                  {t('Идэвхтэй:')} <strong>{n(d.countries.ACTIVE)}</strong> {t('· Тун удахгүй:')}{' '}
+                  <strong>{n(d.countries.COMING_SOON)}</strong> {t('· Хаалттай:')} <strong>{n(d.countries.DISABLED)}</strong>
                 </p>
-                <Link to="/admin/countries">Удирдах →</Link>
+                <Link to="/admin/countries">{t('Удирдах →')}</Link>
               </Card>
               <Card>
-                <h2>Визийн лавлах</h2>
+                <h2>{t('Визийн лавлах')}</h2>
                 <p className="mb0">
-                  Төрөл: <strong>{d.visaTypes.total}</strong> (идэвхтэй {d.visaTypes.active}) · Нийтэлсэн хувилбар:{' '}
-                  <strong>{d.versions.published}</strong> · Ноорог: <strong>{d.versions.drafts}</strong>
+                  {t('Төрөл:')} <strong>{d.visaTypes.total}</strong> {t('(идэвхтэй')} {d.visaTypes.active}
+                  {t(') · Нийтэлсэн хувилбар:')} <strong>{d.versions.published}</strong> {t('· Ноорог:')}{' '}
+                  <strong>{d.versions.drafts}</strong>
                 </p>
-                <Link to="/admin/visa-types">Удирдах →</Link>
+                <Link to="/admin/visa-types">{t('Удирдах →')}</Link>
               </Card>
               <Card>
-                <h2>Идэвхтэй хэрэглэгч</h2>
+                <h2>{t('Идэвхтэй хэрэглэгч')}</h2>
                 <p className="mb0">
-                  Мэдүүлэгч: <strong>{n(d.activeUsers.APPLICANT)}</strong> · Оператор: <strong>{n(d.activeUsers.OPERATOR)}</strong> · Админ:{' '}
-                  <strong>{n(d.activeUsers.ADMIN)}</strong>
+                  {t('Мэдүүлэгч:')} <strong>{n(d.activeUsers.APPLICANT)}</strong> {t('· Оператор:')}{' '}
+                  <strong>{n(d.activeUsers.OPERATOR)}</strong> {t('· Админ:')} <strong>{n(d.activeUsers.ADMIN)}</strong>
                 </p>
-                <Link to="/admin/users">Удирдах →</Link>
+                <Link to="/admin/users">{t('Удирдах →')}</Link>
               </Card>
             </div>
             <p className="small muted mt">
-              Админы эрх нь мэдүүлэгчийн анкет, хавсралтыг унших эрх биш. Хуваарилалтад зөвхөн лавлах дугаар, төрөл, огноо зэрэг metadata
-              харагдана.
+              {t(
+                'Админы эрх нь мэдүүлэгчийн анкет, хавсралтыг унших эрх биш. Хуваарилалтад зөвхөн лавлах дугаар, төрөл, огноо зэрэг metadata харагдана.',
+              )}
             </p>
           </>
         )

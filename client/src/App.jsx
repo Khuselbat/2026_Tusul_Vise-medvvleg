@@ -2,7 +2,6 @@ import { Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import { RequireRole } from './auth.jsx';
 import { Page, Empty, LinkButton } from './components/ui.jsx';
-
 import Home from './pages/public/Home.jsx';
 import Login from './pages/public/Login.jsx';
 import Register from './pages/public/Register.jsx';
@@ -13,7 +12,6 @@ import Mfa from './pages/public/Mfa.jsx';
 import ForgotPassword from './pages/public/ForgotPassword.jsx';
 import ResetPassword from './pages/public/ResetPassword.jsx';
 import VerifyEmail from './pages/public/VerifyEmail.jsx';
-
 import AppDashboard from './pages/app/Dashboard.jsx';
 import NewForm from './pages/app/NewForm.jsx';
 import NewDocuments from './pages/app/NewDocuments.jsx';
@@ -26,12 +24,10 @@ import OfficialResult from './pages/app/OfficialResult.jsx';
 import Imports from './pages/app/Imports.jsx';
 import ImportNew from './pages/app/ImportNew.jsx';
 import ImportDetail from './pages/app/ImportDetail.jsx';
-
 import Worklist from './pages/operator/Worklist.jsx';
 import Review from './pages/operator/Review.jsx';
 import ReviewHistory from './pages/operator/ReviewHistory.jsx';
 import MyReviews from './pages/operator/MyReviews.jsx';
-
 import AdminDashboard from './pages/admin/Dashboard.jsx';
 import Countries from './pages/admin/Countries.jsx';
 import VisaTypes from './pages/admin/VisaTypes.jsx';
@@ -43,19 +39,17 @@ import Assignments from './pages/admin/Assignments.jsx';
 import Audit from './pages/admin/Audit.jsx';
 import DeletionRequests from './pages/admin/DeletionRequests.jsx';
 import Stats from './pages/admin/Stats.jsx';
-
+import { t } from './i18n.js';
 const guard = (role, el) => <RequireRole role={role}>{el}</RequireRole>;
-
 function NotFound() {
   return (
-    <Page title="Хуудас олдсонгүй">
-      <Empty title="Энэ хаягаар хуудас алга" action={<LinkButton to="/">Нүүр рүү</LinkButton>}>
-        Холбоос буруу эсвэл хуудас шилжсэн байж болно.
+    <Page title={t('Хуудас олдсонгүй')}>
+      <Empty title={t('Энэ хаягаар хуудас алга')} action={<LinkButton to="/">{t('Нүүр рүү')}</LinkButton>}>
+        {t('Холбоос буруу эсвэл хуудас шилжсэн байж болно.')}
       </Empty>
     </Page>
   );
 }
-
 export default function App() {
   return (
     <Routes>

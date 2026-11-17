@@ -17,107 +17,145 @@ import {
 } from '../../components/ui.jsx';
 
 // Зураг 57 Визийн мэдээллийн хувилбар засах. Нийтэлсэн хувилбарыг шууд засахгүй.
+import { t } from '../../i18n.js';
 export default function VersionEdit() {
   const { id: typeId, versionId } = useParams();
   const isNew = !versionId;
   const navigate = useNavigate();
   const toast = useToast();
   const loaded = useAsync(() => (isNew ? Promise.resolve(null) : api.get(`/api/admin/versions/${versionId}`)), [versionId]);
-  const [f, setF] = useState({ nameMn: '', description: '', sourceUrl: '', verifiedAt: '' });
+  const [f, setF] = useState({
+    nameMn: '',
+    description: '',
+    sourceUrl: '',
+    verifiedAt: '',
+  });
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState(false);
   const [pubOpen, setPubOpen] = useState(false);
   const [delOpen, setDelOpen] = useState(false);
   const v = loaded.data?.version;
   const published = !!v?.publishedAt;
-
   useEffect(() => {
-    if (v) setF({ nameMn: v.nameMn || '', description: v.description || '', sourceUrl: v.sourceUrl || '', verifiedAt: v.verifiedAt || '' });
+    if (v)
+      setF({
+        nameMn: v.nameMn || '',
+        description: v.description || '',
+        sourceUrl: v.sourceUrl || '',
+        verifiedAt: v.verifiedAt || '',
+      });
   }, [v]);
-
   function check(forPublish) {
     const fe = {};
-    if (f.nameMn.trim().length < 2) fe.nameMn = 'Нэр оруулна уу.';
-    if (f.sourceUrl && !f.sourceUrl.startsWith('https://')) fe.sourceUrl = 'Зөвхөн HTTPS холбоос.';
-    if (forPublish && !f.sourceUrl) fe.sourceUrl = 'Нийтлэхэд эх сурвалж заавал.';
-    if (forPublish && !f.verifiedAt) fe.verifiedAt = 'Нийтлэхэд шалгасан огноо заавал.';
+    if (f.nameMn.trim().length < 2) fe.nameMn = t('Нэр оруулна уу.');
+    if (f.sourceUrl && !f.sourceUrl.startsWith('https://')) fe.sourceUrl = t('Зөвхөн HTTPS холбоос.');
+    if (forPublish && !f.sourceUrl) fe.sourceUrl = t('Нийтлэхэд эх сурвалж заавал.');
+    if (forPublish && !f.verifiedAt) fe.verifiedAt = t('Нийтлэхэд шалгасан огноо заавал.');
     setErrs(fe);
     return !Object.keys(fe).length;
   }
-
   async function saveDraft() {
     if (!check(false)) return;
     setBusy(true);
     try {
       if (isNew) {
         const r = await api.post(`/api/admin/visa-types/${typeId}/versions`, f);
-        toast(`v${r.versionNo} ноорог хадгалагдлаа.`);
-        navigate(`/admin/versions/${r.id}/requirements`, { replace: true });
+        toast(
+          t('v{{v0}} ноорог хадгалагдлаа.', {
+            v0: r.versionNo,
+          }),
+        );
+        navigate(`/admin/versions/${r.id}/requirements`, {
+          replace: true,
+        });
       } else {
         await api.put(`/api/admin/versions/${versionId}`, f);
-        toast('Ноорог хадгалагдлаа.');
+        toast(t('Ноорог хадгалагдлаа.'));
         loaded.reload();
       }
     } catch (ex) {
-      setErrs({ ...ex.fields, _: ex.message });
+      setErrs({
+        ...ex.fields,
+        _: ex.message,
+      });
     } finally {
       setBusy(false);
     }
   }
-
   async function publish() {
     setBusy(true);
     try {
       await api.put(`/api/admin/versions/${versionId}`, f);
       await api.post(`/api/admin/versions/${versionId}/publish`);
-      toast('Нийтлэгдлээ.');
+      toast(t('Нийтлэгдлээ.'));
       setPubOpen(false);
       loaded.reload();
     } catch (ex) {
       setPubOpen(false);
-      setErrs({ ...ex.fields, _: ex.message });
+      setErrs({
+        ...ex.fields,
+        _: ex.message,
+      });
     } finally {
       setBusy(false);
     }
   }
-
   async function remove() {
     setBusy(true);
     try {
       await api.del(`/api/admin/versions/${versionId}`);
-      toast('Ноорог устгагдлаа.', 'info');
+      toast(t('Ноорог устгагдлаа.'), 'info');
       navigate(`/admin/visa-types/${v.visaTypeId}/versions`);
     } catch (ex) {
       setDelOpen(false);
-      setErrs({ _: ex.message });
+      setErrs({
+        _: ex.message,
+      });
     } finally {
       setBusy(false);
     }
   }
-
   async function copyNew() {
     setBusy(true);
     try {
-      const r = await api.post(`/api/admin/visa-types/${v.visaTypeId}/versions`, { copyFromVersionId: v.id });
-      toast(`v${r.versionNo} ноорог үүслээ.`);
+      const r = await api.post(`/api/admin/visa-types/${v.visaTypeId}/versions`, {
+        copyFromVersionId: v.id,
+      });
+      toast(
+        t('v{{v0}} ноорог үүслээ.', {
+          v0: r.versionNo,
+        }),
+      );
       navigate(`/admin/versions/${r.id}`);
     } catch (ex) {
-      setErrs({ _: ex.message });
+      setErrs({
+        _: ex.message,
+      });
     } finally {
       setBusy(false);
     }
   }
-
   const backType = isNew ? typeId : v?.visaTypeId;
   return (
     <Page
       crumb={[
-        { label: 'Админ', to: '/admin' },
-        { label: 'Визийн төрөл', to: '/admin/visa-types' },
-        { label: 'Хувилбарууд', to: backType ? `/admin/visa-types/${backType}/versions` : undefined },
-        { label: isNew ? 'Шинэ' : `v${v?.versionNo || ''}` },
+        {
+          label: t('Админ'),
+          to: '/admin',
+        },
+        {
+          label: t('Визийн төрөл'),
+          to: '/admin/visa-types',
+        },
+        {
+          label: t('Хувилбарууд'),
+          to: backType ? `/admin/visa-types/${backType}/versions` : undefined,
+        },
+        {
+          label: isNew ? t('Шинэ') : `v${v?.versionNo || ''}`,
+        },
       ]}
-      title={isNew ? 'Шинэ мэдээллийн хувилбар' : 'Визийн мэдээллийн хувилбар'}
+      title={isNew ? t('Шинэ мэдээллийн хувилбар') : t('Визийн мэдээллийн хувилбар')}
       subtitle={v && `${v.countryName} · ${v.typeCode} · v${v.versionNo}`}
     >
       <ErrorBox error={loaded.error} onRetry={loaded.reload} />
@@ -127,7 +165,8 @@ export default function VersionEdit() {
         <>
           {published && (
             <Alert tone="info">
-              Энэ хувилбар {fmtDateTime(v.publishedAt)}-нд нийтлэгдсэн тул зөвхөн уншина. Өөрчлөхийн тулд хуулж шинэ хувилбар үүсгэнэ үү.
+              {t('Энэ хувилбар')} {fmtDateTime(v.publishedAt)}
+              {t('-нд нийтлэгдсэн тул зөвхөн уншина. Өөрчлөхийн тулд хуулж шинэ хувилбар үүсгэнэ үү.')}
             </Alert>
           )}
           {errs._ && (
@@ -143,68 +182,98 @@ export default function VersionEdit() {
           )}
           <Card>
             <div className="form-grid">
-              <Field label="Нэр (монгол)" htmlFor="n" error={errs.nameMn} required className="span-2">
-                <input id="n" value={f.nameMn} disabled={published} onChange={(e) => setF({ ...f, nameMn: e.target.value })} />
+              <Field label={t('Нэр (монгол)')} htmlFor="n" error={errs.nameMn} required className="span-2">
+                <input
+                  id="n"
+                  value={f.nameMn}
+                  disabled={published}
+                  onChange={(e) =>
+                    setF({
+                      ...f,
+                      nameMn: e.target.value,
+                    })
+                  }
+                />
               </Field>
-              <Field label="Тайлбар" htmlFor="d" className="span-2">
+              <Field label={t('Тайлбар')} htmlFor="d" className="span-2">
                 <textarea
                   id="d"
                   rows={6}
                   value={f.description}
                   disabled={published}
-                  onChange={(e) => setF({ ...f, description: e.target.value })}
+                  onChange={(e) =>
+                    setF({
+                      ...f,
+                      description: e.target.value,
+                    })
+                  }
                 />
               </Field>
-              <Field label="Эх сурвалжийн URL" htmlFor="s" error={errs.sourceUrl} hint="Нийтлэхэд заавал (BR-04)">
+              <Field label={t('Эх сурвалжийн URL')} htmlFor="s" error={errs.sourceUrl} hint={t('Нийтлэхэд заавал (BR-04)')}>
                 <input
                   id="s"
                   value={f.sourceUrl}
                   disabled={published}
                   placeholder="https://"
-                  onChange={(e) => setF({ ...f, sourceUrl: e.target.value })}
+                  onChange={(e) =>
+                    setF({
+                      ...f,
+                      sourceUrl: e.target.value,
+                    })
+                  }
                 />
               </Field>
-              <Field label="Шалгасан огноо" htmlFor="va" error={errs.verifiedAt} hint="Нийтлэхэд заавал">
+              <Field label={t('Шалгасан огноо')} htmlFor="va" error={errs.verifiedAt} hint={t('Нийтлэхэд заавал')}>
                 <input
                   id="va"
                   type="date"
                   value={f.verifiedAt}
                   disabled={published}
-                  onChange={(e) => setF({ ...f, verifiedAt: e.target.value })}
+                  onChange={(e) =>
+                    setF({
+                      ...f,
+                      verifiedAt: e.target.value,
+                    })
+                  }
                 />
               </Field>
             </div>
             {v && (
               <p className="small muted mt mb0">
-                Үүсгэсэн: {v.createdBy} · {fmtDateTime(v.createdAt)} ·{v.verifiedBy ? ` Шалгасан ажилтан: ${v.verifiedBy} ·` : ''}{' '}
-                {published ? <Badge tone="ok">Нийтэлсэн</Badge> : <Badge tone="muted">Ноорог</Badge>}
+                {t('Үүсгэсэн:')} {v.createdBy} · {fmtDateTime(v.createdAt)} ·
+                {v.verifiedBy
+                  ? t(' Шалгасан ажилтан: {{v0}} ·', {
+                      v0: v.verifiedBy,
+                    })
+                  : ''}{' '}
+                {published ? <Badge tone="ok">{t('Нийтэлсэн')}</Badge> : <Badge tone="muted">{t('Ноорог')}</Badge>}
               </p>
             )}
           </Card>
           <div className="page-footer">
             {!published && (
               <Button loading={busy} onClick={saveDraft}>
-                Ноорог хадгалах
+                {t('Ноорог хадгалах')}
               </Button>
             )}
             {!isNew && (
               <Link className="btn btn-ghost" to={`/admin/versions/${versionId}/requirements`}>
-                Шаардлага {published ? 'үзэх' : 'засах'} ({loaded.data?.requirements.length ?? 0})
+                {t('Шаардлага')} {published ? t('үзэх') : t('засах')} ({loaded.data?.requirements.length ?? 0})
               </Link>
             )}
             {!isNew && !published && (
               <Button variant="ghost" onClick={() => check(true) && setPubOpen(true)}>
-                Нийтлэх
+                {t('Нийтлэх')}
               </Button>
             )}
             {published && (
               <Button variant="ghost" loading={busy} onClick={copyNew}>
-                Хуулж шинэ хувилбар үүсгэх
+                {t('Хуулж шинэ хувилбар үүсгэх')}
               </Button>
             )}
             {!isNew && !published && (
               <Button variant="ghost" className="btn-link danger" onClick={() => setDelOpen(true)}>
-                Ноорог устгах
+                {t('Ноорог устгах')}
               </Button>
             )}
           </div>
@@ -212,25 +281,26 @@ export default function VersionEdit() {
       )}
       <Confirm
         open={pubOpen}
-        title="Хувилбарыг нийтлэх үү?"
-        confirmLabel="Нийтлэх"
+        title={t('Хувилбарыг нийтлэх үү?')}
+        confirmLabel={t('Нийтлэх')}
         loading={busy}
         onClose={() => setPubOpen(false)}
         onConfirm={publish}
       >
-        Нийтэлсний дараа зочин, мэдүүлэгчид харагдаж, шинэ мэдүүлэг энэ хувилбараар үүснэ. Нийтэлсэн хувилбарыг засах боломжгүй. Өмнө
-        илгээсэн мэдүүлгүүд хуучин хувилбартайгаа холбоотой үлдэнэ.
+        {t(
+          'Нийтэлсний дараа зочин, мэдүүлэгчид харагдаж, шинэ мэдүүлэг энэ хувилбараар үүснэ. Нийтэлсэн хувилбарыг засах боломжгүй. Өмнө илгээсэн мэдүүлгүүд хуучин хувилбартайгаа холбоотой үлдэнэ.',
+        )}
       </Confirm>
       <Confirm
         open={delOpen}
-        title="Ноорог устгах уу?"
+        title={t('Ноорог устгах уу?')}
         tone="danger"
-        confirmLabel="Устгах"
+        confirmLabel={t('Устгах')}
         loading={busy}
         onClose={() => setDelOpen(false)}
         onConfirm={remove}
       >
-        Энэ ноорог болон түүний шаардлагууд устана.
+        {t('Энэ ноорог болон түүний шаардлагууд устана.')}
       </Confirm>
     </Page>
   );
