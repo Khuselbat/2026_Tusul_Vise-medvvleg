@@ -1,0 +1,35 @@
+{
+  "name": "civiz-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Цахим виз мэдүүлгийн нэгдсэн веб программ — серверийн хэсэг",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed.js",
+    "db:reset": "node scripts/migrate.js && node scripts/seed.js",
+    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1 test/api.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.10",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.4",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.5.0",
+    "mysql2": "^3.24.6",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "supertest": "^7.3.2"
+  }
+}

@@ -1,0 +1,60 @@
+# Ажиллуулах:  cp .env.example .env  (нууц утгуудаа солино)  →  docker compose up -d --build
+# Жишээ өгөгдөл: docker compose exec app npm run db:seed
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-civiz}
+      MYSQL_USER: ${DB_USER:-civiz}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD тохируулна уу}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD тохируулна уу}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DB_HOST: db
+      DB_NAME: ${DB_NAME:-civiz}
+      DB_USER: ${DB_USER:-civiz}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET тохируулна уу}
+      PASSPORT_KEY: ${PASSPORT_KEY:?PASSPORT_KEY тохируулна уу (64 hex)}
+      PASSPORT_KEY_ID: ${PASSPORT_KEY_ID:-k1}
+      TRUST_PROXY: "1"
+      FORCE_HTTPS: ${FORCE_HTTPS:-0}
+      COOKIE_SECURE: ${COOKIE_SECURE:-1}
+    volumes:
+      - files:/app/server/storage
+    ports:
+      - "${APP_PORT:-4000}:4000"
+
+  # HTTPS (NFR-03): DOMAIN тохируулаад `docker compose --profile https up -d`
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on: [app]
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+
+volumes:
+  dbdata:
+  files:
+  caddydata:

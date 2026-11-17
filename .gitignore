@@ -1,0 +1,7 @@
+node_modules/
+client/dist/
+server/storage/
+server/storage-test/
+backups/
+.env
+*.log

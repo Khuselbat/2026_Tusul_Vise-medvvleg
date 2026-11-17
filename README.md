@@ -1,0 +1,210 @@
+# Цахим виз мэдүүлгийн нэгдсэн веб программ
+
+Төслийн тайлан (“Tsahim viz negdsen tailan — Khuselbat”)-д тодорхойлсон шаардлага, юзкейс, өгөгдлийн схем (Зураг 36), 25 дэлгэцийн прототип (Зураг 37–61)-ийн дагуу хэрэгжүүлсэн бүрэн ажиллагаатай систем.
+
+| Давхарга | Технологи |
+|---|---|
+| Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
+| Backend | Node.js 20+ / Express 4 (REST API) |
+| Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 хүснэгт (`database/schema.sql`) |
+| Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
+| Тест | Node test runner + Supertest — 27 интеграцын тест бодит MySQL дээр |
+| Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
+
+---
+
+## 1. Хурдан эхлүүлэх
+
+> **Windows хэрэглэгч:** алхам алхмаар заавар — [WINDOWS_SETUP.md](WINDOWS_SETUP.md)
+
+### А. Docker-оор (санал болгох)
+
+```bash
+cp .env.example .env
+# .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY-г солино:
+#   openssl rand -hex 32      ← JWT_SECRET болон PASSPORT_KEY-д
+docker compose up -d --build
+docker compose exec app npm run db:seed      # жишээ өгөгдөл (сонголттой)
+```
+Нээх: <http://localhost:4000>
+
+HTTPS-тэй (домэйн DNS тохируулсан үед): `.env` дотор `DOMAIN=viz.example.mn`, `FORCE_HTTPS=1` болгоод
+`docker compose --profile https up -d` — Caddy автоматаар Let's Encrypt гэрчилгээ авна.
+
+### Б. Гараар (хөгжүүлэлт)
+
+Шаардлага: Node.js 20+, MySQL 8 эсвэл MariaDB 10.6+.
+
+```sql
+-- MySQL дээр нэг удаа:
+CREATE DATABASE civiz CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE civiz_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'civiz'@'localhost' IDENTIFIED BY 'civiz_pass';
+GRANT ALL ON civiz.* TO 'civiz'@'localhost';
+GRANT ALL ON civiz_test.* TO 'civiz'@'localhost';
+```
+
+```bash
+cd server && npm install
+npm run db:reset          # схем үүсгэх + жишээ өгөгдөл (АНХААР: бүх хүснэгтийг дахин үүсгэнэ)
+npm run dev               # API → http://localhost:4000
+
+cd ../client && npm install
+npm run dev               # UI → http://localhost:5173  (/api-г 4000 руу proxy хийнэ)
+```
+
+Production build: `cd client && npm run build` → сервер `client/dist`-ийг өөрөө үйлчилнэ (нэг порт).
+
+### Жишээ нэвтрэх эрх (`db:seed`)
+
+| Эрх | Имэйл | Нууц үг |
+|---|---|---|
+| Админ | admin@civiz.mn | Admin1234 |
+| Оператор | operator@civiz.mn | Operator1234 |
+| Оператор 2 | operator2@civiz.mn | Operator1234 |
+| Мэдүүлэгч | applicant@civiz.mn | Applicant1234 |
+
+Жишээ өгөгдөлд: БНСУ (идэвхтэй), C-3-9 ангиллын нийтэлсэн хувилбар (KVAC-ын эх сурвалж, 2026-10-30 шалгасан, 5 материал), D-2 ноорог, мэдүүлэгчийн 3 мэдүүлэг (бүрэн / хянаж буй / хуваарилаагүй). Бүх хувийн мэдээлэл зохиомол (таамаглал А3).
+
+### Тест
+
+```bash
+cd server && npm test     # civiz_test сан дээр схемийг дахин үүсгээд 27 тест ажиллуулна
+```
+
+---
+
+## 2. Бүтэц
+
+```
+visa-system/
+├── database/schema.sql          11 хүснэгт, PK/FK, UNIQUE, CHECK, индекс
+├── server/
+│   ├── src/
+│   │   ├── app.js               Express: helmet/CSP, CSRF хамгаалалт, HTTPS албадах, алдааны боловсруулалт
+│   │   ├── config.js            Орчны тохиргоо
+│   │   ├── db.js                MySQL pool, транзакц
+│   │   ├── middleware/auth.js   JWT httpOnly cookie, эрх шалгах (хүсэлт бүрд is_active шалгана)
+│   │   ├── lib/                 audit, crypto (AES-256-GCM), storage (magic-byte шалгалт), visa дүрэм
+│   │   └── routes/              auth · public · applicant · files · operator · admin
+│   ├── scripts/                 migrate · seed · verify-storage
+│   └── test/api.test.js
+├── client/src/
+│   ├── pages/public|app|operator|admin   25+ дэлгэц
+│   └── components/              Layout, UI бүрэлдэхүүн, файл үзэгч
+├── scripts/backup.sh, restore.sh       NFR-04
+├── Dockerfile, docker-compose.yml, Caddyfile
+└── .env.example
+```
+
+---
+
+## 3. Шаардлагын хэрэгжилт (traceability)
+
+### Функцийн шаардлага
+
+| FR | UC | Хэрэгжүүлэлт | Тест |
+|---|---|---|---|
+| FR-01 Бүртгүүлэх | UC-01 | `POST /api/auth/register` — үргэлж APPLICANT, давхардсан имэйл 409 (BR-01), хагас бүртгэл үлдээхгүй (транзакц) | ✔ |
+| FR-02 Нэвтрэх | UC-02 | `POST /api/auth/login` — ерөнхий алдааны мэдэгдэл, оролдлогын хязгаар (15 мин/10), эрхээр /app, /operator, /admin | ✔ |
+| FR-03 Визийн мэдээлэл | UC-03 | `GET /api/visas`, `/api/visas/:versionId` — зөвхөн нийтэлсэн хувилбар, эх сурвалж, шалгасан огноо; бусад улс “Тун удахгүй” | ✔ |
+| FR-04 Анкет | UC-04 | `PUT /api/app/drafts/:id/form` — латин нэр, огнооны шалгалт (төрсөн ≤ өнөөдөр, гарах ≥ орох, паспорт хүчинтэй), паспорт AES-256-GCM | ✔ |
+| FR-05 Хавсралт | UC-04 | `POST /api/app/drafts/:id/documents` — PDF/JPG/PNG агуулгын байтаар шалгана, ≤10 MB, нийт ≤100 MB, SHA-256 | ✔ |
+| FR-06 Илгээх | UC-04 | `POST /api/app/drafts/:id/submit` — заавал талбар/хавсралт шалгана (422 + дутуу хэсэг), БНСУ-аас бусдыг хориглоно | ✔ |
+| FR-07 Архивлах | UC-04 | Нэг транзакцаар SUBMITTED + archived_at; idempotency (20 зэрэг хүсэлт → 1 мэдүүлэг); илгээснийг засахгүй | ✔ |
+| FR-08 Архив үзэх | UC-05 | `GET /api/app/applications` (шүүлт, хуудаслалт), `/:id`, файл үзэгч | ✔ |
+| FR-09 Албан хариу | UC-06 | `/app/official-result` — баталгаажсан HTTPS холбоос, гадаад сайтын сануулга, URL-д хувийн мэдээлэл дамжуулахгүй | e2e |
+| FR-10 Бүрдэл хянах | UC-07 | `/api/operator/...` — зөвхөн хуваарилсан (бусад 403), Дутуу бол тайлбар заавал, үнэлгээ зөвхөн нэмэгдэнэ, зэрэгцээ 409 | ✔ |
+| FR-11 Лавлах шинэчлэх | UC-08 | `/api/admin/...` — хувилбарлалт, эх сурвалж/огноо/шаардлагагүй бол нийтлэхгүй, нийтэлснийг засахгүй (хуулж шинэ) | ✔ |
+
+### Функцийн бус шаардлага
+
+| NFR | Хэрэгжүүлэлт |
+|---|---|
+| NFR-01 Хандалт | Мэдүүлэгч зөвхөн өөрийнх (бусдынх 404), оператор зөвхөн хуваарилсан (403), **админ файл/анкет үзэх эрхгүй**. Файл бүрийг эрх шалгасан API-аар (`/api/files/:id`) өгнө. Тест: 20+ сөрөг оролдлого → задрал 0 |
+| NFR-02 Нууц үг | bcrypt (cost 12, давтагдашгүй salt); лог, audit-д нууц үг бичихгүй — тестээр шалгасан |
+| NFR-03 HTTPS | `FORCE_HTTPS=1` (HTTP → 308, хувийн POST хаагдана), HSTS, Secure + HttpOnly + SameSite=Strict cookie, Caddy автоматаар TLS |
+| NFR-04 Нөөц | `scripts/backup.sh` (mysqldump + файлын архив + SHA256SUMS), `scripts/restore.sh` → `verify-storage.js` бичлэг/файлын хяналтын нийлбэрийг 100% тулгана |
+| NFR-05 Бүрэн байдал | Илгээлт нэг транзакц, `(applicant_id, idempotency_key)` UNIQUE, хавсралт SHA-256 |
+
+### Бизнес дүрэм
+
+| BR | Хаана |
+|---|---|
+| BR-01 нэг имэйл — нэг бүртгэл | `users.email` UNIQUE |
+| BR-02 өөрийн/хуваарилсан мэдүүлэг | `applicant.js` ownDraft, `operator.js` assignedApp, `files.js` |
+| BR-03 зөвхөн БНСУ | `countries.service_status` + `SUBMITTABLE_COUNTRIES=KR` |
+| BR-04 эх сурвалжгүй бол нийтлэхгүй | `admin.js` publish + `ck_versions_publish` CHECK |
+| BR-05 файл | `storage.js` detectType, multer limit, `ck_documents_*` CHECK |
+| BR-06 бүрдэл бүрэн үед л хүлээж авна | submit → 422 `missing[]` |
+| BR-07 нэг илгээлт — нэг дугаар | idempotency + `public_id` UNIQUE |
+| BR-08 дотоод дугаар ≠ албан дугаар | UI бүх газарт тэмдэглэнэ; албан хариуг порталаас |
+| BR-09 “Бүрэн/Дутуу” ≠ визийн шийдвэр | Виз зөвшөөрөх/татгалзах товч байхгүй; `ck_reviews_comment` |
+
+### Дэлгэцүүд (Зураг 37–61)
+
+| # | Зам | # | Зам |
+|---|---|---|---|
+| 37 | `/` | 50 | `/app/official-result` |
+| 38 | `/login` | 51 | `/operator` |
+| 39 | `/register` | 52 | `/operator/applications/:id` |
+| 40 | `/visas` | 53 | `/operator/applications/:id/history` |
+| 41 | `/visas/:versionId` | 54 | `/admin` |
+| 42 | `/app` | 55 | `/admin/countries` |
+| 43 | `/app/new` | 56 | `/admin/visa-types` (+ `/:id/versions`) |
+| 44 | `/app/new/documents` | 57 | `/admin/visa-types/:id/versions/new`, `/admin/versions/:id` |
+| 45 | `/app/new/confirm` | 58 | `/admin/versions/:id/requirements` |
+| 46 | `/app/submitted/:id` | 59 | `/admin/users` |
+| 47 | `/app/applications` | 60 | `/admin/assignments` |
+| 48 | `/app/applications/:id` | 61 | `/admin/audit` |
+| 49 | `/app/profile` (+ operator, admin) | + | `/operator/history`, `/help` |
+
+---
+
+## 4. Мэдүүлгийн төлөв
+
+```
+DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)──▶ IN_REVIEW ──(оператор)──▶ INCOMPLETE ⇄ COMPLETE
+```
+* Албан ёсны визийн үр дүнг (зөвшөөрсөн/татгалзсан) систем **хадгалахгүй, таахгүй** — Korea Visa Portal-аас шалгана.
+* Үнэлгээ бүр `reviews`-д шинэ мөр (review_no өсөх); өмнөхийг засах/устгах API байхгүй.
+* Визийн мэдээлэл хувилбартай: мэдүүлэг илгээх үеийн `version_id`-тайгаа үлдэнэ.
+
+## 5. API товч
+
+```
+Нийтийн   GET  /api/countries · /api/visas · /api/visas/:versionId · /api/health
+Нэвтрэлт  POST /api/auth/register · login · logout   GET /api/auth/me   PUT /api/auth/me/profile · me/password
+Мэдүүлэгч GET  /api/app/dashboard
+          POST /api/app/drafts   GET/DELETE /api/app/drafts/:id   PUT /api/app/drafts/:id/form
+          POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId
+          POST /api/app/drafts/:id/submit
+          GET  /api/app/applications · /api/app/applications/:id · /:id/form-copy
+Файл      GET  /api/files/:documentId[?download=1]
+Оператор  GET  /api/operator/applications · /stats · /reviews · /applications/:id · /applications/:id/reviews
+          POST /api/operator/applications/:id/reviews   {completeness, comment, expectedReviewNo}
+Админ     GET  /api/admin/dashboard · /audit
+          CRUD /api/admin/countries · /visa-types · /visa-types/:id/versions · /versions/:id · /versions/:id/requirements · /requirements/:id
+          POST /api/admin/versions/:id/publish
+          GET/POST /api/admin/users   PUT /api/admin/users/:id/status
+          GET  /api/admin/assignments   PUT /api/admin/assignments/:publicId {operatorId, expectedOperatorId}
+```
+Өөрчлөх хүсэлт бүр `X-Requested-With: civiz` толгойтой байна (CSRF хамгаалалт).
+
+## 6. Тайлангаас ялгарах / нэмэлт шийдвэрүүд
+
+* **Ноорог серверт хадгалагдана.** Прототип (Зураг 43)-д анкет “зөвхөн урсгалын санах ойд” гэсэн боловч F04 “хадгалаад үргэлжлүүлнэ” гэсэн тул файл хавсаргах үед ноорог (`status='DRAFT'`) үүсгэж, анкетыг шифрлэн хадгална. “Цуцлах” нь ноорог болон түр файлыг бүрэн устгана (UC-04 A3).
+* **Оператор паспортын дугаарыг нууцлагдсан** байдлаар харна (Зураг 52), хавсаргасан хуулбартай тулгана.
+* **Лавлах дугаар** `KR-YYYYMMDD-XXXXXX` хэлбэртэй (`applications.public_id`).
+* **Нүүр хуудас:** өгөгдлийн санд зөвхөн БНСУ seed хийнэ; нэр нь баталгаажаагүй 3 улсыг “Улс 2/3/4 · Тун удахгүй” хоосон картаар харуулна (placeholder нэрийг DB-д оруулахгүй).
+* **Эхний хувилбарт орохгүй** (тайлангийн 4.1): бусад улсын мэдүүлэг, ЭСЯ-тай API, автомат хариу татах, төлбөр, OCR/AI. Мөн “Өмнөх мэдүүлэг импортлох” ба албан ёсны үр дүнг нотолгоотой бүртгэх (F11) нь 11 хүснэгтийн схемд талбаргүй тул дараагийн хувилбарт — `applications`-д `official_*` талбар нэмэх замаар.
+* **Хадгалах хугацаа/устгах хүсэлт:** бодит нэвтрүүлэлтийн өмнө журмаар батлах (4.5). `backup.sh` дахь `KEEP_DAYS` тохируулгатай.
+
+## 7. Production хяналтын хуудас
+
+- [ ] `.env`-ийн бүх нууц утгыг солих (`JWT_SECRET`, `PASSPORT_KEY`, DB нууц үгүүд)
+- [ ] `FORCE_HTTPS=1`, `COOKIE_SECURE=1`, `TRUST_PROXY=1` (proxy ард)
+- [ ] `backup.sh`-г cron-д өдөр бүр, нөөцийг өөр сервер/объект санд хуулах; сар бүр `restore.sh` туршилт
+- [ ] Жишээ (seed) хэрэглэгчдийг устгах эсвэл нууц үгийг солих
+- [ ] Визийн шаардлагыг ЭСЯ-ны хамгийн сүүлийн журамтай тулгаж шинэ хувилбар нийтлэх
+- [ ] Эрх бүхий байгууллагатай хамтын ажиллагааны зохицуулалт (таамаглал А3)

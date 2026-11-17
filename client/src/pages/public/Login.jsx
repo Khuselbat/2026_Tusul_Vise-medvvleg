@@ -1,0 +1,57 @@
+import { useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Page, Card, Field, Button, Alert } from '../../components/ui.jsx';
+import { useAuth, HOME_BY_ROLE } from '../../auth.jsx';
+
+// Зураг 38 Системд нэвтрэх — эрхээр нь /app, /operator, /admin руу
+export default function Login() {
+  const { user, login } = useAuth();
+  const [sp] = useSearchParams();
+  const navigate = useNavigate();
+  const [f, setF] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (user) return <Navigate to={HOME_BY_ROLE[user.role]} replace />;
+
+  async function submit(e) {
+    e.preventDefault();
+    const fe = {};
+    if (!f.email.trim()) fe.email = 'Имэйлээ оруулна уу.';
+    if (!f.password) fe.password = 'Нууц үгээ оруулна уу.';
+    setErrors(fe); setErr('');
+    if (Object.keys(fe).length) return;
+    setBusy(true);
+    try {
+      const u = await login(f.email, f.password);
+      const next = sp.get('next');
+      const home = HOME_BY_ROLE[u.role];
+      navigate(next && next.startsWith(home) ? next : home, { replace: true });
+    } catch (ex) {
+      setErr(ex.message);
+      setErrors(ex.fields || {});
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <Page crumb={[{ label: 'Нэвтрэх' }]} title="Системд нэвтрэх" subtitle="Мэдүүлэгч, оператор, админ нэг хуудсаар нэвтэрнэ">
+      <Card className="auth-card">
+        {sp.get('registered') && <Alert tone="ok">Бүртгэл амжилттай үүслээ. Одоо нэвтэрнэ үү.</Alert>}
+        {err && <Alert tone="danger">{err}</Alert>}
+        <form onSubmit={submit} className="stack" noValidate>
+          <Field label="Имэйл" htmlFor="email" error={errors.email}>
+            <input id="email" type="email" autoComplete="username" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+          </Field>
+          <Field label="Нууц үг" htmlFor="pw" error={errors.password}>
+            <input id="pw" type="password" autoComplete="current-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+          </Field>
+          <div className="row-actions">
+            <Button type="submit" loading={busy}>Нэвтрэх</Button>
+            <Link className="btn btn-ghost" to="/register">Бүртгүүлэх</Link>
+          </div>
+        </form>
+      </Card>
+    </Page>
+  );
+}
