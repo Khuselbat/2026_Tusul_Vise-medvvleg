@@ -7,7 +7,8 @@ import { wrap, parse, badRequest, notFound, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { initialScanStatus, kickScanner } from '../lib/scanner.js';
 import { notify, kickMailer } from '../lib/notify.js';
-import { encryptPassport, makeReference } from '../lib/crypto.js';
+import { encryptPassport, decryptPassport, makeReference } from '../lib/crypto.js';
+import { buildSummaryPdf } from '../lib/summaryPdf.js';
 import { detectType, saveFile, removeFile, safeFileName } from '../lib/storage.js';
 import { LATEST_PUBLISHED, canApply, applyBlockReason, STATUS_LABEL } from '../lib/visa.js';
 import { formSchema, parseForm, serializeForm, serializeDoc, loadApplicationDetail, APP_SELECT } from '../lib/applications.js';
@@ -139,7 +140,55 @@ r.get(
     const a = await ownDraft(req);
     const full = await one(`${APP_SELECT} WHERE a.application_id = ?`, [a.application_id]);
     const detail = await loadApplicationDetail(full, { revealPassport: true });
-    res.json({ draft: { ...detail, canSubmit: canApply(a), blockReason: applyBlockReason(a) } });
+    res.json({ draft: { ...detail, autosave: readAutosave(a), canSubmit: canApply(a), blockReason: applyBlockReason(a) } });
+  }),
+);
+
+/** Үе 4: шифрлэсэн автомат хадгалалтыг уншина (анкетаас шинэ бол л буцаана). */
+function readAutosave(a) {
+  if (!a.form_autosave_enc) return null;
+  try {
+    return { form: JSON.parse(decryptPassport(a.form_autosave_enc, a.form_autosave_key_id)), savedAt: a.form_autosave_at };
+  } catch {
+    return null;
+  }
+}
+
+// Бүрэн бус анкетын утгууд (автомат хадгалалт) — зөвхөн мөр, хэмжээ хязгаартай; бүрэн шалгалтыг “Үргэлжлүүлэх”-д хийнэ
+const s200 = z.string().max(500).optional();
+const autosaveSchema = z
+  .object({
+    familyName: s200,
+    givenName: s200,
+    birthDate: s200,
+    nationalityCode: s200,
+    passportNumber: s200,
+    passportExpiresOn: s200,
+    contactEmail: s200,
+    contactPhone: s200,
+    travelPurpose: s200,
+    intendedEntryOn: s200,
+    intendedExitOn: s200,
+    extraFields: z.object({ occupation: s200, homeAddress: s200, stayAddress: s200 }).partial().optional(),
+  })
+  .strict();
+
+/**
+ * Үе 4 — анкетын ноорог автоматаар хадгалах (debounce-тэй дуудагдана). Паспорт агуулж болох тул бүхэлд нь
+ * AES-256-GCM-ээр шифрлэнэ. Ойр ойрхон дуудагддаг тул audit бичихгүй — эцсийн хадгалалт (DRAFT_FORM_SAVE) audit-тай (D-42).
+ */
+r.put(
+  '/drafts/:id/autosave',
+  wrap(async (req, res) => {
+    const a = await ownDraft(req);
+    const form = parse(autosaveSchema, req.body);
+    const enc = encryptPassport(JSON.stringify(form));
+    await query(
+      'UPDATE applications SET form_autosave_enc = ?, form_autosave_key_id = ?, form_autosave_at = CURRENT_TIMESTAMP(6) WHERE application_id = ?',
+      [enc.data, enc.keyId, a.application_id],
+    );
+    const r2 = await one('SELECT form_autosave_at FROM applications WHERE application_id = ?', [a.application_id]);
+    res.json({ savedAt: r2.form_autosave_at });
   }),
 );
 
@@ -177,6 +226,11 @@ r.put(
         f.intendedExitOn,
         JSON.stringify(f.extraFields),
       ],
+    );
+    // Бүрэн анкет хадгалагдсан тул автомат хадгалалтыг арилгана
+    await query(
+      'UPDATE applications SET form_autosave_enc = NULL, form_autosave_key_id = NULL, form_autosave_at = NULL WHERE application_id = ?',
+      [a.application_id],
     );
     await audit(req, { action: 'DRAFT_FORM_SAVE', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id });
     res.json({ ok: true });
@@ -422,6 +476,26 @@ r.get(
     if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
     await audit(req, { action: 'APP_VIEW', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id });
     res.json({ application: await loadApplicationDetail(a, { revealPassport: false }) });
+  }),
+);
+
+// Үе 4 — мэдүүлгийн хураангуй PDF (албан баримт биш; паспорт нууцлагдсан)
+r.get(
+  '/applications/:id/summary.pdf',
+  wrap(async (req, res) => {
+    const a = await one(`${APP_SELECT} WHERE a.public_id = ? AND a.applicant_id = ? AND a.status <> 'DRAFT'`, [req.params.id, req.user.id]);
+    if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
+    const detail = await loadApplicationDetail(a, { revealPassport: false });
+    const pdf = await buildSummaryPdf(detail);
+    await audit(req, { action: 'APP_SUMMARY_PDF', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id });
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': String(pdf.length),
+      'Content-Disposition': `attachment; filename="${a.public_id}-summary.pdf"`,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.end(pdf);
   }),
 );
 

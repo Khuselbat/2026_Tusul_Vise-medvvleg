@@ -680,11 +680,20 @@ r.get(
     const where = ["a.status <> 'DRAFT'"];
     if (filter === 'unassigned') where.push('a.assigned_operator_id IS NULL');
     if (filter === 'assigned') where.push('a.assigned_operator_id IS NOT NULL');
+    const params = [];
+    const search = String(req.query.q || '')
+      .trim()
+      .slice(0, 40);
+    if (search) {
+      where.push('a.public_id LIKE ?');
+      params.push(`%${search}%`);
+    }
     const rows = await query(
       `SELECT a.public_id, a.status, a.submitted_at, a.assigned_operator_id, t.code, c.name_mn AS country_name, uo.display_name AS operator_name
        FROM applications a JOIN visa_info_versions v ON v.version_id = a.version_id JOIN visa_types t ON t.visa_type_id = v.visa_type_id
        JOIN countries c ON c.country_id = t.country_id LEFT JOIN users uo ON uo.user_id = a.assigned_operator_id
       WHERE ${where.join(' AND ')} ORDER BY a.submitted_at ASC LIMIT 500`,
+      params,
     );
     const ops = await query(
       `SELECT u.user_id, u.display_name,
@@ -707,6 +716,46 @@ r.get(
   }),
 );
 
+/** Нэг мэдүүлгийг хуваарилах/цуцлах (транзакц дотор). Зэрэгцээ өөрчлөлт → 409 (expectedOperatorId). */
+async function assignOne(q, req, publicId, operatorId, expectedOperatorId) {
+  const a = (
+    await q(
+      "SELECT application_id, public_id, assigned_operator_id, status FROM applications WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE",
+      [publicId],
+    )
+  )[0];
+  if (!a) throw notFound(`Мэдүүлэг олдсонгүй: ${publicId}`);
+  if ((a.assigned_operator_id ?? null) !== expectedOperatorId) {
+    throw conflict('Хуваарилалт өөр хэрэглэгчээр өөрчлөгдсөн байна. Дахин уншина уу.', { conflicts: [a.public_id] });
+  }
+  let status = a.status;
+  const hasReview = Number((await q('SELECT COUNT(*) AS n FROM reviews WHERE application_id = ?', [a.application_id]))[0].n) > 0;
+  if (!hasReview) status = operatorId ? 'IN_REVIEW' : 'SUBMITTED';
+  await q('UPDATE applications SET assigned_operator_id = ?, status = ? WHERE application_id = ?', [operatorId, status, a.application_id]);
+  await audit(
+    req,
+    {
+      action: operatorId ? (a.assigned_operator_id ? 'APP_REASSIGN' : 'APP_ASSIGN') : 'APP_UNASSIGN',
+      entityType: 'application',
+      entityKey: a.public_id,
+      applicationId: a.application_id,
+    },
+    q,
+  );
+  if (operatorId) await notify(q, { userId: operatorId, kind: 'APP_ASSIGNED', applicationId: a.application_id, ref: a.public_id });
+}
+
+async function requireActiveOperator(q, operatorId) {
+  if (!operatorId) return;
+  const op = (
+    await q(
+      "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE u.user_id = ? AND r.code = 'OPERATOR' AND u.is_active = 1",
+      [operatorId],
+    )
+  )[0];
+  if (!op) throw badRequest('Идэвхтэй оператор сонгоно уу.');
+}
+
 r.put(
   '/assignments/:publicId',
   wrap(async (req, res) => {
@@ -718,47 +767,49 @@ r.put(
       req.body,
     );
     await tx(async (q) => {
-      const a = (
-        await q(
-          "SELECT application_id, public_id, assigned_operator_id, status FROM applications WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE",
-          [req.params.publicId],
-        )
-      )[0];
-      if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
-      // Зэрэгцээ өөрчлөлт → 409
-      if ((a.assigned_operator_id ?? null) !== d.expectedOperatorId)
-        throw conflict('Хуваарилалт өөр хэрэглэгчээр өөрчлөгдсөн байна. Дахин уншина уу.');
-      if (d.operatorId) {
-        const op = (
-          await q(
-            "SELECT u.user_id FROM users u JOIN roles r ON r.role_id = u.role_id WHERE u.user_id = ? AND r.code = 'OPERATOR' AND u.is_active = 1",
-            [d.operatorId],
-          )
-        )[0];
-        if (!op) throw badRequest('Идэвхтэй оператор сонгоно уу.');
-      }
-      let status = a.status;
-      const hasReview = Number((await q('SELECT COUNT(*) AS n FROM reviews WHERE application_id = ?', [a.application_id]))[0].n) > 0;
-      if (!hasReview) status = d.operatorId ? 'IN_REVIEW' : 'SUBMITTED';
-      await q('UPDATE applications SET assigned_operator_id = ?, status = ? WHERE application_id = ?', [
-        d.operatorId,
-        status,
-        a.application_id,
-      ]);
-      await audit(
-        req,
-        {
-          action: d.operatorId ? (a.assigned_operator_id ? 'APP_REASSIGN' : 'APP_ASSIGN') : 'APP_UNASSIGN',
-          entityType: 'application',
-          entityKey: a.public_id,
-          applicationId: a.application_id,
-        },
-        q,
-      );
-      if (d.operatorId) await notify(q, { userId: d.operatorId, kind: 'APP_ASSIGNED', applicationId: a.application_id, ref: a.public_id });
+      await requireActiveOperator(q, d.operatorId);
+      await assignOne(q, req, req.params.publicId, d.operatorId, d.expectedOperatorId);
     });
     kickMailer();
     res.json({ ok: true });
+  }),
+);
+
+/**
+ * Үе 4 — олноор хуваарилах (≤100). Бүгд эсвэл юу ч биш: аль нэг нь зэрэгцээ өөрчлөгдсөн бол бүхэлд нь буцааж,
+ * зөрсөн дугааруудыг 409-д заана.
+ */
+r.put(
+  '/assignments',
+  wrap(async (req, res) => {
+    const d = parse(
+      z.object({
+        operatorId: z.number().int().positive(),
+        items: z
+          .array(z.object({ publicId: z.string().min(1).max(36), expectedOperatorId: z.number().int().positive().nullable() }))
+          .min(1, 'Дор хаяж нэг мэдүүлэг сонгоно уу.')
+          .max(100, 'Нэг удаад 100 хүртэл мэдүүлэг.'),
+      }),
+      req.body,
+    );
+    const unique = new Set(d.items.map((x) => x.publicId));
+    if (unique.size !== d.items.length) throw badRequest('Давхардсан мэдүүлэг байна.');
+    await tx(async (q) => {
+      await requireActiveOperator(q, d.operatorId);
+      const conflicts = [];
+      for (const it of d.items) {
+        try {
+          await assignOne(q, req, it.publicId, d.operatorId, it.expectedOperatorId);
+        } catch (e) {
+          if (e.status !== 409) throw e;
+          conflicts.push(it.publicId);
+        }
+      }
+      if (conflicts.length)
+        throw conflict(`${conflicts.length} мэдүүлгийн хуваарилалт өөрчлөгдсөн байна. Дахин уншаад сонгоно уу.`, { conflicts });
+    });
+    kickMailer();
+    res.json({ ok: true, assigned: d.items.length });
   }),
 );
 

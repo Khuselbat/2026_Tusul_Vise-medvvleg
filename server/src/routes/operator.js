@@ -30,6 +30,12 @@ r.get(
     const f = parse(
       z.object({
         latest: z.enum(['NONE', 'COMPLETE', 'INCOMPLETE']).optional(),
+        // Үе 4: хайлт, төлөв, эрэмбэ, хуудаслалт
+        q: z.string().trim().max(60).optional(),
+        status: z.enum(['SUBMITTED', 'IN_REVIEW', 'INCOMPLETE', 'COMPLETE', 'DELIVERED']).optional(),
+        sort: z.enum(['submitted_asc', 'submitted_desc', 'ref_asc', 'status']).default('submitted_asc'),
+        page: z.coerce.number().int().min(1).default(1),
+        pageSize: z.coerce.number().int().min(1).max(100).default(20),
         from: z
           .string()
           .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -51,20 +57,39 @@ r.get(
       where.push('a.submitted_at < DATE_ADD(?, INTERVAL 1 DAY)');
       params.push(f.to);
     }
+    if (f.q) {
+      where.push('(a.public_id LIKE ? OR ua.display_name LIKE ?)');
+      params.push(`%${f.q}%`, `%${f.q}%`);
+    }
+    if (f.status) {
+      where.push('a.status = ?');
+      params.push(f.status);
+    }
     const LATEST = `(SELECT r.completeness FROM reviews r WHERE r.application_id = a.application_id ORDER BY r.review_no DESC LIMIT 1)`;
     if (f.latest === 'NONE') where.push(`${LATEST} IS NULL`);
     else if (f.latest) {
       where.push(`${LATEST} = ?`);
       params.push(f.latest);
     }
+    // Эрэмбийг зөвхөн тогтоосон жагсаалтаас (SQL-д хэрэглэгчийн утга залгахгүй)
+    const ORDER = {
+      submitted_asc: 'x.submitted_at ASC',
+      submitted_desc: 'x.submitted_at DESC',
+      ref_asc: 'x.public_id ASC',
+      status: "FIELD(x.status,'SUBMITTED','IN_REVIEW','INCOMPLETE','COMPLETE','DELIVERED'), x.submitted_at ASC",
+    }[f.sort];
+    const total = Number((await query(`SELECT COUNT(*) AS n FROM (${APP_SELECT} WHERE ${where.join(' AND ')}) x`, params))[0].n);
     const rows = await query(
       `SELECT x.*, ${LATEST.replaceAll('a.application_id', 'x.application_id')} AS latest_review,
             (SELECT COUNT(*) FROM application_documents d WHERE d.application_id = x.application_id) AS doc_count
        FROM (${APP_SELECT} WHERE ${where.join(' AND ')}) x
-      ORDER BY x.submitted_at ASC`,
-      params,
+      ORDER BY ${ORDER} LIMIT ? OFFSET ?`,
+      [...params, f.pageSize, (f.page - 1) * f.pageSize],
     );
     res.json({
+      total,
+      page: f.page,
+      pageSize: f.pageSize,
       items: rows.map((a) => ({
         publicId: a.public_id,
         applicantName: a.applicant_name,
