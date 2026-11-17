@@ -52,6 +52,7 @@ const ACTION_MN = {
   DELETION_CANCEL: 'Устгах хүсэлт цуцалсан',
   DELETION_REJECT: 'Устгах хүсэлт татгалзсан',
   ACCOUNT_ERASE: 'Бүртгэл устгасан',
+  APP_SUMMARY_PDF: 'PDF хураангуй татсан',
   APP_ASSIGN: 'Хуваарилсан',
   APP_REASSIGN: 'Дахин хуваарилсан',
   APP_UNASSIGN: 'Хуваарилалт цуцалсан',

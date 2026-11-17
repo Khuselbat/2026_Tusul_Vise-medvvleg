@@ -1,7 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, uuid } from '../../api.js';
-import { Page, Card, Field, Button, Alert, ErrorBox, Skeleton, Confirm, useAsync, Empty, LinkButton } from '../../components/ui.jsx';
+import {
+  Page,
+  Card,
+  Field,
+  Button,
+  Alert,
+  ErrorBox,
+  Skeleton,
+  Confirm,
+  useAsync,
+  Empty,
+  LinkButton,
+  fmtDateTime,
+} from '../../components/ui.jsx';
 import { Steps } from '../../components/shared.jsx';
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -66,6 +79,11 @@ export default function NewForm() {
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  // Үе 4: автомат хадгалалт (серверт шифрлэгдэнэ)
+  const createdRef = useRef(null);
+  const touched = useRef(false);
+  const [save, setSave] = useState({ status: 'idle', at: null });
+  const currentRef = () => draftRef || createdRef.current;
 
   const ctx = useAsync(async () => {
     if (draftRef) {
@@ -82,7 +100,10 @@ export default function NewForm() {
   }, [draftRef, versionId, copyFrom]);
 
   useEffect(() => {
-    const src = ctx.data?.draft?.form || ctx.data?.copy;
+    // Автомат хадгалалт байвал (эцсийн хадгалалтаас шинэ) түүнийг сэргээнэ
+    const auto = ctx.data?.draft?.autosave;
+    if (auto) setSave({ status: 'restored', at: auto.savedAt });
+    const src = auto?.form || ctx.data?.draft?.form || ctx.data?.copy;
     if (src)
       setForm({
         ...EMPTY,
@@ -93,8 +114,48 @@ export default function NewForm() {
       });
   }, [ctx.data]);
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-  const setX = (k) => (e) => setForm((f) => ({ ...f, extraFields: { ...f.extraFields, [k]: e.target.value } }));
+  const set = (k) => (e) => {
+    touched.current = true;
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+  };
+  const setX = (k) => (e) => {
+    touched.current = true;
+    setForm((f) => ({ ...f, extraFields: { ...f.extraFields, [k]: e.target.value } }));
+  };
+
+  const canAutosave = !!(draftRef || (versionId && ctx.data?.visa?.canApply));
+  async function autosave(data) {
+    if (!navigator.onLine) {
+      setSave((s) => ({ ...s, status: 'offline' }));
+      return;
+    }
+    setSave((s) => ({ ...s, status: 'saving' }));
+    try {
+      let ref = currentRef();
+      if (!ref) {
+        ref = (await api.post('/api/app/drafts', { versionId: Number(versionId), idempotencyKey: key })).publicId;
+        createdRef.current = ref;
+        // Дахин ачаалахад ноорог сэргээгдэхийн тулд хаягийг шинэчилнэ (хуудсыг дахин зурахгүйгээр)
+        window.history.replaceState(window.history.state, '', `/app/new?draft=${ref}`);
+      }
+      const r = await api.put(`/api/app/drafts/${ref}/autosave`, data);
+      setSave({ status: 'saved', at: r.savedAt });
+    } catch {
+      setSave((s) => ({ ...s, status: navigator.onLine ? 'error' : 'offline' }));
+    }
+  }
+
+  // Бичихээ зогсоосноос 1.5 сек дараа хадгална; сүлжээ сэргэхэд дахин оролдоно
+  useEffect(() => {
+    if (!touched.current || !canAutosave) return undefined;
+    const t = setTimeout(() => autosave(form), 1500);
+    return () => clearTimeout(t);
+  }, [form, canAutosave]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const retry = () => touched.current && canAutosave && autosave(form);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [form, canAutosave]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function next(e) {
     e.preventDefault();
@@ -107,7 +168,7 @@ export default function NewForm() {
     }
     setBusy(true);
     try {
-      let ref = draftRef;
+      let ref = currentRef();
       if (!ref) ref = (await api.post('/api/app/drafts', { versionId: Number(versionId), idempotencyKey: key })).publicId;
       await api.put(`/api/app/drafts/${ref}/form`, form);
       navigate(`/app/new/documents?draft=${ref}`);
@@ -120,9 +181,9 @@ export default function NewForm() {
   }
 
   async function cancel() {
-    if (draftRef) {
+    if (currentRef()) {
       try {
-        await api.del(`/api/app/drafts/${draftRef}`);
+        await api.del(`/api/app/drafts/${currentRef()}`);
       } catch {
         /* */
       }
@@ -246,6 +307,18 @@ export default function NewForm() {
             Шаардлагыг харах ↗
           </Link>
         </div>
+        <p className="small muted autosave-status" role="status" aria-live="polite">
+          {
+            {
+              idle: '',
+              saving: 'Хадгалж байна…',
+              saved: `Ноорог автоматаар хадгалагдсан · ${fmtDateTime(save.at)}`,
+              restored: `Өмнө автоматаар хадгалсан ноорог сэргээгдлээ · ${fmtDateTime(save.at)}`,
+              error: 'Автомат хадгалалт амжилтгүй. “Үргэлжлүүлэх” дарж хадгална уу.',
+              offline: 'Сүлжээ тасарсан — өөрчлөлт хадгалагдаагүй. Холболт сэргэхэд автоматаар хадгална.',
+            }[save.status]
+          }
+        </p>
       </form>
       <Confirm
         open={cancelOpen}

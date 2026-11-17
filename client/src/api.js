@@ -6,6 +6,7 @@ export class ApiError extends Error {
     this.code = body?.error?.code;
     this.fields = body?.error?.fields || {};
     this.missing = body?.error?.missing || [];
+    this.conflicts = body?.error?.conflicts || [];
   }
 }
 

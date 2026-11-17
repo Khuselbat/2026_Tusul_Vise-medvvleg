@@ -42,6 +42,7 @@ import Users from './pages/admin/Users.jsx';
 import Assignments from './pages/admin/Assignments.jsx';
 import Audit from './pages/admin/Audit.jsx';
 import DeletionRequests from './pages/admin/DeletionRequests.jsx';
+import Stats from './pages/admin/Stats.jsx';
 
 const guard = (role, el) => <RequireRole role={role}>{el}</RequireRole>;
 
@@ -104,6 +105,7 @@ export default function App() {
         <Route path="/admin/users" element={guard('ADMIN', <Users />)} />
         <Route path="/admin/assignments" element={guard('ADMIN', <Assignments />)} />
         <Route path="/admin/audit" element={guard('ADMIN', <Audit />)} />
+        <Route path="/admin/stats" element={guard('ADMIN', <Stats />)} />
         <Route path="/admin/deletion-requests" element={guard('ADMIN', <DeletionRequests />)} />
         <Route path="/admin/profile" element={guard('ADMIN', <Profile />)} />
 

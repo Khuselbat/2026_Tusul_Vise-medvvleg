@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, ROLE_LABEL, HOME_BY_ROLE } from '../auth.jsx';
 import { Modal, Button } from './ui.jsx';
-import { NotificationBell, EmailVerifyBanner } from './Notifications.jsx';
+import { NotificationBell, EmailVerifyBanner, OfflineBanner } from './Notifications.jsx';
 
 // Хүснэгт 40: эрх тус бүрийн үндсэн цэс
 const MENUS = {
@@ -32,6 +32,7 @@ const MENUS = {
     ['/admin/visa-types', 'Визийн төрөл'],
     ['/admin/users', 'Хэрэглэгчид'],
     ['/admin/assignments', 'Хуваарилалт'],
+    ['/admin/stats', 'Статистик'],
     ['/admin/audit', 'Бүртгэл'],
     ['/admin/deletion-requests', 'Устгах хүсэлт'],
     ['/admin/profile', 'Профайл'],
@@ -94,6 +95,7 @@ export default function Layout() {
         </aside>
         {open && <div className="side-backdrop" onClick={() => setOpen(false)} />}
         <main id="main" className="main">
+          <OfflineBanner />
           <EmailVerifyBanner user={user} />
           <Outlet />
           <footer className="site-foot">

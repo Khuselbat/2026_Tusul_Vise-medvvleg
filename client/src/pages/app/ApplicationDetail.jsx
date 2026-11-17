@@ -22,6 +22,9 @@ export default function ApplicationDetail() {
       actions={
         a && (
           <>
+            <a className="btn btn-ghost" href={`/api/app/applications/${a.publicId}/summary.pdf`} download>
+              PDF хураангуй
+            </a>
             <LinkButton variant="ghost" to="/app/official-result">
               Албан ёсны хариу шалгах
             </LinkButton>

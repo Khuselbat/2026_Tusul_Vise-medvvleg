@@ -1105,3 +1105,65 @@ tbody tr:hover {
   border-radius: 8px;
   font-size: 15px;
 }
+
+/* ───────── Үе 4: олноор хуваарилах, автомат хадгалалт, статистик ───────── */
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  margin: 12px 0;
+  background: var(--primary-50);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.bulk-bar select {
+  min-height: 36px;
+  padding: 6px 10px;
+}
+tr.selected td {
+  background: var(--primary-50);
+}
+.autosave-status {
+  min-height: 1.4em;
+  margin: 8px 0 0;
+}
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.chart .bar {
+  fill: var(--primary);
+}
+.chart .bar:hover,
+.chart .bar:focus {
+  fill: var(--primary-700);
+  outline: none;
+}
+.chart .grid line {
+  stroke: var(--line);
+}
+.chart text {
+  fill: var(--muted);
+  font-size: 12px;
+}
+.chart-empty {
+  padding: 32px 0;
+  text-align: center;
+}
+.chart-tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transform: translate(-50%, -110%);
+  white-space: nowrap;
+}
+.chart-wrap {
+  position: relative;
+}
