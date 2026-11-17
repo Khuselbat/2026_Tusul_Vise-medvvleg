@@ -10,8 +10,9 @@
     "dev": "node --watch src/index.js",
     "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js",
-    "db:reset": "node scripts/migrate.js && node scripts/seed.js",
-    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1 test/api.test.js"
+    "db:reset": "node scripts/reset.js && node scripts/seed.js",
+    "user:create-admin": "node scripts/create-admin.js",
+    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1"
   },
   "engines": {
     "node": ">=20"

@@ -1,23 +1,10 @@
 -- =====================================================================
--- Цахим виз мэдүүлгийн нэгдсэн веб программ — өгөгдлийн сангийн схем
--- MySQL 8.0+ / MariaDB 10.6+  ·  11 хүснэгт (Зураг 36-д нийцүүлсэн)
+-- Migration 001 — анхны схем
+-- Цахим виз мэдүүлгийн нэгдсэн веб программ · MySQL 8.0+ / MariaDB 10.6+
+-- 11 хүснэгт (Зураг 36-д нийцүүлсэн). Энэ файлыг өөрчлөхгүй — шинэ өөрчлөлтийг
+-- дараагийн дугаартай migration-оор нэмнэ (migrate.js нь checksum-аар шалгана).
 -- =====================================================================
 SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
-DROP TABLE IF EXISTS audit_events;
-DROP TABLE IF EXISTS reviews;
-DROP TABLE IF EXISTS application_documents;
-DROP TABLE IF EXISTS application_forms;
-DROP TABLE IF EXISTS applications;
-DROP TABLE IF EXISTS visa_requirements;
-DROP TABLE IF EXISTS visa_info_versions;
-DROP TABLE IF EXISTS visa_types;
-DROP TABLE IF EXISTS countries;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS roles;
-
-SET FOREIGN_KEY_CHECKS = 1;
 
 -- 1. Эрх ------------------------------------------------------------------
 CREATE TABLE roles (

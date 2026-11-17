@@ -3,12 +3,12 @@ import { test, before, after, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
 import { pool, query, one } from '../src/db.js';
 import { config } from '../src/config.js';
 import { seed, DEMO } from '../scripts/seed.js';
+import { resetDatabase } from '../src/lib/migrations.js';
 
 let app;
 let ids;
@@ -41,7 +41,7 @@ const validForm = () => ({
 });
 
 before(async () => {
-  execFileSync('node', ['scripts/migrate.js'], { env: { ...process.env, NODE_ENV: 'test' }, stdio: 'ignore' });
+  await resetDatabase();
   await fs.rm(config.storageDir, { recursive: true, force: true });
   ids = await seed({ withDemoApplications: true, rounds: 4 });
   app = createApp();

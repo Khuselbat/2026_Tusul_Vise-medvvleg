@@ -1,14 +1,12 @@
-// Схемийг үүсгэнэ (БҮХ хүснэгтийг устгаад дахин үүсгэнэ — зөвхөн хөгжүүлэлт/туршилтад).
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import mysql from 'mysql2/promise';
+// Хэрэгжээгүй migration-уудыг ажиллуулна. Одоо байгаа өгөгдлийг УСТГАХГҮЙ — production-д аюулгүй.
+//   npm run db:migrate
+import { migrate } from '../src/lib/migrations.js';
 import { config } from '../src/config.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const sql = await fs.readFile(path.resolve(here, '../../database/schema.sql'), 'utf8');
-
-const conn = await mysql.createConnection({ ...config.db, multipleStatements: true });
-await conn.query(sql);
-await conn.end();
-console.log(`Схем үүслээ: ${config.db.database}`);
+try {
+  const done = await migrate({ log: (m) => console.log(m) });
+  console.log(done.length ? `${done.length} migration хэрэгжлээ: ${config.db.database}` : `Схем шинэчлэгдсэн байна: ${config.db.database}`);
+} catch (e) {
+  console.error(`Migration амжилтгүй: ${e.message}`);
+  process.exitCode = 1;
+}

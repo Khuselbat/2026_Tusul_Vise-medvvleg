@@ -30,6 +30,8 @@ const DEMO_PDF = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endo
 const DEMO_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNgYGD4z8DAwMDAwMDAAAAOAAH0o4HcAAAAAElFTkSuQmCC', 'base64');
 
 export async function seed({ withDemoApplications = true, rounds = config.isTest ? 4 : 10 } = {}) {
+  // Мэдэгдэж буй нууц үгтэй жишээ хэрэглэгчдийг production-д хэзээ ч үүсгэхгүй.
+  if (config.isProd) throw new Error('Жишээ өгөгдөл (seed) production орчинд хориглогдсон. Анхны админыг `npm run user:create-admin`-аар үүсгэнэ.');
   const conn = await pool.getConnection();
   const q = async (sql, p = []) => (await conn.query(sql, p))[0];
   try {
@@ -117,8 +119,14 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
 
 // Windows/Linux аль алинд ажиллахаар файлын нэрээр шалгана
 if (path.basename(process.argv[1] || '') === 'seed.js') {
-  await seed();
-  console.log('Жишээ өгөгдөл орлоо. Нэвтрэх эрхүүд:');
-  for (const [k, u] of Object.entries(DEMO)) console.log(`  ${k.padEnd(10)} ${u.email} / ${u.password}`);
-  await pool.end();
+  try {
+    await seed();
+    console.log('Жишээ өгөгдөл орлоо. Нэвтрэх эрхүүд:');
+    for (const [k, u] of Object.entries(DEMO)) console.log(`  ${k.padEnd(10)} ${u.email} / ${u.password}`);
+  } catch (e) {
+    console.error(`Seed амжилтгүй: ${e.message}`);
+    process.exitCode = 1;
+  } finally {
+    await pool.end();
+  }
 }
