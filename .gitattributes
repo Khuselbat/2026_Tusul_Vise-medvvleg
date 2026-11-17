@@ -1,0 +1,9 @@
+# Бүх текст файл репод LF-ээр хадгалагдана (bash скрипт, Docker, CI Linux дээр зөв ажиллахын тулд)
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+*.docx binary
+*.png binary
+*.jpg binary
+*.pdf binary
