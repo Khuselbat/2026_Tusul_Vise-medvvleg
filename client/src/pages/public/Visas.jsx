@@ -1,7 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { api, qs } from '../../api.js';
-import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, fmtDate, Field } from '../../components/ui.jsx';
+import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, fmtDate, Field } from '../../components/ui.jsx';
 
 // Зураг 40 Визийн мэдээлэл хайх — зөвхөн нийтэлсэн хувилбарууд
 export default function Visas() {

@@ -46,5 +46,7 @@ export async function removeFile(storageKey) {
 }
 
 export function safeFileName(name) {
+  // Хяналтын тэмдэгтүүд (U+0000–U+001F)-ийг санаатайгаар орлуулна
+  // eslint-disable-next-line no-control-regex
   return String(name || 'file').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200);
 }

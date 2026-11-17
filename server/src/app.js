@@ -84,7 +84,6 @@ export function createApp({ logger = defaultLogger } = {}) {
     app.get('*', (_req, res) => res.sendFile(path.join(config.clientDist, 'index.html')));
   }
 
-  // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, _next) => {
     if (err instanceof HttpError) {
       return res.status(err.status).json({ error: { code: err.code, message: err.message, ...(err.details || {}) } });

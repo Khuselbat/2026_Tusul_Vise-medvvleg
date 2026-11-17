@@ -61,7 +61,7 @@ export default function Audit() {
       ))}
       <Modal open={!!row} title="Бүртгэлийн мөр" onClose={() => setRow(null)}>
         {row && <DL items={[
-          ['Үйлдэл', `${ACTION_MN[row.action] || ''} (${row.action})`], ['entity_type', row.entityType], ['entity_key', row.entityKey], ['request_id', <span className="mono small">{row.requestId}</span>],
+          ['Үйлдэл', `${ACTION_MN[row.action] || ''} (${row.action})`], ['entity_type', row.entityType], ['entity_key', row.entityKey], ['request_id', <span key="rid" className="mono small">{row.requestId}</span>],
           ['Гүйцэтгэгч', row.actor], ['Огноо', fmtDateTime(row.occurredAt)], ['Мэдүүлэг', row.applicationRef],
         ]} />}
       </Modal>

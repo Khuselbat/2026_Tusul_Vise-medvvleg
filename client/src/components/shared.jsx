@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Button, Badge, fmtBytes, fmtDate, fmtDateTime, DL } from './ui.jsx';
+import { Modal, Badge, fmtBytes, fmtDate, fmtDateTime, DL } from './ui.jsx';
 
 /** Хамгаалалттай файл үзэгч (Зураг 48/52): PDF-ийг нээх, зураг томруулах, татах */
 export function FileViewer({ doc, onClose }) {
