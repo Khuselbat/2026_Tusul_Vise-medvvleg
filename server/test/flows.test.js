@@ -30,6 +30,23 @@ describe('UC-01 Бүртгүүлэх', () => {
   });
 });
 
+describe('Алдааны мессеж монгол (zod 4)', () => {
+  test('тусгай мессежгүй алдаа ч монголоор; тусгай мессеж хадгалагдана', async () => {
+    const r = await client(app).post('/api/auth/register', {});
+    assert.equal(r.status, 400);
+    assert.equal(r.body.error.fields.email, 'Заавал бөглөнө.');
+    assert.equal(r.body.error.fields.displayName, 'Заавал бөглөнө.');
+    const op = await login(app, DEMO.operator);
+    const ref = (await one("SELECT public_id FROM applications WHERE status = 'IN_REVIEW' LIMIT 1")).public_id;
+    const v = await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'MAYBE', expectedReviewNo: 0 });
+    assert.equal(v.body.error.fields.completeness, 'Бүрэн эсвэл дутуу гэдгийг сонгоно уу.');
+    assert.ok(
+      Object.values(v.body.error.fields).every((m) => !/[A-Za-z]{4,}/.test(m)),
+      JSON.stringify(v.body.error.fields),
+    );
+  });
+});
+
 describe('UC-02 Нэвтрэх', () => {
   test('E1: идэвхгүй хэрэглэгч ба буруу нууц үг — ижил ерөнхий алдаа (бүртгэл байгаа эсэхийг илчлэхгүй)', async () => {
     const { user } = await newApplicant(app, 'inactive');

@@ -37,6 +37,11 @@ export const KINDS = {
     body: (ref) => `${ref} мэдүүлэгт мэдүүлэгч нэмэлт материал илгээлээ.`,
     link: opLink,
   },
+  DELETION_REQUESTED: {
+    title: 'Бүртгэл устгах хүсэлт ирлээ',
+    body: (ref) => `${ref} — мэдүүлэгч бүртгэлээ устгахыг хүссэн. Шийдвэрлэнэ үү.`,
+    link: () => '/admin/deletion-requests',
+  },
   HANDOVER_RECORDED: {
     title: 'Эрх бүхий байгууллагад хүргүүлсэн',
     body: (ref) => `${ref} мэдүүлгийн материалыг хүргүүлсэн. Албан ёсны хариуг Korea Visa Portal-аас шалгана уу.`,

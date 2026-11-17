@@ -24,7 +24,8 @@ const MFA_MAX_ATTEMPTS = 5;
 const limiter = (limit, minutes, key) =>
   rateLimit({
     windowMs: minutes * 60 * 1000,
-    limit: config.isTest ? 1000 : limit,
+    // Тестэд анхдагчаар өндөр; security.test нь TEST_REAL_RATE_LIMITS=1-ээр бодит хязгаарыг шалгана
+    limit: () => (config.isTest && process.env.TEST_REAL_RATE_LIMITS !== '1' ? 1000 : limit),
     standardHeaders: 'draft-7',
     legacyHeaders: false,
     keyGenerator: key,

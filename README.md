@@ -7,8 +7,9 @@
 | Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
-| Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 102 интеграцын тест бодит MySQL дээр; Playwright E2E 4 урсгал × (desktop + mobile) |
+| Файлын сан | Сервер дээрх хувийн хавтас эсвэл S3-тэй нийцтэй сан (MinIO), сонголтоор AES-256-GCM (вэбээс шууд хандахгүй) |
+| Тест | Node test runner + Supertest — 128 интеграцын тест бодит MySQL дээр (+ S3/MinIO тест CI-д); Playwright E2E 5 урсгал × (desktop + mobile) |
+| Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, ZIP татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
 | Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
 | Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
@@ -84,7 +85,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 102 интеграцын тест (API, migration, лог, Үе 1–2, UC A/E урсгал)
+cd server && npm test     # civiz_test сан дээр 128 интеграцын тест (API, migration, лог, Үе 1–3, аюулгүй байдал, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -108,6 +109,21 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
   Production: `MAIL_TRANSPORT=smtp`, `SMTP_*`, `APP_URL` тохируулна.
 * **Мэдэгдэл:** илгээсэн, хуваарилагдсан, “Дутуу”, “Бүрэн”, нэмэлт материал ирсэн, хүргүүлсэн — дээд мөрний 🔔 болон имэйл.
   Имэйлд зөвхөн лавлах дугаар ба холбоос (тайлбар, хувийн мэдээлэлгүй); outbox амжилтгүй бол 5 хүртэл дахин оролдоно.
+
+### Хувийн мэдээлэл ба аюулгүй байдал (Үе 3)
+
+* **Файлын сан:** `STORAGE_DRIVER=local|s3` (MinIO/AWS: `S3_*`). `STORAGE_ENCRYPT=1` + `FILE_KEY` (паспортын түлхүүрээс тусдаа) →
+  файл бүр AES-256-GCM; шифрлээгүй хуучин файл хэвээр уншигдана. Docker compose-д шифрлэлт анхдагчаар асаалттай.
+* **Вирус шалгалт:** `CLAMAV_HOST` (Docker: `--profile av`, `CLAMAV_HOST=clamav`) → шинэ файл “Вирус шалгаж байна” төлөвтэй,
+  шалгагдаж дуусах хүртэл хэн ч нээхгүй, илгээхгүй; халдвартай бол хадгалалтаас устгаж “Вирус илэрсэн” гэж харуулна.
+  ClamAV-гүй орчинд (dev) зөвхөн агуулгын төрлийн (magic byte) шалгалт.
+* **Хадгалах хугацаа:** сервер өдөр бүр (мөн `npm run maintenance:retention [-- --dry-run]`) — `RETENTION_DRAFT_DAYS` (30) хэтэрсэн ноорог,
+  өнчин файл, хуучин токен/сесс, уншсан хуучин мэдэгдлийг устгана. **Илгээсэн мэдүүлгийн архивыг автоматаар устгахгүй.**
+* **Мэдээллээ татах:** Профайл → “Бүх мэдээллээ татах (ZIP)” (нууц үгээр) — анкет (паспорт бүтнээр), хавсралт, архив, импорт, мэдэгдэл.
+* **Бүртгэл устгах:** Профайл → хүсэлт (нууц үгээр) → админ “Устгах хүсэлт” дэлгэцээс баталгаажуулна → анкет, бүх файл, импорт,
+  мэдэгдэл бүрмөсөн устаж, илгээсэн мэдүүлэг нэргүй статистик болж үлдэнэ (хянагдаж буй мэдүүлэгтэй бол хүлээнэ).
+* **Түлхүүр эргүүлэх:** шинэ түлхүүрийг `PASSPORT_KEY/_ID` (`FILE_KEY/_ID`), хуучныг `PASSPORT_KEYS_OLD=k1:hex` (`FILE_KEYS_OLD`)-д тавиад
+  `npm run keys:rotate -- --dry-run` → `npm run keys:rotate -- --files` → `node scripts/verify-storage.js` → хуучин түлхүүрийг хасна.
 
 ### Лог
 
@@ -213,6 +229,7 @@ visa-system/
 | 47 | `/app/applications` | 60 | `/admin/assignments` |
 | 48 | `/app/applications/:id` | 61 | `/admin/audit` |
 | 49 | `/app/profile` (+ operator, admin) | + | `/operator/history`, `/help` |
+| Үе 3 | `/admin/deletion-requests`; профайлд “Миний мэдээлэл” | Үе 3 | Файлын “Вирус шалгаж байна” төлөв |
 | Үе 2 | `/login/mfa`, `/forgot-password`, `/reset-password`, `/verify-email` | Үе 2 | Мэдэгдлийн хонх (дээд мөр), профайлд сесс |
 | Үе 1 | `/app/imports`, `/app/imports/new`, `/app/imports/:id` | Үе 1 | Нэмэлт багц, хүргүүлсэн, албан үр дүн — `/app/applications/:id`, `/operator/applications/:id` дотор |
 
@@ -239,6 +256,7 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/auth/mfa/setup · mfa/enable {code} · mfa/verify {code | recoveryCode}   (login → {mfa: ENROLL|VERIFY})
           GET  /api/auth/sessions   DELETE /api/auth/sessions/:sid   POST /api/auth/sessions/revoke-all
 Мэдэгдэл  GET  /api/notifications[?unread=1]   POST /api/notifications/:id/read · read-all
+Хувийн    POST /api/app/privacy/export {password} → ZIP   GET/POST/DELETE /api/app/privacy/deletion {password, reason?}
 Мэдүүлэгч GET  /api/app/dashboard
           POST /api/app/drafts   GET/DELETE /api/app/drafts/:id   PUT /api/app/drafts/:id/form
           POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId
@@ -259,6 +277,7 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           CRUD /api/admin/countries · /visa-types · /visa-types/:id/versions · /versions/:id · /versions/:id/requirements · /requirements/:id
           POST /api/admin/versions/:id/publish
           GET/POST /api/admin/users   PUT /api/admin/users/:id/status   POST /api/admin/users/:id/mfa-reset
+          GET  /api/admin/deletion-requests?status=   POST /api/admin/deletion-requests/:id/approve · reject {note}
           GET  /api/admin/assignments   PUT /api/admin/assignments/:publicId {operatorId, expectedOperatorId}
 ```
 Өөрчлөх хүсэлт бүр `X-Requested-With: civiz` толгойтой байна (CSRF хамгаалалт).

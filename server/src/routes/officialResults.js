@@ -17,7 +17,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Огноо буруу байна.');
 
 export const resultSchema = z.object({
-  outcome: z.enum(['PENDING', 'APPROVED', 'REFUSED'], { errorMap: () => ({ message: 'Үр дүнгээ сонгоно уу.' }) }),
+  outcome: z.enum(['PENDING', 'APPROVED', 'REFUSED'], { error: 'Үр дүнгээ сонгоно уу.' }),
   checkedOn: isoDate.refine((d) => d <= today(), 'Шалгасан огноо ирээдүйд байж болохгүй.'),
   source: z.string().trim().min(2, 'Эх сурвалжаа бичнэ үү (ж: Korea Visa Portal).').max(150),
   sourceUrl: z

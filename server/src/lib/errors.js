@@ -1,3 +1,21 @@
+import { z } from 'zod';
+
+/**
+ * Zod 4-ийн анхдагч (англи) мессежийг монголоор. Схемд тусгай мессеж заасан бол тэр нь давуу.
+ * Хэрэглэгчид харагдах бүх алдаа монгол байх (CLAUDE.md кодын хэв маяг).
+ */
+z.config({
+  customError: (iss) => {
+    if (iss.code === 'invalid_type') return iss.input === undefined || iss.input === null ? 'Заавал бөглөнө.' : 'Утгын төрөл буруу байна.';
+    if (iss.code === 'too_small') return iss.origin === 'string' ? 'Хэт богино байна.' : 'Утга хэт бага байна.';
+    if (iss.code === 'too_big') return iss.origin === 'string' ? 'Хэт урт байна.' : 'Утга хэт их байна.';
+    if (iss.code === 'invalid_value') return 'Зөвшөөрөгдөх утгаас сонгоно уу.';
+    if (iss.code === 'invalid_format') return iss.format === 'email' ? 'Имэйлийн хэлбэр буруу байна.' : 'Хэлбэр буруу байна.';
+    if (iss.code === 'unrecognized_keys') return 'Танигдаагүй талбар байна.';
+    return 'Утга буруу байна.';
+  },
+});
+
 export class HttpError extends Error {
   constructor(status, code, message, details) {
     super(message);

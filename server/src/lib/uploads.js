@@ -3,6 +3,7 @@ import multer from 'multer';
 import { config } from '../config.js';
 import { badRequest } from './errors.js';
 import { detectType, saveFile, removeFile, safeFileName } from './storage.js';
+import { initialScanStatus, kickScanner } from './scanner.js';
 
 /**
  * multipart хүсэлтийг хүлээн авна. `maxFiles` > 1 бол `field` нэрээр массив (req.files), үгүй бол req.file.
@@ -59,10 +60,11 @@ export async function discardFiles(stored) {
 /** evidence_files мөр нэмнэ (транзакц дотор `q`). */
 export async function insertEvidence(q, { kind, applicationId = null, importId = null, uploadedBy, file }) {
   const ins = await q(
-    `INSERT INTO evidence_files (kind, application_id, import_id, uploaded_by, original_name, storage_key, mime_type, size_bytes, sha256)
-     VALUES (?,?,?,?,?,?,?,?,?)`,
-    [kind, applicationId, importId, uploadedBy, file.originalName, file.storageKey, file.mime, file.size, file.sha256],
+    `INSERT INTO evidence_files (kind, application_id, import_id, uploaded_by, original_name, storage_key, mime_type, size_bytes, sha256, scan_status)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    [kind, applicationId, importId, uploadedBy, file.originalName, file.storageKey, file.mime, file.size, file.sha256, initialScanStatus()],
   );
+  kickScanner();
   return ins.insertId;
 }
 

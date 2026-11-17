@@ -7,6 +7,7 @@ import { config } from '../config.js';
 import { query, tx } from '../db.js';
 import { wrap, parse, badRequest, notFound, conflict, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
+import { initialScanStatus, kickScanner } from '../lib/scanner.js';
 import { notify, kickMailer } from '../lib/notify.js';
 import { removeFile } from '../lib/storage.js';
 import { serializeDoc } from '../lib/applications.js';
@@ -142,7 +143,7 @@ r.post(
         }
         const ins = await q(
           `INSERT INTO application_documents (application_id, version_id, requirement_id, supplement_id, original_name, storage_key, mime_type, size_bytes, sha256, scan_status)
-           VALUES (?,?,?,?,?,?,?,?,?, 'ACCEPTED')`,
+           VALUES (?,?,?,?,?,?,?,?,?,?)`,
           [
             a.application_id,
             a.version_id,
@@ -153,6 +154,7 @@ r.post(
             file.mime,
             file.size,
             file.sha256,
+            initialScanStatus(),
           ],
         );
         await audit(
@@ -162,6 +164,7 @@ r.post(
         );
         return (await q('SELECT * FROM application_documents WHERE document_id = ?', [ins.insertId]))[0];
       });
+      kickScanner();
       res.status(201).json({ document: serializeDoc(doc) });
     } catch (e) {
       await discardFiles([file]);
@@ -238,6 +241,18 @@ r.post(
       if (n === 0) {
         throw new HttpError(422, 'INCOMPLETE', 'Нэмэлт материал хавсаргаагүй байна.', {
           missing: [{ step: 'documents', message: 'Дор хаяж нэг файл хавсаргана уу.' }],
+        });
+      }
+      const pending = Number(
+        (
+          await q("SELECT COUNT(*) AS n FROM application_documents WHERE supplement_id = ? AND scan_status <> 'ACCEPTED'", [
+            s.supplement_id,
+          ])
+        )[0].n,
+      );
+      if (pending > 0) {
+        throw new HttpError(422, 'INCOMPLETE', 'Нэмэлт материал илгээх боломжгүй.', {
+          missing: [{ step: 'documents', message: 'Шалгалт дуусаагүй эсвэл татгалзсан файл байна.' }],
         });
       }
       await q("UPDATE application_supplements SET status = 'SUBMITTED', submitted_at = CURRENT_TIMESTAMP(6) WHERE supplement_id = ?", [

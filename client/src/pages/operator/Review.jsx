@@ -16,7 +16,7 @@ import {
   useToast,
   fmtDateTime,
 } from '../../components/ui.jsx';
-import { FormSummary, DocumentList, FileViewer, ReviewTimeline } from '../../components/shared.jsx';
+import { FormSummary, DocumentList, FileViewer, ReviewTimeline, usePendingScanPoll } from '../../components/shared.jsx';
 import { SupplementHistory, HandoverCard, HandoverForm, OfficialResults } from '../../components/records.jsx';
 
 // Зураг 52 / UC-07 Материал шалгаж үнэлэх. Виз зөвшөөрөх/татгалзах товч байхгүй (BR-09).
@@ -24,6 +24,7 @@ export default function Review() {
   const { id } = useParams();
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/operator/applications/${id}`), [id]);
+  usePendingScanPoll(data, reload);
   const [viewing, setViewing] = useState(null);
   const [val, setVal] = useState('');
   const [comment, setComment] = useState('');

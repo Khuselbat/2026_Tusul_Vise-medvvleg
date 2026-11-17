@@ -135,6 +135,7 @@ export function serializeEvidence(f) {
     mimeType: f.mime_type,
     sizeBytes: Number(f.size_bytes),
     sha256: f.sha256,
+    scanStatus: f.scan_status ?? 'ACCEPTED',
     uploadedAt: f.uploaded_at,
   };
 }
@@ -170,7 +171,7 @@ async function loadSupplements(applicationId, { includeDrafts }) {
 
 async function loadHandover(applicationId) {
   const h = await one(
-    `SELECT h.*, u.display_name AS operator_name, f.file_id, f.kind, f.original_name, f.mime_type, f.size_bytes, f.sha256, f.uploaded_at
+    `SELECT h.*, u.display_name AS operator_name, f.file_id, f.kind, f.original_name, f.mime_type, f.size_bytes, f.sha256, f.scan_status, f.uploaded_at
        FROM application_handovers h JOIN users u ON u.user_id = h.operator_id
        JOIN evidence_files f ON f.file_id = h.evidence_file_id
       WHERE h.application_id = ?`,
@@ -191,7 +192,7 @@ async function loadHandover(applicationId) {
 /** F11: мэдүүлэгчийн бүртгэсэн албан үр дүн (шинэ нь эхэнд) + операторын тулгалт */
 async function loadOfficialResults(applicationId) {
   const rows = await query(
-    `SELECT r.*, f.file_id, f.kind, f.original_name, f.mime_type, f.size_bytes, f.sha256, f.uploaded_at,
+    `SELECT r.*, f.file_id, f.kind, f.original_name, f.mime_type, f.size_bytes, f.sha256, f.scan_status, f.uploaded_at,
             v.verdict, v.note AS verify_note, v.verified_at, uv.display_name AS verifier_name
        FROM official_results r
        LEFT JOIN evidence_files f ON f.file_id = r.evidence_file_id

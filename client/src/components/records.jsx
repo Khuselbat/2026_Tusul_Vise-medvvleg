@@ -2,16 +2,14 @@
 import { useState } from 'react';
 import { api, uuid } from '../api.js';
 import { Card, Button, Field, Alert, Badge, Confirm, Modal, useToast, fmtBytes, fmtDate, fmtDateTime, DL } from './ui.jsx';
-import { asEvidence } from './shared.jsx';
+import { asEvidence, FileOpenButton } from './shared.jsx';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
 function FileLine({ doc, onOpen, onRemove }) {
   return (
     <div className="file-line">
-      <button className="btn-link" onClick={() => onOpen(doc)}>
-        {doc.originalName}
-      </button>
+      <FileOpenButton doc={doc} onOpen={onOpen} />
       <span>{fmtBytes(doc.sizeBytes)}</span>
       {onRemove && (
         <button className="btn-link danger" onClick={() => onRemove(doc)}>
@@ -223,12 +221,7 @@ export function HandoverCard({ handover, onOpen }) {
           ['Хүргүүлсэн огноо', fmtDate(handover.deliveredOn)],
           ['Бүртгэсэн', `${handover.operatorName} · ${fmtDateTime(handover.recordedAt)}`],
           handover.note && ['Тэмдэглэл', handover.note],
-          [
-            'Нотолгоо',
-            <button key="ev" className="btn-link" onClick={() => onOpen(asEvidence(handover.evidence))}>
-              {handover.evidence.originalName}
-            </button>,
-          ],
+          ['Нотолгоо', <FileOpenButton key="ev" doc={asEvidence(handover.evidence)} onOpen={onOpen} />],
         ]}
       />
       <p className="small muted mb0">Хүргүүлсэн нь визийн шийдвэр биш. Албан ёсны хариуг Korea Visa Portal-аас шалгана.</p>
@@ -381,9 +374,9 @@ export function OfficialResults({ app, mode, onChanged, onOpen }) {
                 )}
               </div>
               {r.evidence && (
-                <button className="btn-link" onClick={() => onOpen(asEvidence(r.evidence))}>
-                  Нотолгоо: {r.evidence.originalName}
-                </button>
+                <div>
+                  Нотолгоо: <FileOpenButton doc={asEvidence(r.evidence)} onOpen={onOpen} />
+                </div>
               )}
               {r.verification && (
                 <div className="small muted">

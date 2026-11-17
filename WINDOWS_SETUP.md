@@ -95,7 +95,7 @@ npm start
 cd server
 npm test
 ```
-→ `ℹ pass 102  ℹ fail 0`
+→ `ℹ pass 128  ℹ fail 0`
 
 ### E2E ба lint (сонголттой)
 Репоны үндсэн хавтсанд:

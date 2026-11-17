@@ -12,12 +12,15 @@
     "db:seed": "node scripts/seed.js",
     "db:reset": "node scripts/reset.js && node scripts/seed.js",
     "user:create-admin": "node scripts/create-admin.js",
-    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1 \"test/*.test.js\""
+    "test": "cross-env NODE_ENV=test node --test --test-concurrency=1 \"test/*.test.js\"",
+    "maintenance:retention": "node scripts/retention.js",
+    "keys:rotate": "node scripts/rotate-keys.js"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1170.0",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.10",
@@ -31,7 +34,7 @@
     "pino": "^10.4.0",
     "pino-http": "^11.0.0",
     "qrcode": "^1.5.4",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

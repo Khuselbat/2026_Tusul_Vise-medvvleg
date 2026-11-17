@@ -18,6 +18,8 @@ import supplementRoutes from './routes/supplements.js';
 import officialResultRoutes from './routes/officialResults.js';
 import importRoutes from './routes/imports.js';
 import notificationRoutes from './routes/notifications.js';
+import privacyRoutes from './routes/privacy.js';
+import privacyAdminRoutes from './routes/privacyAdmin.js';
 
 export function createApp({ logger = defaultLogger } = {}) {
   const app = express();
@@ -88,6 +90,8 @@ export function createApp({ logger = defaultLogger } = {}) {
   app.use('/api/app', officialResultRoutes);
   app.use('/api/app', importRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/app', privacyRoutes);
+  app.use('/api/admin', privacyAdminRoutes);
   app.use('/api/files', fileRoutes);
   app.use('/api/operator', operatorRoutes);
   app.use('/api/admin', adminRoutes);

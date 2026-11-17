@@ -33,6 +33,7 @@ const MENUS = {
     ['/admin/users', 'Хэрэглэгчид'],
     ['/admin/assignments', 'Хуваарилалт'],
     ['/admin/audit', 'Бүртгэл'],
+    ['/admin/deletion-requests', 'Устгах хүсэлт'],
     ['/admin/profile', 'Профайл'],
   ],
 };

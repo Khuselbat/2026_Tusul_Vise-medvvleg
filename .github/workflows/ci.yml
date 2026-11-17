@@ -35,6 +35,46 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
 
+  audit:
+    name: npm audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Үе 3: хамаарлын эмзэг байдал 0 байх (lockfile-аар шалгана)
+      - run: npm audit --audit-level=moderate
+      - run: npm audit --audit-level=moderate
+        working-directory: server
+      - run: npm audit --audit-level=moderate
+        working-directory: client
+
+  s3:
+    name: S3 storage (MinIO)
+    runs-on: ubuntu-latest
+    env:
+      S3_TEST: '1'
+      S3_ENDPOINT: http://127.0.0.1:9000
+      S3_BUCKET: civiz-test
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 -e MINIO_ROOT_USER=minioadmin -e MINIO_ROOT_PASSWORD=minioadmin minio/minio:latest server /data
+          for i in $(seq 1 30); do curl -fs http://127.0.0.1:9000/minio/health/live && break; sleep 2; done
+      - run: npm ci
+        working-directory: server
+      - run: npx cross-env NODE_ENV=test node --test test/s3.test.js
+        working-directory: server
+
   test:
     name: Integration tests (Node ${{ matrix.node }})
     runs-on: ubuntu-latest

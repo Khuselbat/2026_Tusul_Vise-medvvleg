@@ -140,7 +140,7 @@ r.post(
     const data = parse(
       z
         .object({
-          completeness: z.enum(['COMPLETE', 'INCOMPLETE'], { errorMap: () => ({ message: 'Бүрэн эсвэл дутуу гэдгийг сонгоно уу.' }) }),
+          completeness: z.enum(['COMPLETE', 'INCOMPLETE'], { error: 'Бүрэн эсвэл дутуу гэдгийг сонгоно уу.' }),
           comment: z.string().trim().max(4000).optional().default(''),
           expectedReviewNo: z.coerce.number().int().min(0),
         })
@@ -294,7 +294,7 @@ r.post(
     const data = parse(
       z
         .object({
-          verdict: z.enum(['MATCHES', 'MISMATCH'], { errorMap: () => ({ message: 'Тулгалтын дүнг сонгоно уу.' }) }),
+          verdict: z.enum(['MATCHES', 'MISMATCH'], { error: 'Тулгалтын дүнг сонгоно уу.' }),
           note: z.string().trim().max(4000).optional().default(''),
         })
         .refine((d) => d.verdict === 'MATCHES' || d.note.length > 0, { path: ['note'], message: 'Таараагүй бол шалтгааныг бичнэ.' }),

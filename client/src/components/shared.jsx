@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Badge, fmtBytes, fmtDate, fmtDateTime, DL } from './ui.jsx';
 
 /** Хамгаалалттай файл үзэгч (Зураг 48/52): PDF-ийг нээх, зураг томруулах, татах */
@@ -100,9 +100,7 @@ export function DocumentList({ requirements, documents, onOpen }) {
               {docs.length === 0 && <div className="small muted">Файл хавсаргаагүй</div>}
               {docs.map((d) => (
                 <div key={d.id} className="file-line">
-                  <button className="btn-link" onClick={() => onOpen(d)}>
-                    {d.originalName}
-                  </button>
+                  <FileOpenButton doc={d} onOpen={onOpen} />
                   <span>{fmtBytes(d.sizeBytes)}</span>
                 </div>
               ))}
@@ -171,5 +169,34 @@ export function RequirementMeta({ r }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/* ───────── Үе 3: вирусын шалгалтын төлөв ───────── */
+export function ScanBadge({ status }) {
+  if (!status || status === 'ACCEPTED') return null;
+  return status === 'REJECTED' ? <Badge tone="danger">Вирус илэрсэн — устгагдсан</Badge> : <Badge tone="info">Вирус шалгаж байна</Badge>;
+}
+
+/** Өгөгдөлд PENDING файл байвал 4 сек тутам дахин уншина (шалгалт дуусах хүртэл). */
+export function usePendingScanPoll(data, reload) {
+  const pending = JSON.stringify(data ?? '').includes('"scanStatus":"PENDING"');
+  useEffect(() => {
+    if (!pending) return undefined;
+    const t = setInterval(reload, 4000);
+    return () => clearInterval(t);
+  }, [pending, reload]);
+}
+
+/** Нээх товч: шалгагдаагүй/татгалзсан файлыг нээхгүй */
+export function FileOpenButton({ doc, onOpen, label }) {
+  const ready = !doc.scanStatus || doc.scanStatus === 'ACCEPTED';
+  return (
+    <>
+      <button className="btn-link" onClick={() => onOpen(doc)} disabled={!ready} title={ready ? undefined : 'Шалгалт дуусаагүй'}>
+        {label || doc.originalName}
+      </button>{' '}
+      <ScanBadge status={doc.scanStatus} />
+    </>
   );
 }

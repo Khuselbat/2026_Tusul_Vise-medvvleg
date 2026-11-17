@@ -16,13 +16,14 @@ import {
   fmtDateTime,
   fmtBytes,
 } from '../../components/ui.jsx';
-import { FileViewer, asEvidence } from '../../components/shared.jsx';
+import { FileViewer, asEvidence, usePendingScanPoll, FileOpenButton } from '../../components/shared.jsx';
 
 // Үе 1.3 — Импортолсон мэдүүлгийн дэлгэрэнгүй (зөвхөн уншина; устгаж болно)
 export default function ImportDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/app/imports/${id}`), [id]);
+  usePendingScanPoll(data, reload);
   const [viewing, setViewing] = useState(null);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -94,9 +95,7 @@ export default function ImportDetail() {
               ) : (
                 x.files.map((f) => (
                   <div key={f.id} className="file-line">
-                    <button className="btn-link" onClick={() => setViewing(asEvidence(f))}>
-                      {f.originalName}
-                    </button>
+                    <FileOpenButton doc={asEvidence(f)} onOpen={setViewing} />
                     <span>{fmtBytes(f.sizeBytes)}</span>
                   </div>
                 ))

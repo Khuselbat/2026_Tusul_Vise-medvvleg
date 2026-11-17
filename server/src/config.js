@@ -38,6 +38,38 @@ export const config = {
   passportKeyId: process.env.PASSPORT_KEY_ID || 'k1',
   passportKeyHex: required('PASSPORT_KEY', devKey),
   storageDir: path.resolve(root, process.env.STORAGE_DIR || (isTest ? 'storage-test' : 'storage')),
+  // Үе 3: файлын сан — local | s3 (MinIO, AWS S3 г.м.); сонголтоор AES-256-GCM шифрлэлт (тусдаа түлхүүр)
+  storage: {
+    driver: process.env.STORAGE_DRIVER || 'local',
+    encrypt: process.env.STORAGE_ENCRYPT === '1',
+    keyId: process.env.FILE_KEY_ID || 'f1',
+    keyHex: process.env.FILE_KEY || (isProd ? '' : '1'.repeat(64)),
+    oldKeys: process.env.FILE_KEYS_OLD || '',
+    s3: {
+      endpoint: process.env.S3_ENDPOINT || undefined,
+      region: process.env.S3_REGION || 'us-east-1',
+      bucket: process.env.S3_BUCKET || '',
+      prefix: (process.env.S3_PREFIX || (isTest ? 'test/' : '')).replace(/^\/+/, ''),
+      accessKeyId: process.env.S3_ACCESS_KEY || '',
+      secretAccessKey: process.env.S3_SECRET_KEY || '',
+      forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== '0',
+    },
+  },
+  // Үе 3: вирус шалгалт (clamd). CLAMAV_HOST тохируулаагүй бол зөвхөн magic byte шалгалт (одоогийнх)
+  clamav: {
+    host: process.env.CLAMAV_HOST || '',
+    port: Number(process.env.CLAMAV_PORT || 3310),
+    timeoutMs: Number(process.env.CLAMAV_TIMEOUT_MS || 30000),
+  },
+  // Үе 3: хадгалах хугацаа (өдөр). Илгээсэн мэдүүлгийн архивыг автоматаар устгахгүй — устгах хүсэлтээр (D-33)
+  retention: {
+    draftDays: Number(process.env.RETENTION_DRAFT_DAYS || 30),
+    orphanFileHours: Number(process.env.RETENTION_ORPHAN_FILE_HOURS || 24),
+    tokenDays: Number(process.env.RETENTION_TOKEN_DAYS || 30),
+    sessionDays: Number(process.env.RETENTION_SESSION_DAYS || 30),
+    notificationDays: Number(process.env.RETENTION_NOTIFICATION_DAYS || 365),
+    runEveryHours: Number(process.env.RETENTION_RUN_EVERY_HOURS || 24),
+  },
   clientDist: path.resolve(root, process.env.CLIENT_DIST || '../client/dist'),
   // BR-03: эхний хувилбарт зөвхөн БНСУ
   // Үе 2: имэйл доторх холбоосын үндэс (production-д домэйнээ заавал тохируулна)

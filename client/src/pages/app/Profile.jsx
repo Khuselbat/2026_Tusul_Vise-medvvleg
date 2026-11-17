@@ -16,6 +16,7 @@ import {
   fmtDateTime,
 } from '../../components/ui.jsx';
 import { useAuth, ROLE_LABEL } from '../../auth.jsx';
+import { PrivacyCard } from '../../components/Privacy.jsx';
 
 // Зураг 49 Миний профайл (мэдүүлэгч, оператор, админ ижил бүрэлдэхүүн)
 export default function Profile() {
@@ -153,6 +154,7 @@ export default function Profile() {
         </Card>
       </div>
       <Sessions />
+      {user.role === 'APPLICANT' && <PrivacyCard />}
     </Page>
   );
 }

@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { one } from '../db.js';
-import { wrap, notFound, forbidden } from '../lib/errors.js';
+import { wrap, notFound, forbidden, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { readFile } from '../lib/storage.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const r = Router();
 
-/** Эрх шалгасан файлыг аюулгүй толгойтой буцаана. */
+/** Эрх шалгасан файлыг аюулгүй толгойтой буцаана. Вирусын шалгалтаас гараагүй файлыг хэн ч нээхгүй (Үе 3). */
 async function sendFile(req, res, f, { entityType, applicationId }) {
+  if (f.scan_status === 'PENDING')
+    throw new HttpError(409, 'FILE_SCANNING', 'Файл вирусын шалгалтад байна. Түр хүлээгээд дахин оролдоно уу.');
+  if (f.scan_status === 'REJECTED') throw new HttpError(410, 'FILE_REJECTED', 'Файл вирусын шалгалтад тэнцээгүй тул устгагдсан.');
   let buf;
   try {
     buf = await readFile(f.storage_key);
@@ -62,7 +65,7 @@ r.get(
   wrap(async (req, res) => {
     const id = idParam(req.params.fileId);
     const f = await one(
-      `SELECT f.file_id AS id, f.kind, f.storage_key, f.mime_type, f.original_name, f.application_id,
+      `SELECT f.file_id AS id, f.kind, f.storage_key, f.mime_type, f.original_name, f.application_id, f.scan_status,
               a.applicant_id AS app_owner, a.assigned_operator_id, i.applicant_id AS import_owner
          FROM evidence_files f
          LEFT JOIN applications a ON a.application_id = f.application_id
@@ -92,7 +95,7 @@ r.get(
   wrap(async (req, res) => {
     const id = idParam(req.params.documentId);
     const d = await one(
-      `SELECT d.document_id AS id, d.storage_key, d.mime_type, d.original_name,
+      `SELECT d.document_id AS id, d.storage_key, d.mime_type, d.original_name, d.scan_status,
               a.application_id, a.applicant_id, a.assigned_operator_id, a.status, s.status AS supplement_status
          FROM application_documents d JOIN applications a ON a.application_id = d.application_id
          LEFT JOIN application_supplements s ON s.supplement_id = d.supplement_id

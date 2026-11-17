@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, Card, useAsync, ErrorBox, Skeleton, Badge, LinkButton, Alert, fmtDate, fmtDateTime, DL } from '../../components/ui.jsx';
-import { FormSummary, DocumentList, FileViewer, ReviewTimeline, NotDecisionNote } from '../../components/shared.jsx';
+import { FormSummary, DocumentList, FileViewer, ReviewTimeline, NotDecisionNote, usePendingScanPoll } from '../../components/shared.jsx';
 import { SupplementPanel, SupplementHistory, HandoverCard, OfficialResults } from '../../components/records.jsx';
 
 // Зураг 48 Мэдүүлгийн дэлгэрэнгүй — илгээсэн мэдээллийг засахгүй.
@@ -10,6 +10,7 @@ import { SupplementPanel, SupplementHistory, HandoverCard, OfficialResults } fro
 export default function ApplicationDetail() {
   const { id } = useParams();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/app/applications/${id}`), [id]);
+  usePendingScanPoll(data, reload);
   const [viewing, setViewing] = useState(null);
   const a = data?.application;
 

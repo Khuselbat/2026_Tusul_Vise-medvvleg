@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, uploadWithProgress } from '../../api.js';
 import { Page, Card, Button, Alert, ErrorBox, Skeleton, Badge, useAsync, fmtBytes, useToast } from '../../components/ui.jsx';
-import { Steps, FileViewer } from '../../components/shared.jsx';
+import { Steps, FileViewer, usePendingScanPoll } from '../../components/shared.jsx';
 
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_TOTAL = 100 * 1024 * 1024;
@@ -15,6 +15,7 @@ export default function NewDocuments() {
   const navigate = useNavigate();
   const toast = useToast();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/app/drafts/${ref}`), [ref]);
+  usePendingScanPoll(data, reload); // Үе 3: вирус шалгалт дуусах хүртэл шинэчилнэ
   const [uploads, setUploads] = useState({}); // requirementId -> { progress, error, name }
   const [target, setTarget] = useState(null);
   const [drag, setDrag] = useState(false);

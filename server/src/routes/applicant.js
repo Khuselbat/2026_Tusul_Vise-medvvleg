@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { query, one, tx } from '../db.js';
 import { wrap, parse, badRequest, notFound, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
+import { initialScanStatus, kickScanner } from '../lib/scanner.js';
 import { notify, kickMailer } from '../lib/notify.js';
 import { encryptPassport, makeReference } from '../lib/crypto.js';
 import { detectType, saveFile, removeFile, safeFileName } from '../lib/storage.js';
@@ -224,12 +225,23 @@ r.post(
       const doc = await tx(async (q) => {
         const ins = await q(
           `INSERT INTO application_documents (application_id, version_id, requirement_id, original_name, storage_key, mime_type, size_bytes, sha256, scan_status)
-         VALUES (?,?,?,?,?,?,?,?, 'ACCEPTED')`,
-          [a.application_id, a.version_id, requirementId, safeFileName(req.file.originalname), storageKey, mime, req.file.size, sha256],
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+          [
+            a.application_id,
+            a.version_id,
+            requirementId,
+            safeFileName(req.file.originalname),
+            storageKey,
+            mime,
+            req.file.size,
+            sha256,
+            initialScanStatus(), // Үе 3: ClamAV асаалттай бол PENDING
+          ],
         );
         await audit(req, { action: 'DOC_UPLOAD', entityType: 'document', entityKey: ins.insertId, applicationId: a.application_id }, q);
         return (await q('SELECT * FROM application_documents WHERE document_id = ?', [ins.insertId]))[0];
       });
+      kickScanner();
       res.status(201).json({ document: serializeDoc(doc) });
     } catch (e) {
       await removeFile(storageKey); // E2: бүрэн хадгалагдаагүй файлыг үлдээхгүй

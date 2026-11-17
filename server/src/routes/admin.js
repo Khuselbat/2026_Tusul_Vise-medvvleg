@@ -583,7 +583,7 @@ r.post(
         name: z.string().trim().min(2, 'Нэр оруулна уу.').max(150),
         email: z.string().trim().toLowerCase().email('Имэйлийн хэлбэр буруу байна.').max(254),
         password: passwordSchema,
-        role: z.enum(['OPERATOR', 'ADMIN'], { errorMap: () => ({ message: 'OPERATOR эсвэл ADMIN эрх сонгоно уу.' }) }),
+        role: z.enum(['OPERATOR', 'ADMIN'], { error: 'OPERATOR эсвэл ADMIN эрх сонгоно уу.' }),
       }),
       req.body,
     );

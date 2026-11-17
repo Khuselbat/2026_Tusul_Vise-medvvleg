@@ -44,6 +44,40 @@ export const api = {
   upload: (u, form) => request('POST', u, undefined, { form }),
 };
 
+/**
+ * POST хүсэлтээр файл татах (ж: мэдээллийн ZIP). Алдаа бол JSON-оос ApiError.
+ * Хариуг blob болгоод түр холбоосоор хадгалуулна.
+ */
+export async function downloadPost(url, body, fallbackName = 'download') {
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'civiz', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body ?? {}),
+      credentials: 'same-origin',
+    });
+  } catch {
+    throw new ApiError(0, { error: { message: 'Сервертэй холбогдож чадсангүй. Дахин оролдоно уу.' } });
+  }
+  if (!res.ok) {
+    const data = res.headers.get('content-type')?.includes('application/json') ? await res.json() : null;
+    if (res.status === 401 && onUnauthorized) onUnauthorized();
+    throw new ApiError(res.status, data);
+  }
+  const blob = await res.blob();
+  const name = /filename="?([^"]+)"?/.exec(res.headers.get('content-disposition') || '')?.[1] || fallbackName;
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 10000);
+  return name;
+}
+
 /** Файл байршуулах явцыг харуулах (XHR) */
 export function uploadWithProgress(url, form, onProgress) {
   return new Promise((resolve, reject) => {
