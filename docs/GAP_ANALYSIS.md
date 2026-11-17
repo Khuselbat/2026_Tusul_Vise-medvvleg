@@ -12,7 +12,7 @@
 - Тайлангийн **FR-01…FR-11, BR-01…BR-09, NFR-01/02/03/05** үндсэндээ хэрэгжсэн, Зураг 36-ийн 11 хүснэгт `schema.sql`-тэй 1:1 таарна, 25 дэлгэц (Зураг 37–61) бүгд route-тэй.
 - Гол дутуу зүйл нь **4-р бүлэг (F07/F08/F09/F11) ба 4.5, 5.3**-т бичигдсэн ч FR хүснэгтэд ороогүй боломжууд:
   нэмэлт материал хүсэх/илгээх, “Хүргүүлсэн” төлөв + албан дугаар, албан ёсны үр дүн бүртгэх (F11), өмнөх мэдүүлэг импортлох, мэдэгдэл.
-- 🔴 **`npm run db:migrate` нь бүх хүснэгтийг DROP хийдэг** (`server/scripts/migrate.js` → `schema.sql`). Production-д андуурч ажиллуулбал бүх өгөгдөл устна — Үе 0-д хамгийн түрүүнд засна.
+- ~~🔴 `npm run db:migrate` нь бүх хүснэгтийг DROP хийдэг~~ → ✅ Үе 0-д зассан (хувилбартай migration, reset/seed production-д хориглосон).
 - **Орчин (2026-11-17 шийдсэн):** Node.js 26.13.1 LTS, MySQL 8.0.46 `MySQL80` service суулгасан → `npm test` **27/27 ногоон**, `npm run build` амжилттай. Git репо үүсгэсэн.
 - Хоёр тайлантай зөрчилдсөн асуудал шийдвэр шаардана — §10, `docs/DECISIONS.md`.
 
@@ -30,7 +30,7 @@
 | FR-06 | Бүрэн бол дугаар олгоно, дутуу бол заана, KR-ээс бусдыг хориглоно | ✅ 422 `missing[]`, 403 `NOT_ACCEPTING` | — | — |
 | FR-07 | Анкет, файл, эзэмшигч, дугаар, огноо архивлана; дарж бичихгүй | ✅ нэг транзакц, idempotency, засах API байхгүй | — | — |
 | FR-08 | Огноогоор эрэмбэлсэн архив, анкет, файл нээх | ✅ шүүлт, хуудаслалт, файл үзэгч | Архивт **импортолсон** мэдүүлэг, **шийдвэрийн баримт** (F09) байхгүй → Үе 1.2, 1.3 | 🟠 |
-| FR-09 | Korea Visa Portal руу шилжих; дотоод дугаарыг албан гэж харуулахгүй | ✅ `/app/official-result`, сануулга, URL-д хувийн мэдээлэлгүй | README “e2e” гэж тэмдэглэсэн ч E2E тест **байхгүй** → Үе 0 | 🟢 |
+| FR-09 | Korea Visa Portal руу шилжих; дотоод дугаарыг албан гэж харуулахгүй | ✅ `/app/official-result`, сануулга, URL-д хувийн мэдээлэлгүй | E2E нь BR-08 тэмдэглэгээг шалгана; гадаад холбоос нээх алхам E2E-д ороогүй | 🟢 |
 | FR-10 | Хуваарилагдсан мэдүүлгийг Бүрэн/Дутуу тэмдэглэнэ | ✅ 403, тайлбар заавал, append-only, 409 | “Дутуу”-гийн дараа мэдүүлэгч **нэмэлт материал илгээх боломжгүй** — дахин үнэлэх үндэслэл алга → Үе 1.1 | 🔴 |
 | FR-11 | Админ лавлах шинэчилнэ; эх сурвалжгүйг нийтлэхгүй | ✅ хувилбарлалт, CHECK, ≥1 шаардлага, нийтэлснийг засахгүй | “шалгасан ажилтан” (`verified_by`) бүртгэгдэхгүй (5.2) | 🟢 |
 | R-12 | Онлайн төлбөр | Won’t (бүлэг 9) — хэрэгжүүлэхгүй | — | — |
@@ -88,7 +88,7 @@
 | Хүснэгт | Байдал | Тэмдэглэл |
 |---|---|---|
 | 11 хүснэгт, 15 FK | ✅ бүх багана таарна | Нэмэлт CHECK/индекс нь Зураг 36-аас илүү — зөв |
-| Migration | ❌ / 🔴 | `migrate.js` = DROP + CREATE. `schema_migrations`, `001_init.sql` хэрэгтэй (Үе 0). `docker-compose.yml` `schema.sql`-ийг initdb-д mount хийдэг → migration руу шилжүүлэх |
+| Migration | ✅ Үе 0 | `database/migrations/001_init.sql`, `schema_migrations` (checksum, GET_LOCK, legacy baseline); Docker эхлэхдээ migrate |
 | Шинэ хүснэгт/багана (Үе 1) | ❌ | `application_supplements` (+ `application_documents.supplement_id`), `official_results` (+ нотолгоо файл), `applications.source='IMPORTED'` эсвэл тусдаа `imported_applications`, `handovers` (хүргүүлсэн огноо, албан дугаар, нотолгоо), статус CHECK-д `DELIVERED` |
 | Лавлахын нэмэлт талбар (5.2) | ❌ | `visa_requirements`: `applies_to`, `original_or_copy`, `translation_note`; `visa_info_versions.verified_by` — §10 Q4 |
 
@@ -123,15 +123,15 @@
 
 | Зүйл | Байдал | Үе |
 |---|---|---|
-| Migration систем | ❌ 🔴 (одоогийн `db:migrate` устгадаг) | 0 |
-| ESLint + Prettier | ❌ (`app.js`-д `eslint-disable` сэтгэгдэл л бий) | 0 |
-| Playwright E2E | ❌ | 0 |
-| GitHub Actions CI | ❌ — репо **git биш** | 0 |
-| Бүтэцтэй лог (pino), request id | ◐ request id бий, `console.error` | 0 |
+| Migration систем | ✅ | 0 |
+| ESLint + Prettier | ✅ `npm run lint`, `format:check` | 0 |
+| Playwright E2E | ✅ бүтэн урсгал, desktop + mobile | 0 |
+| GitHub Actions CI | ✅ lint · test (Node 22/24) · build · E2E | 0 |
+| Бүтэцтэй лог (pino), request id | ✅ redaction тесттэй | 0 |
 | Имэйл баталгаажуулалт, нууц үг сэргээх, SMTP, хонх, 2FA, сесс хүчингүй болгох | ❌ | 2 |
 | Хадгалах хугацааны job, ZIP татах, устгах хүсэлт, ClamAV, S3/MinIO, key rotation скрипт | ❌ (`PASSPORT_KEYS_OLD` унших л бий) | 3 |
 | PDF хураангуй, autosave, i18n, WCAG/axe, статистик, олноор хуваарилах | ❌ | 4 |
-| Docker жижигсгэх, автомат migration, seed хориг, PowerShell backup, health (storage), ачааллын тест, DEPLOYMENT/USER_GUIDE | ◐ health зөвхөн DB | 5 |
+| Docker жижигсгэх, ~~автомат migration, seed хориг~~ (Үе 0-д хийсэн), PowerShell backup, health (storage), ачааллын тест, DEPLOYMENT/USER_GUIDE | ◐ health зөвхөн DB | 5 |
 
 ## 10. Тайлантай зөрчилдсөн / шийдвэр шаардлагатай
 

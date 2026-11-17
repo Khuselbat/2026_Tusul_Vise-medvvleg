@@ -12,15 +12,19 @@
 - `database/` — MySQL 8 / MariaDB 10.6+ (utf8mb4)
 - `server/` — Node.js 20+ ESM, Express 4, mysql2/promise, zod, bcryptjs, jsonwebtoken (httpOnly cookie), multer, helmet
 - `client/` — React 18 + Vite 5 + React Router 6, гараар бичсэн CSS (`client/src/styles.css`), UI бүрэлдэхүүн `client/src/components/ui.jsx`
-- Тест: `server/test/*.test.js` (node:test + supertest, бодит `civiz_test` сан)
+- Тест: `server/test/*.test.js` (node:test + supertest, бодит `civiz_test` сан); E2E: `e2e/*.spec.js` (Playwright)
+- Чанар: ESLint + Prettier (репоны үндсэн `package.json`), pino лог (`server/src/lib/logger.js` — `console.*` бүү ашигла)
 
 ## Командууд
 ```
 cd server && npm run dev        # API :4000
 cd client && npm run dev        # UI  :5173 (/api → :4000 proxy)
 cd server && npm test           # интеграцын тест — заавал ногоон байх
-cd server && npm run db:reset   # схем + seed (БҮХ өгөгдлийг устгана)
+cd server && npm run db:migrate # хэрэгжээгүй migration (өгөгдөл устгахгүй)
+cd server && npm run db:reset   # dev/test: бүх хүснэгт устгаад migration + seed (production-д татгалзана)
 cd client && npm run build      # production build → server үйлчилнэ
+npm run lint && npm run format:check   # репоны үндсэнд
+npm run test:e2e                # Playwright (client build хэрэгтэй)
 ```
 Хөгжүүлэгч **Windows** дээр ажилладаг: npm script-д `VAR=x cmd` хэлбэр бүү ашигла (`cross-env` ашигла),
 bash-аас хамааралтай алхам нэмбэл PowerShell/Node хувилбарыг давхар өг, замыг `path.join`-оор үүсгэ.
@@ -48,8 +52,8 @@ bash-аас хамааралтай алхам нэмбэл PowerShell/Node ху�
 - Шинэ дэлгэцийг `App.jsx`-ийн route, `Layout.jsx`-ийн цэсэнд нэмнэ.
 
 ## Өгөгдлийн сан
-- Схемийн өөрчлөлтийг **migration**-оор (`database/migrations/NNN_name.sql`) — `schema.sql`-ийг дарж бичихгүй
-  (migration систем байхгүй бол эхлээд үүнийг хий; ROADMAP Үе 0).
+- Схемийн өөрчлөлтийг **migration**-оор (`database/migrations/NNN_name.sql`, дараагийн дугаар). Хэрэгжсэн migration-ийг
+  (`001_init.sql` г.м.) **засахгүй** — checksum зөрвөл `db:migrate` зогсоно. MySQL-д DDL автоматаар commit болдог тул файлыг жижиг байлга.
 - Шинэ хүснэгт: InnoDB, utf8mb4_unicode_ci, FK, шаардлагатай UNIQUE/CHECK/индекс.
 
 ## Ажиллах дараалал

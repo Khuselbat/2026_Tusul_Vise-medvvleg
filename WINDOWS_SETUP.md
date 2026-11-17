@@ -88,7 +88,20 @@ npm start
 cd server
 npm test
 ```
-→ `# pass 27  # fail 0`
+→ `ℹ pass 36  ℹ fail 0`
+
+### E2E ба lint (сонголттой)
+Репоны үндсэн хавтсанд:
+```
+npm install
+npx playwright install chromium
+cd client && npm run build && cd ..
+npm run test:e2e
+npm run lint
+```
+
+### Өгөгдлийн санг шинэчлэх
+Код шинэчлэгдсэний дараа `cd server && npm run db:migrate` — өгөгдөл устгахгүй, зөвхөн шинэ migration-уудыг ажиллуулна.
 
 ## 5. Түгээмэл алдаа
 
@@ -96,7 +109,7 @@ npm test
 |---|---|
 | `npm.ps1 cannot be loaded because running scripts is disabled` | PowerShell-ийн хориг. Терминалд нэг удаа: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` → `Y`. Эсвэл VS Code терминалын “+” хажуугийн сумаар **Command Prompt** сонгоно |
 | `'node' / 'npm' is not recognized` | Node.js суулгасны дараа VS Code/терминалыг хааж дахин нээнэ |
-| `ECONNREFUSED 127.0.0.1:3306` | MySQL асаагүй. `Win + R` → `services.msc` → **MySQL84** → Start |
+| `ECONNREFUSED 127.0.0.1:3306` | MySQL асаагүй. `Win + R` → `services.msc` → **MySQL84** (эсвэл **MySQL80**) → Start |
 | `ER_ACCESS_DENIED_ERROR` | 3-р алхмын SQL ажиллаагүй эсвэл нууц үг өөр. Өөр нууц үг ашиглах бол `server` хавтсанд `.env` файл үүсгээд `DB_PASSWORD=таны_нууц_үг` гэж бичнэ |
 | `ER_BAD_DB_ERROR: Unknown database 'civiz'` | 3-р алхмын `CREATE DATABASE` ажиллаагүй |
 | `EADDRINUSE :::4000` | 4000 порт завгүй. `server\.env`-д `PORT=4001` гэж бичээд `client\vite.config.js` дахь `4000`-г `4001` болгоно |
@@ -108,8 +121,9 @@ npm test
 ```
 copy .env.example .env      (дотор нь нууц үгүүдийг солино)
 docker compose up -d --build
-docker compose exec app npm run db:seed
+docker compose exec app npm run user:create-admin -- --email admin@example.mn --name "Админ"
 ```
+(Docker production горимд ажилладаг тул жишээ өгөгдөл оруулахгүй; түр нууц үг терминалд нэг удаа хэвлэгдэнэ.)
 → http://localhost:4000
 
 `scripts\backup.sh`, `restore.sh` нь bash скрипт — Windows дээр **Git Bash** (https://git-scm.com) эсвэл серверт (Linux) ажиллуулна.

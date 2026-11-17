@@ -6,9 +6,10 @@
 |---|---|
 | Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
 | Backend | Node.js 20+ / Express 4 (REST API) |
-| Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 хүснэгт (`database/schema.sql`) |
+| Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 27 интеграцын тест бодит MySQL дээр |
+| Тест | Node test runner + Supertest — 36 интеграцын тест бодит MySQL дээр; Playwright E2E (desktop + mobile) |
+| Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
 | Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
 
 ---
@@ -23,9 +24,10 @@
 cp .env.example .env
 # .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY-г солино:
 #   openssl rand -hex 32      ← JWT_SECRET болон PASSPORT_KEY-д
-docker compose up -d --build
-docker compose exec app npm run db:seed      # жишээ өгөгдөл (сонголттой)
+docker compose up -d --build                 # app эхлэхдээ migration-уудыг автоматаар ажиллуулна
+docker compose exec app npm run user:create-admin -- --email admin@example.mn --name "Админ"
 ```
+Production-д жишээ өгөгдөл (seed) хориглогдсон — анхны админыг дээрх командаар үүсгэнэ (түр нууц үгийг нэг удаа хэвлэнэ).
 Нээх: <http://localhost:4000>
 
 HTTPS-тэй (домэйн DNS тохируулсан үед): `.env` дотор `DOMAIN=viz.example.mn`, `FORCE_HTTPS=1` болгоод
@@ -46,7 +48,7 @@ GRANT ALL ON civiz_test.* TO 'civiz'@'localhost';
 
 ```bash
 cd server && npm install
-npm run db:reset          # схем үүсгэх + жишээ өгөгдөл (АНХААР: бүх хүснэгтийг дахин үүсгэнэ)
+npm run db:reset          # бүх хүснэгтийг устгаад migration + жишээ өгөгдөл (зөвхөн dev/test; production-д татгалзана)
 npm run dev               # API → http://localhost:4000
 
 cd ../client && npm install
@@ -66,11 +68,36 @@ Production build: `cd client && npm run build` → сервер `client/dist`-и
 
 Жишээ өгөгдөлд: БНСУ (идэвхтэй), C-3-9 ангиллын нийтэлсэн хувилбар (KVAC-ын эх сурвалж, 2026-10-30 шалгасан, 5 материал), D-2 ноорог, мэдүүлэгчийн 3 мэдүүлэг (бүрэн / хянаж буй / хуваарилаагүй). Бүх хувийн мэдээлэл зохиомол (таамаглал А3).
 
-### Тест
+### Өгөгдлийн сангийн migration
 
 ```bash
-cd server && npm test     # civiz_test сан дээр схемийг дахин үүсгээд 27 тест ажиллуулна
+cd server
+npm run db:migrate        # зөвхөн хэрэгжээгүй migration-уудыг ажиллуулна — өгөгдөл УСТГАХГҮЙ (production-д аюулгүй)
+npm run db:reset          # dev/test: бүх хүснэгтийг устгаад migration + seed
+npm run user:create-admin -- --email a@b.mn --name "Нэр"   # ADMIN_PASSWORD орчны хувьсагч эсвэл санамсаргүй
 ```
+Шинэ өөрчлөлт: `database/migrations/NNN_name.sql` (жишээ `002_add_supplements.sql`) нэмнэ. Хэрэгжсэн файлыг **засахгүй** —
+`schema_migrations`-д checksum хадгалагдах тул өөрчилбөл `db:migrate` зогсоно. Migration системээс өмнө үүссэн санг автоматаар
+baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
+
+### Тест ба чанар
+
+```bash
+cd server && npm test     # civiz_test сан дээр 36 интеграцын тест (API, migration, лог)
+cd client && npm run build
+npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
+npx playwright install chromium   # нэг удаа
+npm run lint              # ESLint (server + client)
+npm run format:check      # Prettier (засах: npm run format)
+npm run test:e2e          # Playwright: зочин → бүртгэл → анкет → файл → илгээх → хуваарилах → үнэлэх → харах
+```
+E2E нь `client/dist`-ийг 4100 порт дээр үйлчилж, `civiz_test` санг цэвэрлэж ажиллана. CI (`.github/workflows/ci.yml`) push бүрд
+lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр ажиллуулна.
+
+### Лог
+
+`pino` — хүсэлт бүр `X-Request-Id`-тай (audit_events.request_id-тай ижил). Dev-д нэг мөр, production-д JSON.
+Хүсэлтийн бие, cookie, query string, SQL алдааны утгыг логлохгүй. `LOG_LEVEL=debug|info|warn`, `LOG_PRETTY=0`.
 
 ---
 
@@ -78,21 +105,24 @@ cd server && npm test     # civiz_test сан дээр схемийг дахин
 
 ```
 visa-system/
-├── database/schema.sql          11 хүснэгт, PK/FK, UNIQUE, CHECK, индекс
+├── database/migrations/         001_init.sql (11 хүснэгт, PK/FK, UNIQUE, CHECK, индекс), дараагийн migration-ууд
 ├── server/
 │   ├── src/
 │   │   ├── app.js               Express: helmet/CSP, CSRF хамгаалалт, HTTPS албадах, алдааны боловсруулалт
 │   │   ├── config.js            Орчны тохиргоо
 │   │   ├── db.js                MySQL pool, транзакц
 │   │   ├── middleware/auth.js   JWT httpOnly cookie, эрх шалгах (хүсэлт бүрд is_active шалгана)
-│   │   ├── lib/                 audit, crypto (AES-256-GCM), storage (magic-byte шалгалт), visa дүрэм
+│   │   ├── lib/                 audit, crypto (AES-256-GCM), storage (magic-byte шалгалт), visa дүрэм, logger (pino), migrations
 │   │   └── routes/              auth · public · applicant · files · operator · admin
-│   ├── scripts/                 migrate · seed · verify-storage
-│   └── test/api.test.js
+│   ├── scripts/                 migrate · reset · seed · create-admin · verify-storage
+│   └── test/                    api · migrate · logger
 ├── client/src/
 │   ├── pages/public|app|operator|admin   25+ дэлгэц
 │   └── components/              Layout, UI бүрэлдэхүүн, файл үзэгч
+├── e2e/                         Playwright (full-flow.spec.js, server.js)
 ├── scripts/backup.sh, restore.sh       NFR-04
+├── .github/workflows/ci.yml     CI
+├── eslint.config.js, .prettierrc.json, playwright.config.js
 ├── Dockerfile, docker-compose.yml, Caddyfile
 └── .env.example
 ```
@@ -113,7 +143,7 @@ visa-system/
 | FR-06 Илгээх | UC-04 | `POST /api/app/drafts/:id/submit` — заавал талбар/хавсралт шалгана (422 + дутуу хэсэг), БНСУ-аас бусдыг хориглоно | ✔ |
 | FR-07 Архивлах | UC-04 | Нэг транзакцаар SUBMITTED + archived_at; idempotency (20 зэрэг хүсэлт → 1 мэдүүлэг); илгээснийг засахгүй | ✔ |
 | FR-08 Архив үзэх | UC-05 | `GET /api/app/applications` (шүүлт, хуудаслалт), `/:id`, файл үзэгч | ✔ |
-| FR-09 Албан хариу | UC-06 | `/app/official-result` — баталгаажсан HTTPS холбоос, гадаад сайтын сануулга, URL-д хувийн мэдээлэл дамжуулахгүй | e2e |
+| FR-09 Албан хариу | UC-06 | `/app/official-result` — баталгаажсан HTTPS холбоос, гадаад сайтын сануулга, URL-д хувийн мэдээлэл дамжуулахгүй | — (гараар) |
 | FR-10 Бүрдэл хянах | UC-07 | `/api/operator/...` — зөвхөн хуваарилсан (бусад 403), Дутуу бол тайлбар заавал, үнэлгээ зөвхөн нэмэгдэнэ, зэрэгцээ 409 | ✔ |
 | FR-11 Лавлах шинэчлэх | UC-08 | `/api/admin/...` — хувилбарлалт, эх сурвалж/огноо/шаардлагагүй бол нийтлэхгүй, нийтэлснийг засахгүй (хуулж шинэ) | ✔ |
 
