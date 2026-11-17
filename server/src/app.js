@@ -1,12 +1,12 @@
 import express from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
 import { pool } from './db.js';
 import { HttpError } from './lib/errors.js';
+import { logger as defaultLogger, httpLogger } from './lib/logger.js';
 import { loadUser } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import publicRoutes from './routes/public.js';
@@ -15,7 +15,7 @@ import fileRoutes from './routes/files.js';
 import operatorRoutes from './routes/operator.js';
 import adminRoutes from './routes/admin.js';
 
-export function createApp() {
+export function createApp({ logger = defaultLogger } = {}) {
   const app = express();
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 1);
@@ -44,11 +44,8 @@ export function createApp() {
     referrerPolicy: { policy: 'no-referrer' },
   }));
 
-  app.use((req, res, next) => {
-    req.id = crypto.randomUUID();
-    res.set('X-Request-Id', req.id);
-    next();
-  });
+  // Request id (X-Request-Id) + хүсэлт бүрийн бүтэцтэй лог
+  app.use(httpLogger(logger));
   app.use(cookieParser());
   app.use(express.json({ limit: '200kb' }));
 
@@ -98,8 +95,8 @@ export function createApp() {
     if (err.type === 'entity.too.large') {
       return res.status(413).json({ error: { code: 'TOO_LARGE', message: 'Хүсэлт хэт том байна.' } });
     }
-    // Логт нууц мэдээлэл бичихгүй — зөвхөн request id, алдааны мессеж
-    console.error(`[${req.id}] ${req.method} ${req.path}:`, err.code || '', err.message);
+    // Логт нууц мэдээлэл бичихгүй — safeError нь SQL алдааны утгыг хасна (lib/logger.js)
+    req.log.error({ err }, 'unhandled error');
     return res.status(500).json({ error: { code: 'SERVER_ERROR', message: 'Серверийн алдаа гарлаа. Дахин оролдоно уу.', requestId: req.id } });
   });
 
