@@ -13,7 +13,10 @@ import { resetDatabase } from '../src/lib/migrations.js';
 let app;
 let ids;
 const PDF = Buffer.from('%PDF-1.4\n%test\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
-const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNgYGD4z8DAwMDAwMDAAAAOAAH0o4HcAAAAAElFTkSuQmCC', 'base64');
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNgYGD4z8DAwMDAwMDAAAAOAAH0o4HcAAAAAElFTkSuQmCC',
+  'base64',
+);
 
 function client() {
   const agent = request.agent(app);
@@ -35,9 +38,17 @@ async function login(user) {
 }
 const future = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
 const validForm = () => ({
-  familyName: 'Dorj', givenName: 'Saran', birthDate: '1990-05-05', nationalityCode: 'mn', passportNumber: 'e7654321',
-  passportExpiresOn: future(2000), contactEmail: 'saran@example.com', contactPhone: '+976 8800 1122',
-  travelPurpose: 'Аялал', intendedEntryOn: future(30), intendedExitOn: future(40),
+  familyName: 'Dorj',
+  givenName: 'Saran',
+  birthDate: '1990-05-05',
+  nationalityCode: 'mn',
+  passportNumber: 'e7654321',
+  passportExpiresOn: future(2000),
+  contactEmail: 'saran@example.com',
+  contactPhone: '+976 8800 1122',
+  travelPurpose: 'Аялал',
+  intendedEntryOn: future(30),
+  intendedExitOn: future(40),
 });
 
 before(async () => {
@@ -46,7 +57,9 @@ before(async () => {
   ids = await seed({ withDemoApplications: true, rounds: 4 });
   app = createApp();
 });
-after(async () => { await pool.end(); });
+after(async () => {
+  await pool.end();
+});
 
 describe('UC-01/02 Бүртгэл ба нэвтрэлт', () => {
   test('FR-01: бүртгүүлэх, BR-01 давхардсан имэйл 409', async () => {
@@ -62,7 +75,13 @@ describe('UC-01/02 Бүртгэл ба нэвтрэлт', () => {
 
   test('бүртгэлд эрх сонгох боломжгүй (role талбарыг үл тооно)', async () => {
     const c = client();
-    await c.post('/api/auth/register', { displayName: 'Hacker', email: 'h@x.mn', password: 'Passw0rd1', passwordConfirm: 'Passw0rd1', role: 'ADMIN' });
+    await c.post('/api/auth/register', {
+      displayName: 'Hacker',
+      email: 'h@x.mn',
+      password: 'Passw0rd1',
+      passwordConfirm: 'Passw0rd1',
+      role: 'ADMIN',
+    });
     const u = await one("SELECT r.code FROM users u JOIN roles r ON r.role_id=u.role_id WHERE email='h@x.mn'");
     assert.equal(u.code, 'APPLICANT');
   });
@@ -116,9 +135,13 @@ describe('UC-03 Визийн мэдээлэл', () => {
 });
 
 describe('UC-04 Мэдүүлэг илгээх', () => {
-  let c; let ref; const key = crypto.randomUUID();
+  let c;
+  let ref;
+  const key = crypto.randomUUID();
 
-  before(async () => { c = await login(DEMO.applicant); });
+  before(async () => {
+    c = await login(DEMO.applicant);
+  });
 
   test('ноорог үүсгэх idempotent', async () => {
     const r1 = await c.post('/api/app/drafts', { versionId: ids.versionId, idempotencyKey: key });
@@ -130,14 +153,22 @@ describe('UC-04 Мэдүүлэг илгээх', () => {
   });
 
   test('FR-04: анкетын шалгалт (ирээдүйн төрсөн огноо, гарах<орох, кирилл нэр)', async () => {
-    const bad = await c.put(`/api/app/drafts/${ref}/form`, { ...validForm(), familyName: 'Дорж', birthDate: future(5), intendedExitOn: future(1) });
+    const bad = await c.put(`/api/app/drafts/${ref}/form`, {
+      ...validForm(),
+      familyName: 'Дорж',
+      birthDate: future(5),
+      intendedExitOn: future(1),
+    });
     assert.equal(bad.status, 400);
     for (const k of ['familyName', 'birthDate', 'intendedExitOn']) assert.ok(bad.body.error.fields[k], k);
     assert.equal((await c.put(`/api/app/drafts/${ref}/form`, validForm())).status, 200);
   });
 
   test('паспортын дугаар DB-д шифрлэгдсэн (ил утга байхгүй)', async () => {
-    const f = await one('SELECT f.passport_number_enc, f.family_name FROM application_forms f JOIN applications a ON a.application_id=f.application_id WHERE a.public_id=?', [ref]);
+    const f = await one(
+      'SELECT f.passport_number_enc, f.family_name FROM application_forms f JOIN applications a ON a.application_id=f.application_id WHERE a.public_id=?',
+      [ref],
+    );
     assert.equal(f.family_name, 'DORJ');
     assert.ok(!Buffer.from(f.passport_number_enc).toString('latin1').includes('E7654321'));
   });
@@ -192,7 +223,13 @@ describe('UC-04 Мэдүүлэг илгээх', () => {
     const admin = await login(DEMO.admin);
     const cid = (await admin.post('/api/admin/countries', { isoCode: 'JP', nameMn: 'Япон', serviceStatus: 'COMING_SOON' })).body.id;
     const tid = (await admin.post('/api/admin/visa-types', { countryId: cid, code: 'TOUR', isActive: true })).body.id;
-    const vid = (await admin.post(`/api/admin/visa-types/${tid}/versions`, { nameMn: 'Аялал', sourceUrl: 'https://example.org/jp', verifiedAt: '2026-10-30' })).body.id;
+    const vid = (
+      await admin.post(`/api/admin/visa-types/${tid}/versions`, {
+        nameMn: 'Аялал',
+        sourceUrl: 'https://example.org/jp',
+        verifiedAt: '2026-10-30',
+      })
+    ).body.id;
     await admin.post(`/api/admin/versions/${vid}/requirements`, { code: 'P', title: 'Паспорт', isRequired: true });
     await admin.post(`/api/admin/versions/${vid}/publish`).expect(200);
     const r = await c.post('/api/app/drafts', { versionId: vid, idempotencyKey: crypto.randomUUID() });
@@ -210,13 +247,22 @@ describe('NFR-01 Хандалтын хяналт (сөрөг тест)', () => {
     const o = await login({ email: 'other@x.mn', password: 'Passw0rd1' });
     const apps = await query('SELECT public_id FROM applications');
     const docs = await query('SELECT document_id FROM application_documents');
-    let leaks = 0; let attempts = 0;
+    let leaks = 0;
+    let attempts = 0;
     for (const a of apps) {
-      for (const url of [`/api/app/applications/${a.public_id}`, `/api/app/drafts/${a.public_id}`, `/api/app/applications/${a.public_id}/form-copy`]) {
-        attempts += 1; if ((await o.get(url)).status === 200) leaks += 1;
+      for (const url of [
+        `/api/app/applications/${a.public_id}`,
+        `/api/app/drafts/${a.public_id}`,
+        `/api/app/applications/${a.public_id}/form-copy`,
+      ]) {
+        attempts += 1;
+        if ((await o.get(url)).status === 200) leaks += 1;
       }
     }
-    for (const d of docs) { attempts += 1; if ((await o.get(`/api/files/${d.document_id}`)).status === 200) leaks += 1; }
+    for (const d of docs) {
+      attempts += 1;
+      if ((await o.get(`/api/files/${d.document_id}`)).status === 200) leaks += 1;
+    }
     assert.ok(attempts >= 20, `attempts=${attempts}`);
     assert.equal(leaks, 0);
   });
@@ -250,12 +296,33 @@ describe('UC-07 Операторын бүрдлийн хяналт', () => {
   test('BR-09: дутуу үнэлгээнд тайлбар заавал, үнэлгээ шинэ мөрөөр, зэрэгцээ → 409', async () => {
     const op = await login(DEMO.operator);
     const ref = 'KR-20261105-DEMO02';
-    assert.equal((await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'INCOMPLETE', comment: '', expectedReviewNo: 0 })).status, 400);
-    assert.equal((await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'INCOMPLETE', comment: 'Зураг тод биш', expectedReviewNo: 0 })).status, 201);
-    assert.equal((await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'COMPLETE', expectedReviewNo: 0 })).status, 409);
-    assert.equal((await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'COMPLETE', expectedReviewNo: 1 })).status, 201);
+    assert.equal(
+      (await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'INCOMPLETE', comment: '', expectedReviewNo: 0 })).status,
+      400,
+    );
+    assert.equal(
+      (
+        await op.post(`/api/operator/applications/${ref}/reviews`, {
+          completeness: 'INCOMPLETE',
+          comment: 'Зураг тод биш',
+          expectedReviewNo: 0,
+        })
+      ).status,
+      201,
+    );
+    assert.equal(
+      (await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'COMPLETE', expectedReviewNo: 0 })).status,
+      409,
+    );
+    assert.equal(
+      (await op.post(`/api/operator/applications/${ref}/reviews`, { completeness: 'COMPLETE', expectedReviewNo: 1 })).status,
+      201,
+    );
     const hist = await op.get(`/api/operator/applications/${ref}/reviews`);
-    assert.deepEqual(hist.body.reviews.map((r) => r.reviewNo), [2, 1]);
+    assert.deepEqual(
+      hist.body.reviews.map((r) => r.reviewNo),
+      [2, 1],
+    );
     const a = await one('SELECT status FROM applications WHERE public_id = ?', [ref]);
     assert.equal(a.status, 'COMPLETE');
   });
@@ -272,18 +339,31 @@ describe('UC-08 Админ: лавлах, хэрэглэгч, хуваарила
     assert.equal(pub.status, 400);
     assert.ok(pub.body.error.fields.sourceUrl && pub.body.error.fields.verifiedAt && pub.body.error.fields.requirements);
     assert.equal((await admin.put(`/api/admin/versions/${ids.versionId}`, { nameMn: 'Засвар' })).status, 409);
-    assert.equal((await admin.post(`/api/admin/versions/${ids.versionId}/requirements`, { code: 'X', title: 'XX', isRequired: true })).status, 409);
+    assert.equal(
+      (await admin.post(`/api/admin/versions/${ids.versionId}/requirements`, { code: 'X', title: 'XX', isRequired: true })).status,
+      409,
+    );
     const copy = await admin.post(`/api/admin/visa-types/${t.visa_type_id}/versions`, { copyFromVersionId: ids.versionId });
     assert.equal(copy.body.versionNo, 3);
     const v = await admin.get(`/api/admin/versions/${copy.body.id}`);
     assert.equal(v.body.requirements.length, 5);
     assert.equal(v.body.version.publishedAt, null);
-    assert.equal((await admin.put(`/api/admin/countries/1`, { isoCode: 'KR', nameMn: 'БНСУ', serviceStatus: 'ACTIVE', officialResultUrl: 'http://insecure' })).status, 400);
+    assert.equal(
+      (
+        await admin.put(`/api/admin/countries/1`, {
+          isoCode: 'KR',
+          nameMn: 'БНСУ',
+          serviceStatus: 'ACTIVE',
+          officialResultUrl: 'http://insecure',
+        })
+      ).status,
+      400,
+    );
   });
 
   test('шинэ хувилбар нийтлэгдэхэд өмнөх мэдүүлэг хуучин хувилбартайгаа үлдэнэ', async () => {
     const admin = await login(DEMO.admin);
-    const v3 = await one("SELECT version_id FROM visa_info_versions WHERE version_no = 3");
+    const v3 = await one('SELECT version_id FROM visa_info_versions WHERE version_no = 3');
     await admin.post(`/api/admin/versions/${v3.version_id}/publish`).expect(200);
     const pubList = await client().get('/api/visas?country=KR');
     assert.equal(pubList.body.visas[0].versionNo, 3);

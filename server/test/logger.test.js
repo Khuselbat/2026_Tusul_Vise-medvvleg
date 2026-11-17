@@ -11,7 +11,12 @@ import { seed, DEMO } from '../scripts/seed.js';
 
 let lines = [];
 let app;
-const sink = new Writable({ write(chunk, _enc, cb) { lines.push(chunk.toString()); cb(); } });
+const sink = new Writable({
+  write(chunk, _enc, cb) {
+    lines.push(chunk.toString());
+    cb();
+  },
+});
 const logged = () => lines.join('');
 
 before(async () => {
@@ -19,12 +24,16 @@ before(async () => {
   await seed({ withDemoApplications: true, rounds: 4 });
   app = createApp({ logger: createLogger({ destination: sink, level: 'info' }) });
 });
-after(async () => { await pool.end(); });
+after(async () => {
+  await pool.end();
+});
 
 describe('Бүтэцтэй лог', () => {
   test('хүсэлт бүр request id-тай; audit-ын request_id-тай таарна', async () => {
     lines = [];
-    const r = await request(app).post('/api/auth/login').set('X-Requested-With', 'civiz')
+    const r = await request(app)
+      .post('/api/auth/login')
+      .set('X-Requested-With', 'civiz')
       .send({ email: DEMO.applicant.email, password: DEMO.applicant.password });
     assert.equal(r.status, 200);
     const id = r.headers['x-request-id'];
@@ -40,7 +49,9 @@ describe('Бүтэцтэй лог', () => {
     lines = [];
     const secret = 'Sup3rSecretPw!';
     await request(app).post('/api/auth/login').set('X-Requested-With', 'civiz').send({ email: 'nobody@example.com', password: secret });
-    const login = await request(app).post('/api/auth/login').set('X-Requested-With', 'civiz')
+    const login = await request(app)
+      .post('/api/auth/login')
+      .set('X-Requested-With', 'civiz')
       .send({ email: DEMO.applicant.email, password: DEMO.applicant.password });
     const cookie = login.headers['set-cookie'][0].split(';')[0];
     await request(app).get('/api/app/applications?q=KR-20261020-DEMO01').set('Cookie', cookie);
@@ -54,7 +65,11 @@ describe('Бүтэцтэй лог', () => {
 
   test('SQL алдаанаас утга (мессеж, sql) хасагдана', () => {
     const e = Object.assign(new Error("Duplicate entry 'saran@example.com' for key 'uq_users_email'"), {
-      code: 'ER_DUP_ENTRY', errno: 1062, sqlState: '23000', sqlMessage: "Duplicate entry 'saran@example.com'", sql: "INSERT INTO users ... 'saran@example.com'",
+      code: 'ER_DUP_ENTRY',
+      errno: 1062,
+      sqlState: '23000',
+      sqlMessage: "Duplicate entry 'saran@example.com'",
+      sql: "INSERT INTO users ... 'saran@example.com'",
     });
     const s = JSON.stringify(safeError(e));
     assert.ok(!s.includes('saran@example.com'));

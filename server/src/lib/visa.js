@@ -9,11 +9,13 @@ export const LATEST_PUBLISHED = `(SELECT MAX(v2.version_no) FROM visa_info_versi
  * улс ACTIVE + тохиргоогоор зөвшөөрсөн, төрөл идэвхтэй, хувилбар нийтлэгдсэн бөгөөд хамгийн сүүлийнх.
  */
 export function canApply(row) {
-  return row.service_status === 'ACTIVE'
-    && config.submittableCountries.includes(row.iso_code)
-    && !!row.type_active
-    && !!row.published_at
-    && row.version_no === row.latest_no;
+  return (
+    row.service_status === 'ACTIVE' &&
+    config.submittableCountries.includes(row.iso_code) &&
+    !!row.type_active &&
+    !!row.published_at &&
+    row.version_no === row.latest_no
+  );
 }
 
 export function applyBlockReason(row) {

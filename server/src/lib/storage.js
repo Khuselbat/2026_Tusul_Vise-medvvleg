@@ -19,7 +19,10 @@ const EXT_OK = { pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jp
 export function detectType(buffer, originalName) {
   const sig = SIGNATURES.find((s) => buffer.length > 8 && s.test(buffer));
   if (!sig) return null;
-  const ext = path.extname(originalName || '').slice(1).toLowerCase();
+  const ext = path
+    .extname(originalName || '')
+    .slice(1)
+    .toLowerCase();
   if (!EXT_OK[ext] || EXT_OK[ext] !== sig.mime) return null;
   return sig.mime;
 }
@@ -48,5 +51,8 @@ export async function removeFile(storageKey) {
 export function safeFileName(name) {
   // Хяналтын тэмдэгтүүд (U+0000–U+001F)-ийг санаатайгаар орлуулна
   // eslint-disable-next-line no-control-regex
-  return String(name || 'file').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 200);
+  const unsafe = /[\\/:*?"<>|\u0000-\u001f]/g;
+  return String(name || 'file')
+    .replace(unsafe, '_')
+    .slice(0, 200);
 }

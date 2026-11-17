@@ -9,7 +9,13 @@ export async function audit(req, { action, entityType, entityKey = null, applica
   await q(
     `INSERT INTO audit_events (actor_id, application_id, action, entity_type, entity_key, request_id)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    [actorId !== undefined ? actorId : (req.user?.id ?? null), applicationId, action, entityType,
-      entityKey === null ? null : String(entityKey).slice(0, 64), req.id],
+    [
+      actorId !== undefined ? actorId : (req.user?.id ?? null),
+      applicationId,
+      action,
+      entityType,
+      entityKey === null ? null : String(entityKey).slice(0, 64),
+      req.id,
+    ],
   );
 }

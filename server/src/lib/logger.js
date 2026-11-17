@@ -9,7 +9,11 @@ const REDACT = [
   'req.headers.cookie',
   'req.headers.authorization',
   'res.headers["set-cookie"]',
-  '*.password', '*.newPassword', '*.currentPassword', '*.passportNumber', '*.token',
+  '*.password',
+  '*.newPassword',
+  '*.currentPassword',
+  '*.passportNumber',
+  '*.token',
 ];
 
 /** URL-аас query string хасна (хайлтын утга, лавлах дугаар г.м. логт үлдэхгүй). */
@@ -41,7 +45,13 @@ export function createLogger({ destination, level } = {}) {
   if (destination) return pino(opts, destination);
   // Хөгжүүлэлтэд уншихад хялбар; production-д JSON мөр (лог цуглуулагчид)
   if (!config.isProd && !config.isTest && process.env.LOG_PRETTY !== '0') {
-    return pino({ ...opts, transport: { target: 'pino-pretty', options: { translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,service,req,res,responseTime,userId,role' } } });
+    return pino({
+      ...opts,
+      transport: {
+        target: 'pino-pretty',
+        options: { translateTime: 'SYS:HH:MM:ss', ignore: 'pid,hostname,service,req,res,responseTime,userId,role' },
+      },
+    });
   }
   return pino(opts);
 }
@@ -65,7 +75,8 @@ export function httpLogger(log = logger) {
       res: (res) => ({ statusCode: res.statusCode }),
       err: safeError,
     },
-    customSuccessMessage: (req, res, ms) => `${req.method} ${pathOnly(req.originalUrl || req.url)} ${res.statusCode}${ms === undefined ? '' : ` ${ms}ms`}`,
+    customSuccessMessage: (req, res, ms) =>
+      `${req.method} ${pathOnly(req.originalUrl || req.url)} ${res.statusCode}${ms === undefined ? '' : ` ${ms}ms`}`,
     customErrorMessage: (req, res) => `${req.method} ${pathOnly(req.originalUrl || req.url)} ${res.statusCode}`,
   });
 }

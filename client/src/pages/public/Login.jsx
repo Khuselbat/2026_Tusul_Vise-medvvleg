@@ -20,7 +20,8 @@ export default function Login() {
     const fe = {};
     if (!f.email.trim()) fe.email = 'Имэйлээ оруулна уу.';
     if (!f.password) fe.password = 'Нууц үгээ оруулна уу.';
-    setErrors(fe); setErr('');
+    setErrors(fe);
+    setErr('');
     if (Object.keys(fe).length) return;
     setBusy(true);
     try {
@@ -31,7 +32,9 @@ export default function Login() {
     } catch (ex) {
       setErr(ex.message);
       setErrors(ex.fields || {});
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -41,14 +44,30 @@ export default function Login() {
         {err && <Alert tone="danger">{err}</Alert>}
         <form onSubmit={submit} className="stack" noValidate>
           <Field label="Имэйл" htmlFor="email" error={errors.email}>
-            <input id="email" type="email" autoComplete="username" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+            <input
+              id="email"
+              type="email"
+              autoComplete="username"
+              value={f.email}
+              onChange={(e) => setF({ ...f, email: e.target.value })}
+            />
           </Field>
           <Field label="Нууц үг" htmlFor="pw" error={errors.password}>
-            <input id="pw" type="password" autoComplete="current-password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} />
+            <input
+              id="pw"
+              type="password"
+              autoComplete="current-password"
+              value={f.password}
+              onChange={(e) => setF({ ...f, password: e.target.value })}
+            />
           </Field>
           <div className="row-actions">
-            <Button type="submit" loading={busy}>Нэвтрэх</Button>
-            <Link className="btn btn-ghost" to="/register">Бүртгүүлэх</Link>
+            <Button type="submit" loading={busy}>
+              Нэвтрэх
+            </Button>
+            <Link className="btn btn-ghost" to="/register">
+              Бүртгүүлэх
+            </Link>
           </div>
         </form>
       </Card>

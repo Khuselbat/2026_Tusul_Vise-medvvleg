@@ -14,12 +14,18 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/api/auth/me').then((r) => setUser(r.user)).catch(() => setUser(null));
+    api
+      .get('/api/auth/me')
+      .then((r) => setUser(r.user))
+      .catch(() => setUser(null));
   }, []);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      setUser((u) => { if (u) setExpired(true); return null; });
+      setUser((u) => {
+        if (u) setExpired(true);
+        return null;
+      });
     });
   }, []);
 
@@ -31,7 +37,11 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
-    try { await api.post('/api/auth/logout'); } catch { /* */ }
+    try {
+      await api.post('/api/auth/logout');
+    } catch {
+      /* */
+    }
     setUser(null);
     navigate('/');
   }, [navigate]);

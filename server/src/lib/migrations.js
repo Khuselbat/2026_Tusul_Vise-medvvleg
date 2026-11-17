@@ -55,7 +55,11 @@ async function baselineLegacy(conn, files, log) {
     "SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('roles','users','applications')",
   );
   if (legacy.length < 3) return;
-  await conn.query('INSERT INTO schema_migrations (version, name, checksum) VALUES (?, ?, ?)', [files[0].version, files[0].name, files[0].checksum]);
+  await conn.query('INSERT INTO schema_migrations (version, name, checksum) VALUES (?, ?, ?)', [
+    files[0].version,
+    files[0].name,
+    files[0].checksum,
+  ]);
   log(`Хуучин схем илэрлээ — ${files[0].name}-ийг хэрэгжсэн гэж тэмдэглэв (baseline).`);
 }
 
@@ -91,7 +95,11 @@ export async function migrate({ dir = MIGRATIONS_DIR, log = () => {} } = {}) {
     }
     return done;
   } finally {
-    try { await conn.query('SELECT RELEASE_LOCK(?)', [LOCK]); } catch { /* ignore */ }
+    try {
+      await conn.query('SELECT RELEASE_LOCK(?)', [LOCK]);
+    } catch {
+      /* ignore */
+    }
     await conn.end();
   }
 }

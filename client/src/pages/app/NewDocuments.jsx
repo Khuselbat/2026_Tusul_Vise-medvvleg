@@ -32,14 +32,23 @@ export default function NewDocuments() {
     if (!OK_EXT.test(file.name)) msg = 'Зөвхөн PDF, JPG, PNG файл.';
     else if (file.size > MAX_FILE) msg = `Файл ${fmtBytes(file.size)} — 10 MiB-аас их байна.`;
     else if (total + file.size > MAX_TOTAL) msg = 'Нийт хэмжээ 100 MiB-аас хэтэрнэ.';
-    if (msg) { setUploads((u) => ({ ...u, [reqId]: { error: msg, name: file.name } })); return; }
+    if (msg) {
+      setUploads((u) => ({ ...u, [reqId]: { error: msg, name: file.name } }));
+      return;
+    }
     setUploads((u) => ({ ...u, [reqId]: { progress: 0, name: file.name } }));
     const fd = new FormData();
     fd.append('requirementId', String(reqId));
     fd.append('file', file);
     try {
-      await uploadWithProgress(`/api/app/drafts/${ref}/documents`, fd, (p) => setUploads((u) => ({ ...u, [reqId]: { ...u[reqId], progress: Math.min(p, 99) } })));
-      setUploads((u) => { const n = { ...u }; delete n[reqId]; return n; });
+      await uploadWithProgress(`/api/app/drafts/${ref}/documents`, fd, (p) =>
+        setUploads((u) => ({ ...u, [reqId]: { ...u[reqId], progress: Math.min(p, 99) } })),
+      );
+      setUploads((u) => {
+        const n = { ...u };
+        delete n[reqId];
+        return n;
+      });
       reload();
     } catch (ex) {
       setUploads((u) => ({ ...u, [reqId]: { error: ex.message, name: file.name } }));
@@ -47,67 +56,133 @@ export default function NewDocuments() {
   }
 
   async function removeDoc(doc) {
-    try { await api.del(`/api/app/drafts/${ref}/documents/${doc.id}`); toast('Файлыг арилгалаа.', 'info'); reload(); } catch (ex) { toast(ex.message, 'danger'); }
+    try {
+      await api.del(`/api/app/drafts/${ref}/documents/${doc.id}`);
+      toast('Файлыг арилгалаа.', 'info');
+      reload();
+    } catch (ex) {
+      toast(ex.message, 'danger');
+    }
   }
 
-  const pick = (reqId) => { setTarget(reqId); inputRef.current.value = ''; inputRef.current.click(); };
+  const pick = (reqId) => {
+    setTarget(reqId);
+    inputRef.current.value = '';
+    inputRef.current.click();
+  };
   const firstMissing = d?.requirements.find((r) => !d.documents.some((x) => x.requirementId === r.id));
-  const missingRequired = d ? d.requirements.filter((r) => r.isRequired && !d.documents.some((x) => x.requirementId === r.id && x.scanStatus === 'ACCEPTED')) : [];
+  const missingRequired = d
+    ? d.requirements.filter((r) => r.isRequired && !d.documents.some((x) => x.requirementId === r.id && x.scanStatus === 'ACCEPTED'))
+    : [];
 
   return (
-    <Page crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Шинэ мэдүүлэг' }]} title="Материал хавсаргах" subtitle={d && `${d.visa.country.name} · ${d.visa.code} — ${d.visa.name}`}>
+    <Page
+      crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Шинэ мэдүүлэг' }]}
+      title="Материал хавсаргах"
+      subtitle={d && `${d.visa.country.name} · ${d.visa.code} — ${d.visa.name}`}
+    >
       <Steps current={1} />
       <ErrorBox error={error} onRetry={reload} />
-      {loading && !d ? <Skeleton rows={4} /> : d && (
-        <>
-          <div className={`dropzone ${drag ? 'drag' : ''}`}
-            onDragOver={(e) => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)}
-            onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files?.[0]; if (f && firstMissing) uploadFile(firstMissing.id, f); }}>
-            <h3>Файлаа энд чирж оруулах эсвэл сонгох</h3>
-            <div className="muted">PDF, JPEG, PNG · файл ≤10 MiB · нийт ≤100 MiB · одоо {fmtBytes(total || 1)} ашигласан</div>
-            {firstMissing && <div className="small muted mt">Чирсэн файл “{firstMissing.title}” хэсэгт хавсаргагдана.</div>}
-          </div>
-          <input ref={inputRef} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" hidden
-            onChange={(e) => uploadFile(target, e.target.files?.[0])} />
-          {d.requirements.map((r) => {
-            const docs = d.documents.filter((x) => x.requirementId === r.id);
-            const up = uploads[r.id];
-            return (
-              <Card key={r.id} className="req-row">
-                <div>
-                  <h3>{r.title} {r.isRequired && <span className="req">*</span>}</h3>
-                  {r.instructions && <div className="small muted">{r.instructions}</div>}
-                  {docs.map((doc) => (
-                    <div key={doc.id} className="file-line">
-                      <button className="btn-link" onClick={() => setViewing(doc)}>{doc.originalName}</button>
-                      <span>{fmtBytes(doc.sizeBytes)}</span>
-                      <Badge tone={doc.scanStatus === 'ACCEPTED' ? 'ok' : doc.scanStatus === 'REJECTED' ? 'danger' : 'info'}>
-                        {doc.scanStatus === 'ACCEPTED' ? 'Шалгагдсан' : doc.scanStatus === 'REJECTED' ? 'Татгалзсан' : 'Шалгаж байна'}
-                      </Badge>
-                      <button className="btn-link danger" onClick={() => removeDoc(doc)}>Арилгах</button>
-                    </div>
-                  ))}
-                  {up && up.error && <div className="field-error">{up.name}: {up.error}</div>}
-                  {up && !up.error && (
-                    <div className="file-line"><span>{up.name}</span><div className="progress"><div style={{ width: `${up.progress}%` }} /></div><span>Шалгаж байна…</span></div>
-                  )}
-                  {!docs.length && !up && <div className="file-line">Файл сонгоогүй</div>}
-                </div>
-                <div className="row-actions" style={{ alignItems: 'center' }}>
-                  {docs.length ? <Badge tone="ok">Хавсаргасан</Badge> : r.isRequired ? <Badge tone="warn">Заавал</Badge> : <Badge tone="muted">Сонголттой</Badge>}
-                  <Button variant="ghost" className="btn-sm" onClick={() => pick(r.id)} disabled={!!up && !up.error}>
-                    {docs.length ? 'Нэмж хавсаргах' : 'Файл сонгох'}
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-          {missingRequired.length > 0 && <Alert tone="warn">Заавал шаардлагатай {missingRequired.length} материал дутуу байна: {missingRequired.map((m) => m.title).join(', ')}.</Alert>}
-          <div className="page-footer">
-            <Button disabled={missingRequired.length > 0 || busy} onClick={() => navigate(`/app/new/confirm?draft=${ref}`)}>Үргэлжлүүлэх</Button>
-            <Button variant="ghost" onClick={() => navigate(`/app/new?draft=${ref}`)}>Буцах</Button>
-          </div>
-        </>
+      {loading && !d ? (
+        <Skeleton rows={4} />
+      ) : (
+        d && (
+          <>
+            <div
+              className={`dropzone ${drag ? 'drag' : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDrag(true);
+              }}
+              onDragLeave={() => setDrag(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDrag(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f && firstMissing) uploadFile(firstMissing.id, f);
+              }}
+            >
+              <h3>Файлаа энд чирж оруулах эсвэл сонгох</h3>
+              <div className="muted">PDF, JPEG, PNG · файл ≤10 MiB · нийт ≤100 MiB · одоо {fmtBytes(total || 1)} ашигласан</div>
+              {firstMissing && <div className="small muted mt">Чирсэн файл “{firstMissing.title}” хэсэгт хавсаргагдана.</div>}
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              hidden
+              onChange={(e) => uploadFile(target, e.target.files?.[0])}
+            />
+            {d.requirements.map((r) => {
+              const docs = d.documents.filter((x) => x.requirementId === r.id);
+              const up = uploads[r.id];
+              return (
+                <Card key={r.id} className="req-row">
+                  <div>
+                    <h3>
+                      {r.title} {r.isRequired && <span className="req">*</span>}
+                    </h3>
+                    {r.instructions && <div className="small muted">{r.instructions}</div>}
+                    {docs.map((doc) => (
+                      <div key={doc.id} className="file-line">
+                        <button className="btn-link" onClick={() => setViewing(doc)}>
+                          {doc.originalName}
+                        </button>
+                        <span>{fmtBytes(doc.sizeBytes)}</span>
+                        <Badge tone={doc.scanStatus === 'ACCEPTED' ? 'ok' : doc.scanStatus === 'REJECTED' ? 'danger' : 'info'}>
+                          {doc.scanStatus === 'ACCEPTED' ? 'Шалгагдсан' : doc.scanStatus === 'REJECTED' ? 'Татгалзсан' : 'Шалгаж байна'}
+                        </Badge>
+                        <button className="btn-link danger" onClick={() => removeDoc(doc)}>
+                          Арилгах
+                        </button>
+                      </div>
+                    ))}
+                    {up && up.error && (
+                      <div className="field-error">
+                        {up.name}: {up.error}
+                      </div>
+                    )}
+                    {up && !up.error && (
+                      <div className="file-line">
+                        <span>{up.name}</span>
+                        <div className="progress">
+                          <div style={{ width: `${up.progress}%` }} />
+                        </div>
+                        <span>Шалгаж байна…</span>
+                      </div>
+                    )}
+                    {!docs.length && !up && <div className="file-line">Файл сонгоогүй</div>}
+                  </div>
+                  <div className="row-actions" style={{ alignItems: 'center' }}>
+                    {docs.length ? (
+                      <Badge tone="ok">Хавсаргасан</Badge>
+                    ) : r.isRequired ? (
+                      <Badge tone="warn">Заавал</Badge>
+                    ) : (
+                      <Badge tone="muted">Сонголттой</Badge>
+                    )}
+                    <Button variant="ghost" className="btn-sm" onClick={() => pick(r.id)} disabled={!!up && !up.error}>
+                      {docs.length ? 'Нэмж хавсаргах' : 'Файл сонгох'}
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+            {missingRequired.length > 0 && (
+              <Alert tone="warn">
+                Заавал шаардлагатай {missingRequired.length} материал дутуу байна: {missingRequired.map((m) => m.title).join(', ')}.
+              </Alert>
+            )}
+            <div className="page-footer">
+              <Button disabled={missingRequired.length > 0 || busy} onClick={() => navigate(`/app/new/confirm?draft=${ref}`)}>
+                Үргэлжлүүлэх
+              </Button>
+              <Button variant="ghost" onClick={() => navigate(`/app/new?draft=${ref}`)}>
+                Буцах
+              </Button>
+            </div>
+          </>
+        )
       )}
       <FileViewer doc={viewing} onClose={() => setViewing(null)} />
     </Page>

@@ -29,20 +29,22 @@ export function createApp({ logger = defaultLogger } = {}) {
     });
   }
 
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'blob:'],
-        frameSrc: ["'self'", 'blob:'],
-        objectSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        upgradeInsecureRequests: config.isProd ? [] : null,
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'blob:'],
+          frameSrc: ["'self'", 'blob:'],
+          objectSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          upgradeInsecureRequests: config.isProd ? [] : null,
+        },
       },
-    },
-    hsts: config.isProd ? { maxAge: 31536000, includeSubDomains: true } : false,
-    referrerPolicy: { policy: 'no-referrer' },
-  }));
+      hsts: config.isProd ? { maxAge: 31536000, includeSubDomains: true } : false,
+      referrerPolicy: { policy: 'no-referrer' },
+    }),
+  );
 
   // Request id (X-Request-Id) + хүсэлт бүрийн бүтэцтэй лог
   app.use(httpLogger(logger));
@@ -68,7 +70,12 @@ export function createApp({ logger = defaultLogger } = {}) {
   app.use(loadUser);
 
   app.get('/api/health', async (_req, res) => {
-    try { await pool.query('SELECT 1'); res.json({ ok: true }); } catch { res.status(503).json({ ok: false }); }
+    try {
+      await pool.query('SELECT 1');
+      res.json({ ok: true });
+    } catch {
+      res.status(503).json({ ok: false });
+    }
   });
   app.use('/api/auth', authRoutes);
   app.use('/api', publicRoutes);
@@ -96,7 +103,9 @@ export function createApp({ logger = defaultLogger } = {}) {
     }
     // Логт нууц мэдээлэл бичихгүй — safeError нь SQL алдааны утгыг хасна (lib/logger.js)
     req.log.error({ err }, 'unhandled error');
-    return res.status(500).json({ error: { code: 'SERVER_ERROR', message: 'Серверийн алдаа гарлаа. Дахин оролдоно уу.', requestId: req.id } });
+    return res
+      .status(500)
+      .json({ error: { code: 'SERVER_ERROR', message: 'Серверийн алдаа гарлаа. Дахин оролдоно уу.', requestId: req.id } });
   });
 
   return app;

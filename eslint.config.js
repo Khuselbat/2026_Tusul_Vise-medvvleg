@@ -7,7 +7,16 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 
 export default [
-  { ignores: ['**/node_modules/**', 'client/dist/**', 'server/storage/**', 'server/storage-test/**', 'playwright-report/**', 'test-results/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      'client/dist/**',
+      'server/storage/**',
+      'server/storage-test/**',
+      'playwright-report/**',
+      'test-results/**',
+    ],
+  },
   js.configs.recommended,
   {
     rules: {

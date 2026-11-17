@@ -32,7 +32,11 @@ export async function tx(fn) {
     await conn.commit();
     return result;
   } catch (err) {
-    try { await conn.rollback(); } catch { /* ignore */ }
+    try {
+      await conn.rollback();
+    } catch {
+      /* ignore */
+    }
     throw err;
   } finally {
     conn.release();

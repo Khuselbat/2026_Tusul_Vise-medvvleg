@@ -40,7 +40,9 @@ const guard = (role, el) => <RequireRole role={role}>{el}</RequireRole>;
 function NotFound() {
   return (
     <Page title="Хуудас олдсонгүй">
-      <Empty title="Энэ хаягаар хуудас алга" action={<LinkButton to="/">Нүүр рүү</LinkButton>}>Холбоос буруу эсвэл хуудас шилжсэн байж болно.</Empty>
+      <Empty title="Энэ хаягаар хуудас алга" action={<LinkButton to="/">Нүүр рүү</LinkButton>}>
+        Холбоос буруу эсвэл хуудас шилжсэн байж болно.
+      </Empty>
     </Page>
   );
 }

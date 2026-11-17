@@ -56,8 +56,10 @@ export function requireAuth(req, _res, next) {
   next();
 }
 
-export const requireRole = (...roles) => (req, _res, next) => {
-  if (!req.user) return next(unauthorized());
-  if (!roles.includes(req.user.role)) return next(forbidden());
-  next();
-};
+export const requireRole =
+  (...roles) =>
+  (req, _res, next) => {
+    if (!req.user) return next(unauthorized());
+    if (!roles.includes(req.user.role)) return next(forbidden());
+    next();
+  };

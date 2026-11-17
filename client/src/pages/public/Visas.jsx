@@ -19,12 +19,26 @@ export default function Visas() {
   };
 
   return (
-    <Page crumb={[{ label: 'Визийн мэдээлэл' }]} title="Визийн мэдээлэл хайх" subtitle="Ангилал, бүрдүүлэх материал, эх сурвалж, шалгасан огноо">
-      <form className="filters" onSubmit={(e) => { e.preventDefault(); update({ q: text.trim() }); }}>
+    <Page
+      crumb={[{ label: 'Визийн мэдээлэл' }]}
+      title="Визийн мэдээлэл хайх"
+      subtitle="Ангилал, бүрдүүлэх материал, эх сурвалж, шалгасан огноо"
+    >
+      <form
+        className="filters"
+        onSubmit={(e) => {
+          e.preventDefault();
+          update({ q: text.trim() });
+        }}
+      >
         <Field label="Улс" htmlFor="c">
           <select id="c" value={country} onChange={(e) => update({ country: e.target.value })}>
             <option value="">Бүгд</option>
-            {countries.data?.countries.map((c) => <option key={c.id} value={c.iso}>{c.name}</option>)}
+            {countries.data?.countries.map((c) => (
+              <option key={c.id} value={c.iso}>
+                {c.name}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="Нэр эсвэл код" htmlFor="q" className="grow">
@@ -33,8 +47,23 @@ export default function Visas() {
         <Button type="submit">Хайх</Button>
       </form>
       <ErrorBox error={error} onRetry={reload} />
-      {loading ? <Skeleton rows={3} /> : data?.visas.length === 0 ? (
-        <Empty title="Үр дүн олдсонгүй" action={<Button variant="ghost" onClick={() => { setText(''); setSp({}); }}>Хайлтаа өөрчлөх</Button>}>
+      {loading ? (
+        <Skeleton rows={3} />
+      ) : data?.visas.length === 0 ? (
+        <Empty
+          title="Үр дүн олдсонгүй"
+          action={
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setText('');
+                setSp({});
+              }}
+            >
+              Хайлтаа өөрчлөх
+            </Button>
+          }
+        >
           Өөр нэр, код эсвэл улсаар хайна уу.
         </Empty>
       ) : (
@@ -42,11 +71,18 @@ export default function Visas() {
           {data?.visas.map((v) => (
             <Link key={v.versionId} to={`/visas/${v.versionId}`} className="card visa-card">
               <div className="between">
-                <span className="code">{v.country.name} · {v.code}</span>
+                <span className="code">
+                  {v.country.name} · {v.code}
+                </span>
                 {v.canApply ? <Badge tone="ok">Мэдүүлэг авна</Badge> : <Badge tone="muted">Зөвхөн мэдээлэл</Badge>}
               </div>
               <h3>{v.name}</h3>
-              <p className="muted small mb0" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{v.description}</p>
+              <p
+                className="muted small mb0"
+                style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+              >
+                {v.description}
+              </p>
               <div className="kv-inline">
                 <span>Материал: {v.requirementCount}</span>
                 <span>Шалгасан: {fmtDate(v.verifiedAt)}</span>

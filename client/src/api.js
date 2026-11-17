@@ -10,13 +10,18 @@ export class ApiError extends Error {
 }
 
 let onUnauthorized = null;
-export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
+export const setUnauthorizedHandler = (fn) => {
+  onUnauthorized = fn;
+};
 
 async function request(method, url, body, { form } = {}) {
   const headers = { 'X-Requested-With': 'civiz' };
   let payload;
   if (form) payload = form;
-  else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
+  else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json';
+    payload = JSON.stringify(body);
+  }
   let res;
   try {
     res = await fetch(url, { method, headers, body: payload, credentials: 'same-origin' });
@@ -45,10 +50,16 @@ export function uploadWithProgress(url, form, onProgress) {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
     xhr.setRequestHeader('X-Requested-With', 'civiz');
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)); };
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    };
     xhr.onload = () => {
       let data = null;
-      try { data = JSON.parse(xhr.responseText); } catch { /* */ }
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch {
+        /* */
+      }
       if (xhr.status >= 200 && xhr.status < 300) resolve(data);
       else reject(new ApiError(xhr.status, data));
     };
@@ -59,7 +70,9 @@ export function uploadWithProgress(url, form, onProgress) {
 
 export const qs = (obj) => {
   const p = new URLSearchParams();
-  Object.entries(obj).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') p.set(k, v); });
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') p.set(k, v);
+  });
   const s = p.toString();
   return s ? `?${s}` : '';
 };

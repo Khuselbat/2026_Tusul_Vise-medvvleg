@@ -30,7 +30,7 @@ export const config = {
     port: Number(process.env.DB_PORT || 3306),
     user: process.env.DB_USER || 'civiz',
     password: process.env.DB_PASSWORD ?? 'civiz_pass',
-    database: isTest ? (process.env.DB_NAME_TEST || 'civiz_test') : (process.env.DB_NAME || 'civiz'),
+    database: isTest ? process.env.DB_NAME_TEST || 'civiz_test' : process.env.DB_NAME || 'civiz',
   },
   jwtSecret: required('JWT_SECRET', devSecret),
   sessionHours: Number(process.env.SESSION_HOURS || 8),

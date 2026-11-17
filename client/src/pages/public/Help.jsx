@@ -8,7 +8,9 @@ export default function Help() {
         <Card className="prose">
           <h2>Мэдүүлэг илгээх алхам</h2>
           <ol>
-            <li><Link to="/visas">Визийн мэдээлэл</Link> хэсгээс ангиллаа сонгож материалын жагсаалтыг уншина.</li>
+            <li>
+              <Link to="/visas">Визийн мэдээлэл</Link> хэсгээс ангиллаа сонгож материалын жагсаалтыг уншина.
+            </li>
             <li>Бүртгүүлж нэвтэрнэ.</li>
             <li>Анкетаа паспорт дээрх латин бичлэгээр бөглөнө.</li>
             <li>Материал бүрийг PDF, JPG, PNG хэлбэрээр хавсаргана (файл ≤10 MB, нийт ≤100 MB).</li>
@@ -29,14 +31,27 @@ export default function Help() {
           <h2>Холбоо барих (албан ёсны эх сурвалж)</h2>
           <ul>
             <li>БНСУ-ын ЭСЯ — визийн утас: +976 7007-1030</li>
-            <li>Монгол дахь KVAC — <a href="https://www.visaforkorea.mn" target="_blank" rel="noopener noreferrer">visaforkorea.mn</a></li>
-            <li>Korea Visa Portal — <a href="https://www.visa.go.kr" target="_blank" rel="noopener noreferrer">visa.go.kr</a></li>
+            <li>
+              Монгол дахь KVAC —{' '}
+              <a href="https://www.visaforkorea.mn" target="_blank" rel="noopener noreferrer">
+                visaforkorea.mn
+              </a>
+            </li>
+            <li>
+              Korea Visa Portal —{' '}
+              <a href="https://www.visa.go.kr" target="_blank" rel="noopener noreferrer">
+                visa.go.kr
+              </a>
+            </li>
           </ul>
           <p className="small muted">Эх сурвалжийг 2026-10-30-нд шалгасан. Мэдүүлэг өгөхийн өмнө дахин нягтална уу.</p>
         </Card>
         <Card className="prose">
           <h2>Хувийн мэдээлэл</h2>
-          <p>Паспортын дугаарыг сервер дээр шифрлэж хадгална. Хавсралтыг зөвхөн та болон хуваарилагдсан оператор нээнэ; админ эрх таны файлыг үзэх эрх биш. Порталын нууц үгийг энэ системд хэзээ ч оруулахгүй.</p>
+          <p>
+            Паспортын дугаарыг сервер дээр шифрлэж хадгална. Хавсралтыг зөвхөн та болон хуваарилагдсан оператор нээнэ; админ эрх таны файлыг
+            үзэх эрх биш. Порталын нууц үгийг энэ системд хэзээ ч оруулахгүй.
+          </p>
         </Card>
       </div>
     </Page>

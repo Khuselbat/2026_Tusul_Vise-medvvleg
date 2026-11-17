@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, Confirm, useToast, Alert, Field, fmtDate } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Button,
+  Confirm,
+  useToast,
+  Alert,
+  Field,
+  fmtDate,
+} from '../../components/ui.jsx';
 
 // Зураг 60 Мэдүүлэг операторт хуваарилах — зөвхөн metadata
 export default function Assignments() {
@@ -17,63 +30,132 @@ export default function Assignments() {
   const opName = (id) => data?.operators.find((o) => o.id === id)?.name;
 
   async function apply() {
-    setBusy(true); setConflict('');
+    setBusy(true);
+    setConflict('');
     try {
-      await api.put(`/api/admin/assignments/${pending.item.publicId}`, { operatorId: pending.to, expectedOperatorId: pending.item.operatorId ?? null });
+      await api.put(`/api/admin/assignments/${pending.item.publicId}`, {
+        operatorId: pending.to,
+        expectedOperatorId: pending.item.operatorId ?? null,
+      });
       toast(pending.to ? 'Хуваарилагдлаа.' : 'Хуваарилалт цуцлагдлаа.', pending.to ? 'ok' : 'info');
-      setPending(null); reload();
+      setPending(null);
+      reload();
     } catch (ex) {
       setPending(null);
-      if (ex.status === 409) { setConflict(ex.message); reload(); } else toast(ex.message, 'danger');
-    } finally { setBusy(false); }
+      if (ex.status === 409) {
+        setConflict(ex.message);
+        reload();
+      } else toast(ex.message, 'danger');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
-    <Page crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Хуваарилалт' }]} title="Мэдүүлэг операторт хуваарилах" subtitle="Идэвхтэй операторт хуваарилах, дахин хуваарилах, цуцлах">
+    <Page
+      crumb={[{ label: 'Админ', to: '/admin' }, { label: 'Хуваарилалт' }]}
+      title="Мэдүүлэг операторт хуваарилах"
+      subtitle="Идэвхтэй операторт хуваарилах, дахин хуваарилах, цуцлах"
+    >
       <div className="filters">
         <Field label="Харах" htmlFor="f">
           <select id="f" value={filter} onChange={(e) => setSp({ filter: e.target.value })}>
-            <option value="unassigned">Хуваарилаагүй</option><option value="assigned">Хуваарилсан</option><option value="all">Бүгд</option>
+            <option value="unassigned">Хуваарилаагүй</option>
+            <option value="assigned">Хуваарилсан</option>
+            <option value="all">Бүгд</option>
           </select>
         </Field>
-        {data && <div className="small muted" style={{ paddingBottom: 10 }}>Операторын ачаалал: {data.operators.map((o) => `${o.name} (${o.openCount})`).join(' · ') || 'идэвхтэй оператор алга'}</div>}
+        {data && (
+          <div className="small muted" style={{ paddingBottom: 10 }}>
+            Операторын ачаалал: {data.operators.map((o) => `${o.name} (${o.openCount})`).join(' · ') || 'идэвхтэй оператор алга'}
+          </div>
+        )}
       </div>
       {conflict && <Alert tone="warn">{conflict} Жагсаалтыг дахин уншлаа.</Alert>}
       <ErrorBox error={error} onRetry={reload} />
-      {loading && !data ? <Skeleton /> : data && (data.items.length === 0 ? <Empty title={filter === 'unassigned' ? 'Хуваарилаагүй мэдүүлэг алга' : 'Мэдүүлэг алга'} /> : (
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Лавлах дугаар</th><th>Улс · төрөл</th><th>Илгээсэн</th><th>Төлөв</th><th>Одоогийн оператор</th><th>Оператор сонгох</th><th /></tr></thead>
-            <tbody>
-              {data.items.map((a) => {
-                const sel = pick[a.publicId] ?? '';
-                return (
-                  <tr key={a.publicId}>
-                    <td className="mono">{a.publicId}</td><td>{a.country} · {a.visaCode}</td><td>{fmtDate(a.submittedAt)}</td>
-                    <td><Badge status={a.status} /></td>
-                    <td>{a.operatorName || <span className="muted">—</span>}</td>
-                    <td>
-                      <select aria-label="Оператор" value={sel} onChange={(e) => setPick({ ...pick, [a.publicId]: e.target.value })} style={{ minHeight: 38, padding: '6px 10px' }}>
-                        <option value="">— сонгох —</option>
-                        {data.operators.filter((o) => o.id !== a.operatorId).map((o) => <option key={o.id} value={o.id}>{o.name} ({o.openCount})</option>)}
-                      </select>
-                    </td>
-                    <td className="row-actions">
-                      <Button className="btn-sm" disabled={!sel} onClick={() => setPending({ item: a, to: Number(sel) })}>{a.operatorId ? 'Дахин хуваарилах' : 'Хуваарилах'}</Button>
-                      {a.operatorId && <button className="btn-link danger" onClick={() => setPending({ item: a, to: null })}>Цуцлах</button>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ))}
-      <Confirm open={!!pending} title={pending?.to ? 'Хуваарилалт баталгаажуулах' : 'Хуваарилалт цуцлах'} loading={busy} onClose={() => setPending(null)} onConfirm={apply}
-        tone={pending?.to ? 'primary' : 'danger'}>
+      {loading && !data ? (
+        <Skeleton />
+      ) : (
+        data &&
+        (data.items.length === 0 ? (
+          <Empty title={filter === 'unassigned' ? 'Хуваарилаагүй мэдүүлэг алга' : 'Мэдүүлэг алга'} />
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Лавлах дугаар</th>
+                  <th>Улс · төрөл</th>
+                  <th>Илгээсэн</th>
+                  <th>Төлөв</th>
+                  <th>Одоогийн оператор</th>
+                  <th>Оператор сонгох</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((a) => {
+                  const sel = pick[a.publicId] ?? '';
+                  return (
+                    <tr key={a.publicId}>
+                      <td className="mono">{a.publicId}</td>
+                      <td>
+                        {a.country} · {a.visaCode}
+                      </td>
+                      <td>{fmtDate(a.submittedAt)}</td>
+                      <td>
+                        <Badge status={a.status} />
+                      </td>
+                      <td>{a.operatorName || <span className="muted">—</span>}</td>
+                      <td>
+                        <select
+                          aria-label="Оператор"
+                          value={sel}
+                          onChange={(e) => setPick({ ...pick, [a.publicId]: e.target.value })}
+                          style={{ minHeight: 38, padding: '6px 10px' }}
+                        >
+                          <option value="">— сонгох —</option>
+                          {data.operators
+                            .filter((o) => o.id !== a.operatorId)
+                            .map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name} ({o.openCount})
+                              </option>
+                            ))}
+                        </select>
+                      </td>
+                      <td className="row-actions">
+                        <Button className="btn-sm" disabled={!sel} onClick={() => setPending({ item: a, to: Number(sel) })}>
+                          {a.operatorId ? 'Дахин хуваарилах' : 'Хуваарилах'}
+                        </Button>
+                        {a.operatorId && (
+                          <button className="btn-link danger" onClick={() => setPending({ item: a, to: null })}>
+                            Цуцлах
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
+      <Confirm
+        open={!!pending}
+        title={pending?.to ? 'Хуваарилалт баталгаажуулах' : 'Хуваарилалт цуцлах'}
+        loading={busy}
+        onClose={() => setPending(null)}
+        onConfirm={apply}
+        tone={pending?.to ? 'primary' : 'danger'}
+      >
         {pending && (
-          <p><span className="mono">{pending.item.publicId}</span><br />
-            Өмнөх: <strong>{pending.item.operatorName || '—'}</strong> → Шинэ: <strong>{pending.to ? opName(pending.to) : '—'}</strong></p>
+          <p>
+            <span className="mono">{pending.item.publicId}</span>
+            <br />
+            Өмнөх: <strong>{pending.item.operatorName || '—'}</strong> → Шинэ: <strong>{pending.to ? opName(pending.to) : '—'}</strong>
+          </p>
         )}
       </Confirm>
     </Page>

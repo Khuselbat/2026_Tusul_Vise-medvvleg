@@ -19,7 +19,9 @@ async function copyMigrations() {
   return dir;
 }
 
-before(async () => { tmp = await copyMigrations(); });
+before(async () => {
+  tmp = await copyMigrations();
+});
 after(async () => {
   await fs.rm(tmp, { recursive: true, force: true });
   await resetDatabase(); // дараагийн тестэд цэвэр схем үлдээнэ
@@ -30,7 +32,10 @@ describe('Migration систем', () => {
   test('reset → бүх migration хэрэгжиж, schema_migrations-д бүртгэгдэнэ; дахин ажиллуулахад 0', async () => {
     const files = await listMigrations();
     const done = await resetDatabase();
-    assert.deepEqual(done, files.map((f) => f.name));
+    assert.deepEqual(
+      done,
+      files.map((f) => f.name),
+    );
     const rows = await query('SELECT version, checksum FROM schema_migrations ORDER BY version');
     assert.equal(rows.length, files.length);
     assert.equal(rows[0].version, '001');
@@ -40,12 +45,16 @@ describe('Migration систем', () => {
   test('migrate өгөгдөл устгахгүй, зөвхөн шинэ файлыг ажиллуулна', async () => {
     await resetDatabase({ dir: tmp });
     await query("INSERT INTO countries (iso_code, name_mn, service_status) VALUES ('KR', 'БНСУ', 'ACTIVE')");
-    await fs.writeFile(path.join(tmp, '900_test_extra.sql'),
-      'CREATE TABLE zz_migration_probe (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n');
+    await fs.writeFile(
+      path.join(tmp, '900_test_extra.sql'),
+      'CREATE TABLE zz_migration_probe (id INT PRIMARY KEY) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n',
+    );
     try {
       assert.deepEqual(await migrate({ dir: tmp }), ['900_test_extra.sql']);
       assert.equal(Number((await one('SELECT COUNT(*) AS n FROM countries')).n), 1, 'өмнөх өгөгдөл хэвээр');
-      assert.ok(await one("SELECT 1 AS ok FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'zz_migration_probe'"));
+      assert.ok(
+        await one("SELECT 1 AS ok FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'zz_migration_probe'"),
+      );
       assert.deepEqual(await migrate({ dir: tmp }), []);
     } finally {
       await fs.rm(path.join(tmp, '900_test_extra.sql'), { force: true });

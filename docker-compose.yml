@@ -10,11 +10,11 @@ services:
       MYSQL_USER: ${DB_USER:-civiz}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD тохируулна уу}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD тохируулна уу}
-    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
     volumes:
       - dbdata:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-u', 'root', '-p${DB_ROOT_PASSWORD}']
       interval: 5s
       retries: 20
 
@@ -33,23 +33,23 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET тохируулна уу}
       PASSPORT_KEY: ${PASSPORT_KEY:?PASSPORT_KEY тохируулна уу (64 hex)}
       PASSPORT_KEY_ID: ${PASSPORT_KEY_ID:-k1}
-      TRUST_PROXY: "1"
+      TRUST_PROXY: '1'
       FORCE_HTTPS: ${FORCE_HTTPS:-0}
       COOKIE_SECURE: ${COOKIE_SECURE:-1}
     volumes:
       - files:/app/server/storage
     ports:
-      - "${APP_PORT:-4000}:4000"
+      - '${APP_PORT:-4000}:4000'
 
   # HTTPS (NFR-03): DOMAIN тохируулаад `docker compose --profile https up -d`
   caddy:
     image: caddy:2
-    profiles: ["https"]
+    profiles: ['https']
     restart: unless-stopped
     depends_on: [app]
     environment:
       DOMAIN: ${DOMAIN:-localhost}
-    ports: ["80:80", "443:443"]
+    ports: ['80:80', '443:443']
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data

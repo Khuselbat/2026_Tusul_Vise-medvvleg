@@ -4,41 +4,72 @@ import { decryptPassport, maskPassport } from './crypto.js';
 import { STATUS_LABEL } from './visa.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const isoDate = (msg) => z.string().regex(/^\d{4}-\d{2}-\d{2}$/, msg).refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), msg);
+const isoDate = (msg) =>
+  z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, msg)
+    .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), msg);
 // Албан ёсны анкетыг англи хэлээр бөглөнө — паспорт дээрх латин бичлэг
-const latinName = z.string().trim().min(1, 'Заавал бөглөнө.').max(100)
+const latinName = z
+  .string()
+  .trim()
+  .min(1, 'Заавал бөглөнө.')
+  .max(100)
   .regex(/^[A-Za-z][A-Za-z\s'-]*$/, 'Паспорт дээрх латин үсгээр бичнэ үү.')
   .transform((s) => s.replace(/\s+/g, ' ').toUpperCase());
 
 /** FR-04 / Зураг 43: анкетын талбар ба огнооны шалгалт */
-export const formSchema = z.object({
-  familyName: latinName,
-  givenName: latinName,
-  birthDate: isoDate('Бодит огноо оруулна уу.').refine((d) => d <= today(), 'Төрсөн огноо ирээдүйд байж болохгүй.').refine((d) => d >= '1900-01-01', 'Бодит огноо оруулна уу.'),
-  nationalityCode: z.string().trim().toUpperCase().regex(/^[A-Z]{2}$/, 'ISO 2 үсгийн код (жишээ: MN).'),
-  passportNumber: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{6,12}$/, 'Паспортын дугаар 6–12 латин үсэг, тоо.'),
-  passportExpiresOn: isoDate('Бодит огноо оруулна уу.').refine((d) => d > today(), 'Паспортын хугацаа дууссан байна.'),
-  contactEmail: z.string().trim().toLowerCase().email('Имэйлийн хэлбэр буруу байна.').max(254),
-  contactPhone: z.string().trim().regex(/^\+?[0-9 ()-]{6,20}$/, 'Утасны дугаар буруу байна.'),
-  travelPurpose: z.string().trim().min(3, 'Аяллын зорилгоо бичнэ үү.').max(500),
-  intendedEntryOn: isoDate('Бодит огноо оруулна уу.').refine((d) => d >= today(), 'Орох огноо өнгөрсөн байна.'),
-  intendedExitOn: isoDate('Бодит огноо оруулна уу.'),
-  extraFields: z.object({
-    occupation: z.string().trim().max(120).optional().default(''),
-    homeAddress: z.string().trim().max(300).optional().default(''),
-    stayAddress: z.string().trim().max(300).optional().default(''),
-  }).optional().default({}),
-}).superRefine((d, ctx) => {
-  if (d.intendedExitOn < d.intendedEntryOn) ctx.addIssue({ code: 'custom', path: ['intendedExitOn'], message: 'Гарах огноо орох огнооноос хойш байна.' });
-  if (d.passportExpiresOn <= d.intendedExitOn) ctx.addIssue({ code: 'custom', path: ['passportExpiresOn'], message: 'Паспорт аяллын хугацаанд хүчинтэй байх ёстой.' });
-});
+export const formSchema = z
+  .object({
+    familyName: latinName,
+    givenName: latinName,
+    birthDate: isoDate('Бодит огноо оруулна уу.')
+      .refine((d) => d <= today(), 'Төрсөн огноо ирээдүйд байж болохгүй.')
+      .refine((d) => d >= '1900-01-01', 'Бодит огноо оруулна уу.'),
+    nationalityCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z]{2}$/, 'ISO 2 үсгийн код (жишээ: MN).'),
+    passportNumber: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9]{6,12}$/, 'Паспортын дугаар 6–12 латин үсэг, тоо.'),
+    passportExpiresOn: isoDate('Бодит огноо оруулна уу.').refine((d) => d > today(), 'Паспортын хугацаа дууссан байна.'),
+    contactEmail: z.string().trim().toLowerCase().email('Имэйлийн хэлбэр буруу байна.').max(254),
+    contactPhone: z
+      .string()
+      .trim()
+      .regex(/^\+?[0-9 ()-]{6,20}$/, 'Утасны дугаар буруу байна.'),
+    travelPurpose: z.string().trim().min(3, 'Аяллын зорилгоо бичнэ үү.').max(500),
+    intendedEntryOn: isoDate('Бодит огноо оруулна уу.').refine((d) => d >= today(), 'Орох огноо өнгөрсөн байна.'),
+    intendedExitOn: isoDate('Бодит огноо оруулна уу.'),
+    extraFields: z
+      .object({
+        occupation: z.string().trim().max(120).optional().default(''),
+        homeAddress: z.string().trim().max(300).optional().default(''),
+        stayAddress: z.string().trim().max(300).optional().default(''),
+      })
+      .optional()
+      .default({}),
+  })
+  .superRefine((d, ctx) => {
+    if (d.intendedExitOn < d.intendedEntryOn)
+      ctx.addIssue({ code: 'custom', path: ['intendedExitOn'], message: 'Гарах огноо орох огнооноос хойш байна.' });
+    if (d.passportExpiresOn <= d.intendedExitOn)
+      ctx.addIssue({ code: 'custom', path: ['passportExpiresOn'], message: 'Паспорт аяллын хугацаанд хүчинтэй байх ёстой.' });
+  });
 
 /** Талбарын алдаа болон огнооны харьцуулалтыг нэг дор буцаана (zod нь суурь алдаатай үед superRefine-ийг алгасдаг). */
 export function parseForm(body) {
   const r = formSchema.safeParse(body);
   if (r.success) return { data: r.data, fields: null };
   const fields = {};
-  for (const i of r.error.issues) { const k = i.path.join('.') || '_'; if (!fields[k]) fields[k] = i.message; }
+  for (const i of r.error.issues) {
+    const k = i.path.join('.') || '_';
+    if (!fields[k]) fields[k] = i.message;
+  }
   const d = body || {};
   const iso = (x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x);
   if (!fields.intendedExitOn && iso(d.intendedEntryOn) && iso(d.intendedExitOn) && d.intendedExitOn < d.intendedEntryOn) {
@@ -53,9 +84,19 @@ export function parseForm(body) {
 export function serializeForm(f, { revealPassport }) {
   if (!f) return null;
   let passport = null;
-  try { passport = decryptPassport(f.passport_number_enc, f.passport_key_id); } catch { passport = null; }
+  try {
+    passport = decryptPassport(f.passport_number_enc, f.passport_key_id);
+  } catch {
+    passport = null;
+  }
   let extra = f.extra_fields;
-  if (typeof extra === 'string') { try { extra = JSON.parse(extra); } catch { extra = {}; } }
+  if (typeof extra === 'string') {
+    try {
+      extra = JSON.parse(extra);
+    } catch {
+      extra = {};
+    }
+  }
   return {
     familyName: f.family_name,
     givenName: f.given_name,
@@ -90,7 +131,10 @@ export async function loadApplicationDetail(appRow, { revealPassport }) {
   const [form, docs, reqs, reviews] = await Promise.all([
     one('SELECT * FROM application_forms WHERE application_id = ?', [appRow.application_id]),
     query('SELECT * FROM application_documents WHERE application_id = ? ORDER BY requirement_id, uploaded_at', [appRow.application_id]),
-    query('SELECT requirement_id, code, title, instructions, is_required FROM visa_requirements WHERE version_id = ? ORDER BY sort_order, requirement_id', [appRow.version_id]),
+    query(
+      'SELECT requirement_id, code, title, instructions, is_required FROM visa_requirements WHERE version_id = ? ORDER BY sort_order, requirement_id',
+      [appRow.version_id],
+    ),
     query(
       `SELECT r.review_no, r.completeness, r.comment, r.reviewed_at, u.display_name AS operator_name
          FROM reviews r JOIN users u ON u.user_id = r.operator_id
@@ -117,10 +161,20 @@ export async function loadApplicationDetail(appRow, { revealPassport }) {
     applicantName: appRow.applicant_name,
     operatorName: appRow.operator_name ?? null,
     form: serializeForm(form, { revealPassport }),
-    requirements: reqs.map((q) => ({ id: q.requirement_id, code: q.code, title: q.title, instructions: q.instructions, isRequired: !!q.is_required })),
+    requirements: reqs.map((q) => ({
+      id: q.requirement_id,
+      code: q.code,
+      title: q.title,
+      instructions: q.instructions,
+      isRequired: !!q.is_required,
+    })),
     documents: docs.map(serializeDoc),
     reviews: reviews.map((r) => ({
-      reviewNo: r.review_no, completeness: r.completeness, comment: r.comment, reviewedAt: r.reviewed_at, operatorName: r.operator_name,
+      reviewNo: r.review_no,
+      completeness: r.completeness,
+      comment: r.comment,
+      reviewedAt: r.reviewed_at,
+      operatorName: r.operator_name,
     })),
   };
 }

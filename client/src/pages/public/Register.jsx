@@ -20,7 +20,8 @@ export default function Register() {
     const fe = {};
     if (f.displayName.trim().length < 2) fe.displayName = 'Нэрээ оруулна уу.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) fe.email = 'Имэйлийн хэлбэр буруу байна.';
-    if (f.password.length < 8 || !/\d/.test(f.password) || !/[A-Za-zА-Яа-яӨөҮүЁё]/.test(f.password)) fe.password = 'Дор хаяж 8 тэмдэгт, үсэг ба тоо агуулна.';
+    if (f.password.length < 8 || !/\d/.test(f.password) || !/[A-Za-zА-Яа-яӨөҮүЁё]/.test(f.password))
+      fe.password = 'Дор хаяж 8 тэмдэгт, үсэг ба тоо агуулна.';
     if (f.password !== f.passwordConfirm) fe.passwordConfirm = 'Нууц үг таарахгүй байна.';
     return fe;
   }
@@ -28,7 +29,8 @@ export default function Register() {
   async function submit(e) {
     e.preventDefault();
     const fe = validate();
-    setErrors(fe); setErr('');
+    setErrors(fe);
+    setErr('');
     if (Object.keys(fe).length) return;
     setBusy(true);
     try {
@@ -37,7 +39,9 @@ export default function Register() {
     } catch (ex) {
       setErrors(ex.fields || {});
       setErr(ex.message);
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -59,8 +63,12 @@ export default function Register() {
           </Field>
           <p className="small muted">Бүртгүүлснээр таны анкет, хавсралт зөвхөн танд болон хуваарилагдсан операторт харагдана.</p>
           <div className="row-actions">
-            <Button type="submit" loading={busy}>Бүртгүүлэх</Button>
-            <Link className="btn btn-ghost" to="/login">Нэвтрэх</Link>
+            <Button type="submit" loading={busy}>
+              Бүртгүүлэх
+            </Button>
+            <Link className="btn btn-ghost" to="/login">
+              Нэвтрэх
+            </Link>
           </div>
         </form>
       </Card>
