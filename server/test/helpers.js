@@ -8,6 +8,8 @@ import { config } from '../src/config.js';
 import { one } from '../src/db.js';
 import { resetDatabase } from '../src/lib/migrations.js';
 import { seed, DEMO } from '../scripts/seed.js';
+import { outbox } from '../src/lib/mailer.js';
+import { codeAt, currentStep } from '../src/lib/totp.js';
 
 export { DEMO };
 export const PDF = Buffer.from('%PDF-1.4\n%test\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
@@ -36,6 +38,7 @@ export function client(app) {
     post: (u, b) => h(agent.post(u)).send(b ?? {}),
     put: (u, b) => h(agent.put(u)).send(b ?? {}),
     del: (u) => h(agent.delete(u)),
+    upload: (u, requirementId, buf, name) => h(agent.post(u)).field('requirementId', String(requirementId)).attach('file', buf, name),
     /** multipart: fields + файлууд [{field, buf, name}] */
     multipart: (u, fields = {}, files = []) => {
       let r = h(agent.post(u));
@@ -46,12 +49,46 @@ export function client(app) {
   };
 }
 
+/* ───── 2FA (Үе 2): ажилтны TOTP. Сервер давтан алхмыг хүлээж авахгүй тул алхам бүрийг нэг удаа ашиглана. ───── */
+export const mfaSecrets = new Map();
+const lastStep = new Map();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export async function nextCode(email) {
+  const secret = mfaSecrets.get(email);
+  assert.ok(secret, `${email}: 2FA нууц тодорхойгүй`);
+  const step = Math.max(currentStep(), (lastStep.get(email) ?? -1) + 1);
+  while (step > currentStep() + 1) await sleep(1000); // ±1 цонхноос хэтрэхгүй
+  lastStep.set(email, step);
+  return codeAt(secret, step);
+}
+
+/** Нэвтэрнэ; ажилтан бол 2FA-г (анх бол QR бүртгэл) автоматаар гүйцэтгэнэ. */
 export async function login(app, user) {
   const c = client(app);
   const r = await c.post('/api/auth/login', { email: user.email, password: user.password });
   assert.equal(r.status, 200, JSON.stringify(r.body));
+  if (r.body.mfa === 'ENROLL') {
+    const s = await c.post('/api/auth/mfa/setup');
+    assert.equal(s.status, 200, JSON.stringify(s.body));
+    mfaSecrets.set(user.email, s.body.secret);
+    const e = await c.post('/api/auth/mfa/enable', { code: await nextCode(user.email) });
+    assert.equal(e.status, 200, JSON.stringify(e.body));
+    c.recoveryCodes = e.body.recoveryCodes;
+  } else if (r.body.mfa === 'VERIFY') {
+    const v = await c.post('/api/auth/mfa/verify', { code: await nextCode(user.email) });
+    assert.equal(v.status, 200, JSON.stringify(v.body));
+  }
   return c;
 }
+
+/** Тестийн memory outbox-оос тухайн хаяг руу ирсэн сүүлийн холбоосын токен. */
+export function lastMailToken(email, pathPart) {
+  const m = [...outbox].reverse().find((x) => x.to === email && x.text.includes(pathPart));
+  assert.ok(m, `${email}: ${pathPart} захидал олдсонгүй`);
+  return decodeURIComponent(m.text.match(/token=([^\s&]+)/)[1]);
+}
+export { outbox };
 
 /** Шинэ мэдүүлэгч бүртгэж нэвтэрнэ. */
 export async function newApplicant(app, tag = uuid().slice(0, 8)) {
@@ -59,6 +96,9 @@ export async function newApplicant(app, tag = uuid().slice(0, 8)) {
   const c = client(app);
   const r = await c.post('/api/auth/register', { displayName: u.name, email: u.email, password: u.password, passwordConfirm: u.password });
   assert.equal(r.status, 201, JSON.stringify(r.body));
+  // Үе 2: имэйлээр ирсэн холбоосоор баталгаажуулна (мэдүүлэг илгээхэд шаардлагатай)
+  const v = await c.post('/api/auth/verify-email', { token: lastMailToken(u.email, '/verify-email') });
+  assert.equal(v.status, 200, JSON.stringify(v.body));
   return { c: await login(app, u), user: u };
 }
 

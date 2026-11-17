@@ -4,6 +4,7 @@ import { query, one, tx } from '../db.js';
 import { wrap, parse, notFound, forbidden, conflict, badRequest } from '../lib/errors.js';
 import { receiveFiles, storeFiles, discardFiles, insertEvidence } from '../lib/uploads.js';
 import { audit } from '../lib/audit.js';
+import { notify, kickMailer } from '../lib/notify.js';
 import { STATUS_LABEL } from '../lib/visa.js';
 import { loadApplicationDetail, APP_SELECT } from '../lib/applications.js';
 import { requireRole } from '../middleware/auth.js';
@@ -153,7 +154,7 @@ r.post(
     const out = await tx(async (q) => {
       const a = (
         await q(
-          `SELECT application_id, public_id, assigned_operator_id, status FROM applications WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE`,
+          `SELECT application_id, public_id, applicant_id, assigned_operator_id, status FROM applications WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE`,
           [req.params.id],
         )
       )[0];
@@ -176,8 +177,15 @@ r.post(
         { action: 'REVIEW_CREATE', entityType: 'review', entityKey: `${a.public_id}#${reviewNo}`, applicationId: a.application_id },
         q,
       );
+      await notify(q, {
+        userId: a.applicant_id,
+        kind: data.completeness === 'COMPLETE' ? 'REVIEW_COMPLETE' : 'REVIEW_INCOMPLETE',
+        applicationId: a.application_id,
+        ref: a.public_id,
+      });
       return { reviewNo };
     });
+    kickMailer();
     res.status(201).json(out);
   }),
 );
@@ -236,7 +244,7 @@ r.post(
       await tx(async (q) => {
         const a = (
           await q(
-            `SELECT application_id, public_id, assigned_operator_id, status, submitted_at FROM applications
+            `SELECT application_id, public_id, applicant_id, assigned_operator_id, status, submitted_at FROM applications
                     WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE`,
             [req.params.id],
           )
@@ -265,7 +273,9 @@ r.post(
           { action: 'HANDOVER_RECORD', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id },
           q,
         );
+        await notify(q, { userId: a.applicant_id, kind: 'HANDOVER_RECORDED', applicationId: a.application_id, ref: a.public_id });
       });
+      kickMailer();
     } catch (e) {
       await discardFiles(stored);
       throw e;

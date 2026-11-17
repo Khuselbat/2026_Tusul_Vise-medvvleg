@@ -5,6 +5,7 @@ import { config } from '../config.js';
 import { query, one, tx } from '../db.js';
 import { wrap, parse, badRequest, notFound, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
+import { notify, kickMailer } from '../lib/notify.js';
 import { encryptPassport, makeReference } from '../lib/crypto.js';
 import { detectType, saveFile, removeFile, safeFileName } from '../lib/storage.js';
 import { LATEST_PUBLISHED, canApply, applyBlockReason, STATUS_LABEL } from '../lib/visa.js';
@@ -262,6 +263,10 @@ r.delete(
 r.post(
   '/drafts/:id/submit',
   wrap(async (req, res) => {
+    // Үе 2: мэдэгдэл хүрэхийн тулд имэйл баталгаажсан байх (D-24)
+    if (config.requireEmailVerification && !req.user.emailVerified) {
+      throw new HttpError(403, 'EMAIL_NOT_VERIFIED', 'Мэдүүлэг илгээхийн өмнө имэйл хаягаа баталгаажуулна уу.');
+    }
     const result = await tx(async (q) => {
       const rows = await q(
         `SELECT a.*, v.version_no, v.published_at, t.is_active AS type_active, c.iso_code, c.service_status,
@@ -312,9 +317,11 @@ r.post(
         [a.application_id],
       );
       await audit(req, { action: 'APP_SUBMIT', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id }, q);
+      await notify(q, { userId: req.user.id, kind: 'APP_SUBMITTED', applicationId: a.application_id, ref: a.public_id });
       const after = (await q('SELECT submitted_at FROM applications WHERE application_id = ?', [a.application_id]))[0];
       return { publicId: a.public_id, submittedAt: after.submitted_at, repeated: false };
     });
+    if (!result.repeated) kickMailer();
     res.status(result.repeated ? 200 : 201).json(result);
   }),
 );

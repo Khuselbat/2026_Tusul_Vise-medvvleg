@@ -40,6 +40,27 @@ export const config = {
   storageDir: path.resolve(root, process.env.STORAGE_DIR || (isTest ? 'storage-test' : 'storage')),
   clientDist: path.resolve(root, process.env.CLIENT_DIST || '../client/dist'),
   // BR-03: эхний хувилбарт зөвхөн БНСУ
+  // Үе 2: имэйл доторх холбоосын үндэс (production-д домэйнээ заавал тохируулна)
+  appUrl: (process.env.APP_URL || (isProd ? '' : 'http://localhost:5173')).replace(/\/+$/, ''),
+  mail: {
+    // smtp | file | memory | log. Production — smtp; dev — file (server/mail-outbox); test — memory
+    transport: process.env.MAIL_TRANSPORT || (isProd ? 'smtp' : isTest ? 'memory' : 'file'),
+    from: process.env.MAIL_FROM || 'Цахим виз <no-reply@localhost>',
+    outboxDir: path.resolve(root, process.env.MAIL_OUTBOX_DIR || 'mail-outbox'),
+    smtp: {
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: process.env.SMTP_SECURE === '1',
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+    // Outbox-ийг дахин оролдох ажил (тестэд гараар дуудна)
+    workerIntervalMs: Number(process.env.MAIL_WORKER_INTERVAL_MS || 60000),
+  },
+  // Ажилтны (оператор, админ) 2FA заавал. Зөвхөн dev/test-д MFA_REQUIRED=0-оор унтрааж болно.
+  mfaRequired: isProd ? true : process.env.MFA_REQUIRED !== '0',
+  // Мэдүүлэг илгээхээс өмнө имэйл баталгаажсан байх
+  requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION !== '0',
   submittableCountries: (process.env.SUBMITTABLE_COUNTRIES || 'KR').split(',').map((s) => s.trim().toUpperCase()),
   limits: {
     fileBytes: 10 * 1024 * 1024, // BR-05: нэг файл ≤10 MB

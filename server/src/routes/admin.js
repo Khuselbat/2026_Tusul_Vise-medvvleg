@@ -6,7 +6,8 @@ import { query, one, tx } from '../db.js';
 import { wrap, parse, notFound, conflict, badRequest } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
 import { STATUS_LABEL } from '../lib/visa.js';
-import { requireRole } from '../middleware/auth.js';
+import { requireRole, revokeSessions } from '../middleware/auth.js';
+import { notify, kickMailer } from '../lib/notify.js';
 import { passwordSchema, BCRYPT_ROUNDS } from './auth.js';
 
 /**
@@ -551,7 +552,7 @@ r.get(
     const role = ['APPLICANT', 'OPERATOR', 'ADMIN'].includes(req.query.role) ? req.query.role : null;
     const q = req.query.q ? `%${String(req.query.q).slice(0, 80)}%` : null;
     const rows = await query(
-      `SELECT u.user_id, u.public_id, u.email, u.display_name, u.is_active, u.created_at, r.code AS role,
+      `SELECT u.user_id, u.public_id, u.email, u.display_name, u.is_active, u.created_at, u.email_verified_at, u.mfa_enabled_at, r.code AS role,
             (SELECT COUNT(*) FROM applications a WHERE a.assigned_operator_id = u.user_id AND a.status IN ('SUBMITTED','IN_REVIEW','INCOMPLETE')) AS open_assignments
        FROM users u JOIN roles r ON r.role_id = u.role_id
       WHERE (? IS NULL OR r.code = ?) AND (? IS NULL OR u.email LIKE ? OR u.display_name LIKE ?)
@@ -565,6 +566,8 @@ r.get(
         name: u.display_name,
         role: u.role,
         isActive: !!u.is_active,
+        emailVerified: !!u.email_verified_at,
+        mfaEnabled: !!u.mfa_enabled_at,
         createdAt: u.created_at,
         openAssignments: Number(u.open_assignments),
       })),
@@ -588,7 +591,8 @@ r.post(
     try {
       const id = await tx(async (q) => {
         const ins = await q(
-          `INSERT INTO users (public_id, role_id, email, password_hash, display_name) VALUES (?, (SELECT role_id FROM roles WHERE code = ?), ?, ?, ?)`,
+          `INSERT INTO users (public_id, role_id, email, password_hash, display_name, email_verified_at)
+           VALUES (?, (SELECT role_id FROM roles WHERE code = ?), ?, ?, ?, CURRENT_TIMESTAMP(6))`,
           [crypto.randomUUID(), d.role, d.email, hash, d.name],
         );
         await audit(req, { action: 'STAFF_CREATE', entityType: 'user', entityKey: ins.insertId }, q);
@@ -638,7 +642,31 @@ r.put(
         if (n > 0) throw conflict(`Энэ операторт ${n} нээлттэй мэдүүлэг хуваарилагдсан. Эхлээд дахин хуваарилна уу.`);
       }
       await q('UPDATE users SET is_active = ? WHERE user_id = ?', [isActive, id]);
+      if (!isActive) await revokeSessions(q, id); // идэвхгүй болгоход бүх сесс даруй хүчингүй
       await audit(req, { action: isActive ? 'USER_ACTIVATE' : 'USER_DEACTIVATE', entityType: 'user', entityKey: id }, q);
+    });
+    res.json({ ok: true });
+  }),
+);
+
+// Үе 2: ажилтны 2FA-г дахин тохируулах (утсаа гээсэн г.м.) — дараагийн нэвтрэлтэд QR-аар дахин бүртгүүлнэ
+r.post(
+  '/users/:id/mfa-reset',
+  wrap(async (req, res) => {
+    const id = idParam(req.params.id);
+    if (id === req.user.id) throw badRequest('Өөрийн 2FA-г өөр админаар дахин тохируулуулна уу.');
+    await tx(async (q) => {
+      const u = (
+        await q('SELECT u.user_id, r.code AS role FROM users u JOIN roles r ON r.role_id = u.role_id WHERE u.user_id = ? FOR UPDATE', [id])
+      )[0];
+      if (!u) throw notFound('Хэрэглэгч олдсонгүй.');
+      if (u.role === 'APPLICANT') throw badRequest('2FA зөвхөн ажилтанд хамаарна.');
+      await q('UPDATE users SET mfa_secret_enc = NULL, mfa_key_id = NULL, mfa_enabled_at = NULL, mfa_last_step = NULL WHERE user_id = ?', [
+        id,
+      ]);
+      await q('DELETE FROM mfa_recovery_codes WHERE user_id = ?', [id]);
+      await revokeSessions(q, id);
+      await audit(req, { action: 'MFA_RESET', entityType: 'user', entityKey: id }, q);
     });
     res.json({ ok: true });
   }),
@@ -727,7 +755,9 @@ r.put(
         },
         q,
       );
+      if (d.operatorId) await notify(q, { userId: d.operatorId, kind: 'APP_ASSIGNED', applicationId: a.application_id, ref: a.public_id });
     });
+    kickMailer();
     res.json({ ok: true });
   }),
 );

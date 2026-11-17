@@ -34,8 +34,8 @@ try {
     const exists = await q('SELECT 1 FROM users WHERE email = ?', [email]);
     if (exists.length) throw new Error('Энэ имэйлээр бүртгэл аль хэдийн байна.');
     const ins = await q(
-      `INSERT INTO users (public_id, role_id, email, password_hash, display_name)
-       VALUES (?, (SELECT role_id FROM roles WHERE code = 'ADMIN'), ?, ?, ?)`,
+      `INSERT INTO users (public_id, role_id, email, password_hash, display_name, email_verified_at)
+       VALUES (?, (SELECT role_id FROM roles WHERE code = 'ADMIN'), ?, ?, ?, CURRENT_TIMESTAMP(6))`,
       [crypto.randomUUID(), email, hash, name],
     );
     await audit(

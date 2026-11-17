@@ -7,6 +7,7 @@ import { config } from '../config.js';
 import { query, tx } from '../db.js';
 import { wrap, parse, badRequest, notFound, conflict, HttpError } from '../lib/errors.js';
 import { audit } from '../lib/audit.js';
+import { notify, kickMailer } from '../lib/notify.js';
 import { removeFile } from '../lib/storage.js';
 import { serializeDoc } from '../lib/applications.js';
 import { receiveFiles, storeFiles, discardFiles, applicationBytesUsed } from '../lib/uploads.js';
@@ -252,9 +253,11 @@ r.post(
         { action: 'SUPPLEMENT_SUBMIT', entityType: 'supplement', entityKey: `${a.public_id}#S${roundNo}`, applicationId: a.application_id },
         q,
       );
+      await notify(q, { userId: a.assigned_operator_id, kind: 'SUPPLEMENT_SUBMITTED', applicationId: a.application_id, ref: a.public_id });
       const after = (await q('SELECT submitted_at FROM application_supplements WHERE supplement_id = ?', [s.supplement_id]))[0];
       return { roundNo, submittedAt: after.submitted_at, repeated: false };
     });
+    if (!out.repeated) kickMailer();
     res.status(out.repeated ? 200 : 201).json(out);
   }),
 );

@@ -9,6 +9,7 @@ import { pool, query, one } from '../src/db.js';
 import { config } from '../src/config.js';
 import { seed, DEMO } from '../scripts/seed.js';
 import { resetDatabase } from '../src/lib/migrations.js';
+import { login as loginWithMfa } from './helpers.js';
 
 let app;
 let ids;
@@ -30,12 +31,8 @@ function client() {
     upload: (u, requirementId, buf, name) => h(agent.post(u)).field('requirementId', String(requirementId)).attach('file', buf, name),
   };
 }
-async function login(user) {
-  const c = client();
-  const r = await c.post('/api/auth/login', { email: user.email, password: user.password });
-  assert.equal(r.status, 200, JSON.stringify(r.body));
-  return c;
-}
+// Үе 2: ажилтны 2FA-г helpers.login гүйцэтгэнэ
+const login = (user) => loginWithMfa(app, user);
 const future = (days) => new Date(Date.now() + days * 864e5).toISOString().slice(0, 10);
 const validForm = () => ({
   familyName: 'Dorj',

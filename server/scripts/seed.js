@@ -68,7 +68,11 @@ const DEMO_PNG = Buffer.from(
   'base64',
 );
 
-export async function seed({ withDemoApplications = true, rounds = config.isTest ? 4 : 10 } = {}) {
+/**
+ * @param staffMfaSecret — (E2E/тест) ажилтны 2FA-г энэ base32 нууцаар урьдчилан идэвхжүүлнэ.
+ *   Анхдагчаар хоосон: ажилтан анх нэвтрэхдээ QR-аар бүртгүүлнэ.
+ */
+export async function seed({ withDemoApplications = true, rounds = config.isTest ? 4 : 10, staffMfaSecret = null } = {}) {
   // Мэдэгдэж буй нууц үгтэй жишээ хэрэглэгчдийг production-д хэзээ ч үүсгэхгүй.
   if (config.isProd)
     throw new Error('Жишээ өгөгдөл (seed) production орчинд хориглогдсон. Анхны админыг `npm run user:create-admin`-аар үүсгэнэ.');
@@ -77,16 +81,26 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
   try {
     await conn.beginTransaction();
     const role = async (code) => (await q('SELECT role_id FROM roles WHERE code = ?', [code]))[0].role_id;
-    const mkUser = async (u, code) =>
-      (
-        await q('INSERT INTO users (public_id, role_id, email, password_hash, display_name) VALUES (?,?,?,?,?)', [
-          crypto.randomUUID(),
-          await role(code),
-          u.email,
-          await bcrypt.hash(u.password, rounds),
-          u.name,
-        ])
+    // Жишээ хэрэглэгчдийн имэйл баталгаажсан (зохиомол хаяг тул захидал хүрэхгүй)
+    const mkUser = async (u, code) => {
+      const mfa = staffMfaSecret && code !== 'APPLICANT' ? encryptPassport(staffMfaSecret) : null;
+      return (
+        await q(
+          `INSERT INTO users (public_id, role_id, email, password_hash, display_name, email_verified_at, mfa_secret_enc, mfa_key_id, mfa_enabled_at)
+           VALUES (?,?,?,?,?, CURRENT_TIMESTAMP(6), ?, ?, ?)`,
+          [
+            crypto.randomUUID(),
+            await role(code),
+            u.email,
+            await bcrypt.hash(u.password, rounds),
+            u.name,
+            mfa?.data ?? null,
+            mfa?.keyId ?? null,
+            mfa ? new Date() : null,
+          ],
+        )
       ).insertId;
+    };
 
     const adminId = await mkUser(DEMO.admin, 'ADMIN');
     const opId = await mkUser(DEMO.operator, 'OPERATOR');
@@ -220,7 +234,7 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
 if (path.basename(process.argv[1] || '') === 'seed.js') {
   try {
     await seed();
-    console.log('Жишээ өгөгдөл орлоо. Нэвтрэх эрхүүд:');
+    console.log('Жишээ өгөгдөл орлоо. Нэвтрэх эрхүүд (ажилтан анх нэвтрэхдээ 2FA-г QR-аар тохируулна):');
     for (const [k, u] of Object.entries(DEMO)) console.log(`  ${k.padEnd(10)} ${u.email} / ${u.password}`);
   } catch (e) {
     console.error(`Seed амжилтгүй: ${e.message}`);
