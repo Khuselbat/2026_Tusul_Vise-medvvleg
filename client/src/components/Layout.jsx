@@ -15,6 +15,7 @@ const MENUS = {
     ['/app', 'Хянах самбар', true],
     ['/app/new', 'Шинэ мэдүүлэг'],
     ['/app/applications', 'Миний архив'],
+    ['/app/imports', 'Өмнөх мэдүүлэг'],
     ['/app/official-result', 'Үр дүн шалгах'],
     ['/visas', 'Визийн мэдээлэл'],
     ['/app/profile', 'Профайл'],

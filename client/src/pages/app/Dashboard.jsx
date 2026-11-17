@@ -45,8 +45,8 @@ export default function Dashboard() {
                 <div className="lbl">Нэмэлт материал шаардсан</div>
               </Card>
               <Card className="stat">
-                <div className="num">{c.complete}</div>
-                <div className="lbl">Бүрдэл бүрэн</div>
+                <div className="num">{c.complete + (c.delivered || 0)}</div>
+                <div className="lbl">Бүрдэл бүрэн · хүргүүлсэн</div>
               </Card>
             </div>
 

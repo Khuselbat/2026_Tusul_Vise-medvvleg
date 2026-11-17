@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { api } from '../../api.js';
+import { api, uuid } from '../../api.js';
 import { Page, Card, Field, Button, Alert, ErrorBox, Skeleton, Confirm, useAsync, Empty, LinkButton } from '../../components/ui.jsx';
 import { Steps } from '../../components/shared.jsx';
 
-const uuid = () =>
-  crypto.randomUUID
-    ? crypto.randomUUID()
-    : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
-        (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16),
-      );
 const today = () => new Date().toISOString().slice(0, 10);
 const EMPTY = {
   familyName: '',

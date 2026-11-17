@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, Card, useAsync, ErrorBox, Skeleton, Badge, LinkButton, Alert, fmtDate, fmtDateTime, DL } from '../../components/ui.jsx';
 import { FormSummary, DocumentList, FileViewer, ReviewTimeline, NotDecisionNote } from '../../components/shared.jsx';
+import { SupplementPanel, SupplementHistory, HandoverCard, OfficialResults } from '../../components/records.jsx';
 
-// Зураг 48 Мэдүүлгийн дэлгэрэнгүй — илгээсэн мэдээллийг засахгүй
+// Зураг 48 Мэдүүлгийн дэлгэрэнгүй — илгээсэн мэдээллийг засахгүй.
+// Үе 1: нэмэлт материалын багц (анхны илгээлтээс тусдаа), хүргүүлсэн бүртгэл, албан үр дүн (F11).
 export default function ApplicationDetail() {
   const { id } = useParams();
   const { data, error, loading, reload } = useAsync(() => api.get(`/api/app/applications/${id}`), [id]);
@@ -30,7 +32,7 @@ export default function ApplicationDetail() {
       }
     >
       <ErrorBox error={error} onRetry={reload} />
-      {loading ? (
+      {loading && !a ? (
         <Skeleton rows={5} />
       ) : (
         a && (
@@ -48,9 +50,11 @@ export default function ApplicationDetail() {
                   <FormSummary form={a.form} />
                 </Card>
                 <Card>
-                  <h2>Хавсралт</h2>
+                  <h2>Хавсралт (анхны илгээлт)</h2>
                   <DocumentList requirements={a.requirements} documents={a.documents} onOpen={setViewing} />
                 </Card>
+                {a.status === 'INCOMPLETE' && <SupplementPanel app={a} onChanged={reload} onOpen={setViewing} />}
+                <SupplementHistory supplements={a.supplements} requirements={a.requirements} onOpen={setViewing} />
               </div>
               <div>
                 <Card>
@@ -75,10 +79,12 @@ export default function ApplicationDetail() {
                     <NotDecisionNote />
                   </div>
                 </Card>
+                <HandoverCard handover={a.handover} onOpen={setViewing} />
                 <Card>
                   <h2>Бүрдлийн үнэлгээний түүх</h2>
                   <ReviewTimeline reviews={a.reviews} />
                 </Card>
+                <OfficialResults app={a} mode="applicant" onChanged={reload} onOpen={setViewing} />
               </div>
             </div>
           </>

@@ -19,6 +19,9 @@ import Archive from './pages/app/Archive.jsx';
 import ApplicationDetail from './pages/app/ApplicationDetail.jsx';
 import Profile from './pages/app/Profile.jsx';
 import OfficialResult from './pages/app/OfficialResult.jsx';
+import Imports from './pages/app/Imports.jsx';
+import ImportNew from './pages/app/ImportNew.jsx';
+import ImportDetail from './pages/app/ImportDetail.jsx';
 
 import Worklist from './pages/operator/Worklist.jsx';
 import Review from './pages/operator/Review.jsx';
@@ -69,6 +72,9 @@ export default function App() {
         <Route path="/app/applications/:id" element={guard('APPLICANT', <ApplicationDetail />)} />
         <Route path="/app/profile" element={guard('APPLICANT', <Profile />)} />
         <Route path="/app/official-result" element={guard('APPLICANT', <OfficialResult />)} />
+        <Route path="/app/imports" element={guard('APPLICANT', <Imports />)} />
+        <Route path="/app/imports/new" element={guard('APPLICANT', <ImportNew />)} />
+        <Route path="/app/imports/:id" element={guard('APPLICANT', <ImportDetail />)} />
 
         {/* Оператор — Зураг 51–53 */}
         <Route path="/operator" element={guard('OPERATOR', <Worklist />)} />

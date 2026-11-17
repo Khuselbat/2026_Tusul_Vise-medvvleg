@@ -17,6 +17,7 @@ import {
   fmtDateTime,
 } from '../../components/ui.jsx';
 import { FormSummary, DocumentList, FileViewer, ReviewTimeline } from '../../components/shared.jsx';
+import { SupplementHistory, HandoverCard, HandoverForm, OfficialResults } from '../../components/records.jsx';
 
 // Зураг 52 / UC-07 Материал шалгаж үнэлэх. Виз зөвшөөрөх/татгалзах товч байхгүй (BR-09).
 export default function Review() {
@@ -98,58 +99,64 @@ export default function Review() {
                 <p className="small muted mb0 mt">Паспортын дугаар нууцлагдсан — хавсаргасан паспортын хуулбартай тулгана уу.</p>
               </Card>
               <Card>
-                <h2>Материал</h2>
+                <h2>Материал (анхны илгээлт)</h2>
                 <DocumentList requirements={a.requirements} documents={a.documents} onOpen={setViewing} />
               </Card>
+              <SupplementHistory supplements={a.supplements} requirements={a.requirements} onOpen={setViewing} />
             </div>
             <div>
-              <Card>
-                <h2>Бүрдлийн үнэлгээ</h2>
-                <div className="small muted">Одоогийн төлөв</div>
-                <div style={{ margin: '4px 0 14px' }}>
-                  <Badge status={a.status} /> <span className="small muted">илгээсэн {fmtDateTime(a.submittedAt)}</span>
-                </div>
-                <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
-                  <legend className="small muted" style={{ marginBottom: 8 }}>
-                    Үнэлгээ
-                  </legend>
-                  <div className="radio-row">
-                    <label className="radio">
-                      <input type="radio" name="c" checked={val === 'COMPLETE'} onChange={() => setVal('COMPLETE')} /> Бүрэн
-                    </label>
-                    <label className="radio">
-                      <input type="radio" name="c" checked={val === 'INCOMPLETE'} onChange={() => setVal('INCOMPLETE')} /> Дутуу
-                    </label>
+              {a.status === 'DELIVERED' && <HandoverCard handover={a.handover} onOpen={setViewing} />}
+              {a.status !== 'DELIVERED' && (
+                <Card>
+                  <h2>Бүрдлийн үнэлгээ</h2>
+                  <div className="small muted">Одоогийн төлөв</div>
+                  <div style={{ margin: '4px 0 14px' }}>
+                    <Badge status={a.status} /> <span className="small muted">илгээсэн {fmtDateTime(a.submittedAt)}</span>
                   </div>
-                  {fieldErr.completeness && <div className="field-error">{fieldErr.completeness}</div>}
-                </fieldset>
-                <Field
-                  label="Тайлбар"
-                  htmlFor="cm"
-                  error={fieldErr.comment}
-                  hint={val === 'INCOMPLETE' ? 'Дутуу бол шалтгааныг заавал бичнэ' : 'Сонголттой'}
-                >
-                  <textarea
-                    id="cm"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder="Дутуу бол шалтгааныг заавал бичнэ"
-                    maxLength={4000}
-                  />
-                </Field>
-                {fieldErr._ && <Alert tone="danger">{fieldErr._}</Alert>}
-                <div className="mt">
-                  <Button onClick={ask}>Үнэлгээ хадгалах</Button>
-                </div>
-                <p className="small muted mt mb0">
-                  Энэ нь материалын бүрдлийн үнэлгээ — виз олгох шийдвэр биш. Хадгалсан үнэлгээг засах, устгах боломжгүй; шинэ үнэлгээ
-                  нэмнэ.
-                </p>
-              </Card>
+                  <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
+                    <legend className="small muted" style={{ marginBottom: 8 }}>
+                      Үнэлгээ
+                    </legend>
+                    <div className="radio-row">
+                      <label className="radio">
+                        <input type="radio" name="c" checked={val === 'COMPLETE'} onChange={() => setVal('COMPLETE')} /> Бүрэн
+                      </label>
+                      <label className="radio">
+                        <input type="radio" name="c" checked={val === 'INCOMPLETE'} onChange={() => setVal('INCOMPLETE')} /> Дутуу
+                      </label>
+                    </div>
+                    {fieldErr.completeness && <div className="field-error">{fieldErr.completeness}</div>}
+                  </fieldset>
+                  <Field
+                    label="Тайлбар"
+                    htmlFor="cm"
+                    error={fieldErr.comment}
+                    hint={val === 'INCOMPLETE' ? 'Дутуу бол шалтгааныг заавал бичнэ' : 'Сонголттой'}
+                  >
+                    <textarea
+                      id="cm"
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Дутуу бол шалтгааныг заавал бичнэ"
+                      maxLength={4000}
+                    />
+                  </Field>
+                  {fieldErr._ && <Alert tone="danger">{fieldErr._}</Alert>}
+                  <div className="mt">
+                    <Button onClick={ask}>Үнэлгээ хадгалах</Button>
+                  </div>
+                  <p className="small muted mt mb0">
+                    Энэ нь материалын бүрдлийн үнэлгээ — виз олгох шийдвэр биш. Хадгалсан үнэлгээг засах, устгах боломжгүй; шинэ үнэлгээ
+                    нэмнэ.
+                  </p>
+                </Card>
+              )}
+              {a.status === 'COMPLETE' && <HandoverForm publicId={a.publicId} onDone={reload} />}
               <Card>
                 <h2>Өмнөх үнэлгээ</h2>
                 <ReviewTimeline reviews={a.reviews.slice(0, 3)} />
               </Card>
+              <OfficialResults app={a} mode="operator" onChanged={reload} onOpen={setViewing} />
             </div>
           </div>
         )

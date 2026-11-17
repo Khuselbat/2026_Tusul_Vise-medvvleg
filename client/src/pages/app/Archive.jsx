@@ -28,7 +28,14 @@ export default function Archive() {
       crumb={[{ label: 'Мэдүүлэгч', to: '/app' }, { label: 'Архив' }]}
       title="Миний мэдүүлгийн архив"
       subtitle="Илгээсэн бүх мэдүүлэг, анкет, хавсралт"
-      actions={<LinkButton to="/app/new">Шинэ мэдүүлэг</LinkButton>}
+      actions={
+        <>
+          <LinkButton variant="ghost" to="/app/imports">
+            Өмнөх (импортолсон) мэдүүлэг
+          </LinkButton>
+          <LinkButton to="/app/new">Шинэ мэдүүлэг</LinkButton>
+        </>
+      }
     >
       <div className="filters">
         <Field label="Лавлах дугаар" htmlFor="q">

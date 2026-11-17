@@ -5,7 +5,8 @@ import { Modal, Badge, fmtBytes, fmtDate, fmtDateTime, DL } from './ui.jsx';
 export function FileViewer({ doc, onClose }) {
   const [zoom, setZoom] = useState(false);
   if (!doc) return null;
-  const url = `/api/files/${doc.id}`;
+  // Нотолгоо файл (хүргүүлсэн, албан үр дүн, импорт) өөр замаар үйлчлэгдэнэ
+  const url = doc.url || `/api/files/${doc.id}`;
   const isPdf = doc.mimeType === 'application/pdf';
   return (
     <Modal
@@ -147,3 +148,6 @@ export function ReviewTimeline({ reviews }) {
 export const NotDecisionNote = () => (
   <p className="small muted mb0">Бүрдлийн төлөв нь визийн шийдвэр биш. Дотоод лавлах дугаар нь консулын визийн дугаар биш.</p>
 );
+
+/** Нотолгоо файлыг FileViewer-д нээх хэлбэрт оруулна (/api/files/evidence/:id). */
+export const asEvidence = (e) => (e ? { ...e, url: `/api/files/evidence/${e.id}` } : null);

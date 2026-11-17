@@ -6,9 +6,9 @@
 |---|---|
 | Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
 | Backend | Node.js 22+ / Express 4 (REST API) |
-| Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 хүснэгт, хувилбартай migration (`database/migrations/`) |
+| Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 36 интеграцын тест бодит MySQL дээр; Playwright E2E (desktop + mobile) |
+| Тест | Node test runner + Supertest — 78 интеграцын тест бодит MySQL дээр; Playwright E2E 2 урсгал × (desktop + mobile) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
 | Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
 
@@ -83,7 +83,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 36 интеграцын тест (API, migration, лог)
+cd server && npm test     # civiz_test сан дээр 78 интеграцын тест (API, migration, лог, Үе 1, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -147,6 +147,16 @@ visa-system/
 | FR-10 Бүрдэл хянах | UC-07 | `/api/operator/...` — зөвхөн хуваарилсан (бусад 403), Дутуу бол тайлбар заавал, үнэлгээ зөвхөн нэмэгдэнэ, зэрэгцээ 409 | ✔ |
 | FR-11 Лавлах шинэчлэх | UC-08 | `/api/admin/...` — хувилбарлалт, эх сурвалж/огноо/шаардлагагүй бол нийтлэхгүй, нийтэлснийг засахгүй (хуулж шинэ) | ✔ |
 
+### Хамрах хүрээний боломжууд (тайлан бүлэг 4, Үе 1)
+
+| F / хэсэг | Хэрэгжүүлэлт | Тест |
+|---|---|---|
+| F07 нэмэлт материал хүсэх | “Дутуу”-гийн дараа мэдүүлэгч **нэмэлт багц** (`application_supplements`, round) илгээнэ; анхны илгээлт өөрчлөгдөхгүй (BR-07); оператор зөвхөн илгээсэн багцыг харна; ноорог байх хооронд шинэ “Дутуу” гарвал ноорог сүүлийн хүсэлтэд шилжинэ | ✔ e2e |
+| 4.2 / 5.3 “Хүргүүлсэн” | Хуваарилагдсан оператор, зөвхөн `COMPLETE`-ээс, албан дугаар + огноо + нотолгоо файлтай → `DELIVERED`; нэг удаа, засахгүй; дараа нь үнэлгээ нэмэхгүй | ✔ e2e |
+| F11 баталгаатай үр дүн | Мэдүүлэгч порталаас харсан үр дүнгээ (хүлээж буй/зөвшөөрсөн/татгалзсан, огноо, эх сурвалж, нотолгоо) бүртгэнэ — **системийн шийдвэр биш**, зөвхөн нэмэгдэнэ; бичлэггүй = “Шалгаагүй”; хуваарилагдсан оператор нотолгоотой бичлэгийг **тусдаа** тэмдэглэлээр тулгана (бичлэгийг өөрчлөхгүй) | ✔ e2e |
+| 4.5 өмнөх мэдүүлэг нэмэх | `imported_applications` — “импортолсон, баталгаажаагүй”, зөвхөн эзэмшигчид; оператор/админд харагдахгүй; засахгүй, устгаж болно | ✔ e2e |
+| F09 шийдвэрийн баримт | Хүргүүлсэн баримт, албан үр дүнгийн нотолгоо, импортын файл — `evidence_files`, `/api/files/evidence/:id` (админ үзэхгүй) | ✔ |
+
 ### Функцийн бус шаардлага
 
 | NFR | Хэрэгжүүлэлт |
@@ -188,15 +198,19 @@ visa-system/
 | 47 | `/app/applications` | 60 | `/admin/assignments` |
 | 48 | `/app/applications/:id` | 61 | `/admin/audit` |
 | 49 | `/app/profile` (+ operator, admin) | + | `/operator/history`, `/help` |
+| Үе 1 | `/app/imports`, `/app/imports/new`, `/app/imports/:id` | Үе 1 | Нэмэлт багц, хүргүүлсэн, албан үр дүн — `/app/applications/:id`, `/operator/applications/:id` дотор |
 
 ---
 
 ## 4. Мэдүүлгийн төлөв
 
 ```
-DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)──▶ IN_REVIEW ──(оператор)──▶ INCOMPLETE ⇄ COMPLETE
+DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)──▶ IN_REVIEW ──(оператор)──▶ INCOMPLETE ⇄ COMPLETE ──(оператор, нотолгоотой)──▶ DELIVERED
+                                                         ▲                         │
+                                                         └──(мэдүүлэгч нэмэлт багц)─┘
 ```
-* Албан ёсны визийн үр дүнг (зөвшөөрсөн/татгалзсан) систем **хадгалахгүй, таахгүй** — Korea Visa Portal-аас шалгана.
+* Систем визийн шийдвэр гаргахгүй, таахгүй. Мэдүүлэгч Korea Visa Portal-аас харсан үр дүнгээ **өөрөө** бүртгэж болно
+  (`official_results`, “мэдүүлэгчийн мэдээлснээр”, нотолгоогүй бол “Баталгаажаагүй”) — энэ нь мэдүүлгийн төлөвт нөлөөлөхгүй.
 * Үнэлгээ бүр `reviews`-д шинэ мөр (review_no өсөх); өмнөхийг засах/устгах API байхгүй.
 * Визийн мэдээлэл хувилбартай: мэдүүлэг илгээх үеийн `version_id`-тайгаа үлдэнэ.
 
@@ -210,9 +224,17 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId
           POST /api/app/drafts/:id/submit
           GET  /api/app/applications · /api/app/applications/:id · /:id/form-copy
-Файл      GET  /api/files/:documentId[?download=1]
+          POST /api/app/applications/:id/supplements                     (нэмэлт багц эхлүүлэх)
+          PUT  /api/app/applications/:id/supplements/:round              {note}
+          POST/DELETE /api/app/applications/:id/supplements/:round/documents[/:docId]
+          POST /api/app/applications/:id/supplements/:round/submit   DELETE …/supplements/:round (ноорог цуцлах)
+          POST /api/app/applications/:id/official-results            multipart {outcome, checkedOn, source, sourceUrl?, idempotencyKey, file?}
+          GET/POST /api/app/imports   GET/DELETE /api/app/imports/:id   (POST multipart, files[] ≤10)
+Файл      GET  /api/files/:documentId[?download=1] · /api/files/evidence/:fileId[?download=1]
 Оператор  GET  /api/operator/applications · /stats · /reviews · /applications/:id · /applications/:id/reviews
           POST /api/operator/applications/:id/reviews   {completeness, comment, expectedReviewNo}
+          POST /api/operator/applications/:id/handover   multipart {authority, officialRef, deliveredOn, note?, file}
+          POST /api/operator/applications/:id/official-results/:entryNo/verification   {verdict: MATCHES|MISMATCH, note}
 Админ     GET  /api/admin/dashboard · /audit
           CRUD /api/admin/countries · /visa-types · /visa-types/:id/versions · /versions/:id · /versions/:id/requirements · /requirements/:id
           POST /api/admin/versions/:id/publish
@@ -227,7 +249,8 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
 * **Оператор паспортын дугаарыг нууцлагдсан** байдлаар харна (Зураг 52), хавсаргасан хуулбартай тулгана.
 * **Лавлах дугаар** `KR-YYYYMMDD-XXXXXX` хэлбэртэй (`applications.public_id`).
 * **Нүүр хуудас:** өгөгдлийн санд зөвхөн БНСУ seed хийнэ; нэр нь баталгаажаагүй 3 улсыг “Улс 2/3/4 · Тун удахгүй” хоосон картаар харуулна (placeholder нэрийг DB-д оруулахгүй).
-* **Эхний хувилбарт орохгүй** (тайлангийн 4.1): бусад улсын мэдүүлэг, ЭСЯ-тай API, автомат хариу татах, төлбөр, OCR/AI. Мөн “Өмнөх мэдүүлэг импортлох” ба албан ёсны үр дүнг нотолгоотой бүртгэх (F11) нь 11 хүснэгтийн схемд талбаргүй тул дараагийн хувилбарт — `applications`-д `official_*` талбар нэмэх замаар.
+* **Эхний хувилбарт орохгүй** (тайлангийн 4.1): бусад улсын мэдүүлэг, ЭСЯ-тай API, автомат хариу татах, төлбөр, OCR/AI.
+* Үе 1-ийн шийдвэрүүд (албан үр дүнг хэн бүртгэх, “Хүргүүлсэн”-ийг хэн бүртгэх г.м.) — `docs/DECISIONS.md`.
 * **Хадгалах хугацаа/устгах хүсэлт:** бодит нэвтрүүлэлтийн өмнө журмаар батлах (4.5). `backup.sh` дахь `KEEP_DAYS` тохируулгатай.
 
 ## 7. Production хяналтын хуудас
