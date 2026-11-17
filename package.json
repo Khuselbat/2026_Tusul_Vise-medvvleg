@@ -12,7 +12,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

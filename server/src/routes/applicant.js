@@ -67,10 +67,11 @@ r.get(
     });
     res.json({
       counts: {
-        submitted: (by.SUBMITTED || 0) + (by.IN_REVIEW || 0) + (by.INCOMPLETE || 0) + (by.COMPLETE || 0),
+        submitted: (by.SUBMITTED || 0) + (by.IN_REVIEW || 0) + (by.INCOMPLETE || 0) + (by.COMPLETE || 0) + (by.DELIVERED || 0),
         inReview: (by.SUBMITTED || 0) + (by.IN_REVIEW || 0),
         incomplete: by.INCOMPLETE || 0,
         complete: by.COMPLETE || 0,
+        delivered: by.DELIVERED || 0,
         drafts: by.DRAFT || 0,
       },
       recent: recent.map(row),
@@ -324,7 +325,7 @@ r.get(
   wrap(async (req, res) => {
     const f = parse(
       z.object({
-        status: z.enum(['SUBMITTED', 'IN_REVIEW', 'INCOMPLETE', 'COMPLETE']).optional(),
+        status: z.enum(['SUBMITTED', 'IN_REVIEW', 'INCOMPLETE', 'COMPLETE', 'DELIVERED']).optional(),
         visaTypeId: z.coerce.number().int().positive().optional(),
         from: z
           .string()

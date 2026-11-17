@@ -34,4 +34,5 @@ export const STATUS_LABEL = {
   IN_REVIEW: 'Бүрдэл хянаж байна',
   INCOMPLETE: 'Нэмэлт материал шаардсан',
   COMPLETE: 'Бүрдэл бүрэн',
+  DELIVERED: 'Эрх бүхий байгууллагад хүргүүлсэн',
 };

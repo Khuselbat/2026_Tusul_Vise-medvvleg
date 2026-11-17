@@ -10,7 +10,7 @@
 
 ## Стек
 - `database/` — MySQL 8 / MariaDB 10.6+ (utf8mb4)
-- `server/` — Node.js 20+ ESM, Express 4, mysql2/promise, zod, bcryptjs, jsonwebtoken (httpOnly cookie), multer, helmet
+- `server/` — Node.js 22+ ESM, Express 4, mysql2/promise, zod, bcryptjs, jsonwebtoken (httpOnly cookie), multer, helmet
 - `client/` — React 18 + Vite 5 + React Router 6, гараар бичсэн CSS (`client/src/styles.css`), UI бүрэлдэхүүн `client/src/components/ui.jsx`
 - Тест: `server/test/*.test.js` (node:test + supertest, бодит `civiz_test` сан); E2E: `e2e/*.spec.js` (Playwright)
 - Чанар: ESLint + Prettier (репоны үндсэн `package.json`), pino лог (`server/src/lib/logger.js` — `console.*` бүү ашигла)

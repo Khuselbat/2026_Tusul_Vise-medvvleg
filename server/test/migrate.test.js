@@ -73,12 +73,20 @@ describe('Migration систем', () => {
   });
 
   test('хуучин schema.sql-ээр үүссэн сан: 001-ийг baseline болгож, өгөгдөл хэвээр', async () => {
-    await resetDatabase({ dir: tmp });
-    await query("INSERT INTO countries (iso_code, name_mn, service_status) VALUES ('KR', 'БНСУ', 'ACTIVE')");
-    await query('DROP TABLE schema_migrations'); // migration системээс өмнөх төлөв
-    assert.deepEqual(await migrate({ dir: tmp }), []);
-    assert.equal((await one('SELECT version FROM schema_migrations')).version, '001');
-    assert.equal(Number((await one('SELECT COUNT(*) AS n FROM countries')).n), 1);
+    // Migration системээс өмнөх төлөв: зөвхөн 001-ийн хүснэгтүүд, schema_migrations байхгүй
+    const legacy = await fs.mkdtemp(path.join(os.tmpdir(), 'civiz-legacy-'));
+    try {
+      await fs.copyFile(path.join(tmp, '001_init.sql'), path.join(legacy, '001_init.sql'));
+      await resetDatabase({ dir: legacy });
+      await query("INSERT INTO countries (iso_code, name_mn, service_status) VALUES ('KR', 'БНСУ', 'ACTIVE')");
+      await query('DROP TABLE schema_migrations');
+      const later = (await listMigrations(tmp)).filter((f) => f.version !== '001').map((f) => f.name);
+      assert.deepEqual(await migrate({ dir: tmp }), later, '001 baseline, дараагийнх нь хэрэгжинэ');
+      assert.equal((await one('SELECT MIN(version) AS v FROM schema_migrations')).v, '001');
+      assert.equal(Number((await one('SELECT COUNT(*) AS n FROM countries')).n), 1);
+    } finally {
+      await fs.rm(legacy, { recursive: true, force: true });
+    }
   });
 
   test('буруу нэртэй файлыг хүлээн авахгүй', async () => {

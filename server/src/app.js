@@ -14,6 +14,9 @@ import applicantRoutes from './routes/applicant.js';
 import fileRoutes from './routes/files.js';
 import operatorRoutes from './routes/operator.js';
 import adminRoutes from './routes/admin.js';
+import supplementRoutes from './routes/supplements.js';
+import officialResultRoutes from './routes/officialResults.js';
+import importRoutes from './routes/imports.js';
 
 export function createApp({ logger = defaultLogger } = {}) {
   const app = express();
@@ -80,6 +83,9 @@ export function createApp({ logger = defaultLogger } = {}) {
   app.use('/api/auth', authRoutes);
   app.use('/api', publicRoutes);
   app.use('/api/app', applicantRoutes);
+  app.use('/api/app', supplementRoutes);
+  app.use('/api/app', officialResultRoutes);
+  app.use('/api/app', importRoutes);
   app.use('/api/files', fileRoutes);
   app.use('/api/operator', operatorRoutes);
   app.use('/api/admin', adminRoutes);

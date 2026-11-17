@@ -5,7 +5,7 @@
 | Давхарга | Технологи |
 |---|---|
 | Frontend | React 18 + Vite, React Router (SPA, responsive, монгол хэл) |
-| Backend | Node.js 20+ / Express 4 (REST API) |
+| Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
 | Тест | Node test runner + Supertest — 36 интеграцын тест бодит MySQL дээр; Playwright E2E (desktop + mobile) |
@@ -35,7 +35,7 @@ HTTPS-тэй (домэйн DNS тохируулсан үед): `.env` дотор
 
 ### Б. Гараар (хөгжүүлэлт)
 
-Шаардлага: Node.js 20+, MySQL 8 эсвэл MariaDB 10.6+.
+Шаардлага: Node.js 22+, MySQL 8 эсвэл MariaDB 10.6+.
 
 ```sql
 -- MySQL дээр нэг удаа:

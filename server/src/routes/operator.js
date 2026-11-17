@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query, one, tx } from '../db.js';
-import { wrap, parse, notFound, forbidden, conflict } from '../lib/errors.js';
+import { wrap, parse, notFound, forbidden, conflict, badRequest } from '../lib/errors.js';
+import { receiveFiles, storeFiles, discardFiles, insertEvidence } from '../lib/uploads.js';
 import { audit } from '../lib/audit.js';
 import { STATUS_LABEL } from '../lib/visa.js';
 import { loadApplicationDetail, APP_SELECT } from '../lib/applications.js';
@@ -124,7 +125,7 @@ r.get(
   wrap(async (req, res) => {
     const a = await assignedApp(req);
     await audit(req, { action: 'APP_VIEW', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id });
-    res.json({ application: await loadApplicationDetail(a, { revealPassport: false }) }); // Зураг 52: паспорт нууцлагдсан
+    res.json({ application: await loadApplicationDetail(a, { revealPassport: false, viewer: 'OPERATOR' }) }); // Зураг 52: паспорт нууцлагдсан
   }),
 );
 
@@ -158,6 +159,7 @@ r.post(
       )[0];
       if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
       if (a.assigned_operator_id !== req.user.id) throw conflict('Хуваарилалт өөрчлөгдсөн байна. Жагсаалтаа дахин уншина уу.');
+      if (a.status === 'DELIVERED') throw conflict('Хүргүүлсэн мэдүүлэгт бүрдлийн үнэлгээ нэмэхгүй.');
       const last = (await q('SELECT COALESCE(MAX(review_no),0) AS n FROM reviews WHERE application_id = ?', [a.application_id]))[0];
       if (Number(last.n) !== data.expectedReviewNo) throw conflict('Энэ мэдүүлэгт шинэ үнэлгээ нэмэгдсэн байна. Дахин уншина уу.');
       const reviewNo = Number(last.n) + 1;
@@ -200,6 +202,133 @@ r.get(
         operatorName: x.operator_name,
       })),
     });
+  }),
+);
+
+/**
+ * Үе 1.4 — “Эрх бүхий байгууллагад хүргүүлсэн” (тайлан 4.2, 5.3). Зөвхөн хуваарилагдсан оператор,
+ * зөвхөн “Бүрдэл бүрэн” төлвөөс, албан дугаар + огноо + нотолгоо файлтай. Нэг удаа; засахгүй.
+ */
+const today = () => new Date().toISOString().slice(0, 10);
+const handoverSchema = z.object({
+  authority: z.string().trim().min(2, 'Хүлээн авсан байгууллагыг бичнэ үү (ж: KVAC).').max(150),
+  officialRef: z.string().trim().min(1, 'Албан бүртгэлийн дугаар заавал.').max(64),
+  deliveredOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Огноо буруу байна.')
+    .refine((d) => d <= today(), 'Хүргүүлсэн огноо ирээдүйд байж болохгүй.'),
+  note: z
+    .string()
+    .trim()
+    .max(4000)
+    .optional()
+    .transform((s) => s || null),
+});
+
+r.post(
+  '/applications/:id/handover',
+  receiveFiles(),
+  wrap(async (req, res) => {
+    const data = parse(handoverSchema, req.body);
+    if (!req.file) throw badRequest('Хүргүүлсэн нотолгоо файл заавал.', { fields: { file: 'Нотолгоо файл хавсаргана уу.' } });
+    const stored = await storeFiles([req.file]);
+    try {
+      await tx(async (q) => {
+        const a = (
+          await q(
+            `SELECT application_id, public_id, assigned_operator_id, status, submitted_at FROM applications
+                    WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE`,
+            [req.params.id],
+          )
+        )[0];
+        if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
+        if (a.assigned_operator_id !== req.user.id) throw forbidden('Энэ мэдүүлэг танд хуваарилагдаагүй байна.');
+        if (a.status === 'DELIVERED') throw conflict('Хүргүүлсэн бүртгэл аль хэдийн хийгдсэн.');
+        if (a.status !== 'COMPLETE') throw conflict('Зөвхөн “Бүрдэл бүрэн” мэдүүлгийг хүргүүлсэн гэж бүртгэнэ.');
+        if (data.deliveredOn < new Date(a.submitted_at).toISOString().slice(0, 10)) {
+          throw badRequest('Оруулсан мэдээллийг шалгана уу.', { fields: { deliveredOn: 'Илгээсэн огнооноос өмнө байж болохгүй.' } });
+        }
+        const evidenceId = await insertEvidence(q, {
+          kind: 'HANDOVER',
+          applicationId: a.application_id,
+          uploadedBy: req.user.id,
+          file: stored[0],
+        });
+        await q(
+          `INSERT INTO application_handovers (application_id, operator_id, authority, official_ref, delivered_on, evidence_file_id, note)
+           VALUES (?,?,?,?,?,?,?)`,
+          [a.application_id, req.user.id, data.authority, data.officialRef, data.deliveredOn, evidenceId, data.note],
+        );
+        await q("UPDATE applications SET status = 'DELIVERED' WHERE application_id = ?", [a.application_id]);
+        await audit(
+          req,
+          { action: 'HANDOVER_RECORD', entityType: 'application', entityKey: a.public_id, applicationId: a.application_id },
+          q,
+        );
+      });
+    } catch (e) {
+      await discardFiles(stored);
+      throw e;
+    }
+    res.status(201).json({ ok: true });
+  }),
+);
+
+/**
+ * Үе 1.2 / Q1 — Мэдүүлэгчийн бүртгэсэн албан үр дүнг нотолгоо файлтай нь тулгах.
+ * Мэдүүлэгчийн бичлэгийг ӨӨРЧЛӨХГҮЙ — тусдаа тэмдэглэл (нэг бичлэгт нэг удаа). Визийн шийдвэр биш.
+ */
+r.post(
+  '/applications/:id/official-results/:entryNo/verification',
+  wrap(async (req, res) => {
+    const data = parse(
+      z
+        .object({
+          verdict: z.enum(['MATCHES', 'MISMATCH'], { errorMap: () => ({ message: 'Тулгалтын дүнг сонгоно уу.' }) }),
+          note: z.string().trim().max(4000).optional().default(''),
+        })
+        .refine((d) => d.verdict === 'MATCHES' || d.note.length > 0, { path: ['note'], message: 'Таараагүй бол шалтгааныг бичнэ.' }),
+      req.body,
+    );
+    const entryNo = Number(req.params.entryNo);
+    if (!Number.isInteger(entryNo) || entryNo <= 0) throw notFound('Бичлэг олдсонгүй.');
+    await tx(async (q) => {
+      const a = (
+        await q(
+          "SELECT application_id, public_id, assigned_operator_id FROM applications WHERE public_id = ? AND status <> 'DRAFT' FOR UPDATE",
+          [req.params.id],
+        )
+      )[0];
+      if (!a) throw notFound('Мэдүүлэг олдсонгүй.');
+      if (a.assigned_operator_id !== req.user.id) throw forbidden('Энэ мэдүүлэг танд хуваарилагдаагүй байна.');
+      const res0 = (
+        await q('SELECT result_id, evidence_file_id FROM official_results WHERE application_id = ? AND entry_no = ?', [
+          a.application_id,
+          entryNo,
+        ])
+      )[0];
+      if (!res0) throw notFound('Бичлэг олдсонгүй.');
+      if (!res0.evidence_file_id) throw conflict('Нотолгоо файлгүй бичлэгийг тулгахгүй.');
+      const done = (await q('SELECT 1 FROM official_result_verifications WHERE result_id = ?', [res0.result_id]))[0];
+      if (done) throw conflict('Энэ бичлэгийг аль хэдийн тулгасан.');
+      await q('INSERT INTO official_result_verifications (result_id, operator_id, verdict, note) VALUES (?,?,?,?)', [
+        res0.result_id,
+        req.user.id,
+        data.verdict,
+        data.note || null,
+      ]);
+      await audit(
+        req,
+        {
+          action: 'OFFICIAL_RESULT_VERIFY',
+          entityType: 'official_result',
+          entityKey: `${a.public_id}#R${entryNo}`,
+          applicationId: a.application_id,
+        },
+        q,
+      );
+    });
+    res.status(201).json({ ok: true });
   }),
 );
 
