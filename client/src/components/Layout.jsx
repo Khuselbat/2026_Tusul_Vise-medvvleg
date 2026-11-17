@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, ROLE_LABEL, HOME_BY_ROLE } from '../auth.jsx';
 import { Modal, Button } from './ui.jsx';
+import { NotificationBell, EmailVerifyBanner } from './Notifications.jsx';
 
 // Хүснэгт 40: эрх тус бүрийн үндсэн цэс
 const MENUS = {
@@ -63,6 +64,7 @@ export default function Layout() {
           <span className="role-label" title={user?.email}>
             {user ? `${ROLE_LABEL[user.role]} · ${user.name}` : 'Зочин'}
           </span>
+          {user && <NotificationBell />}
           {user ? (
             <button className="link-strong" onClick={logout}>
               Гарах
@@ -91,6 +93,7 @@ export default function Layout() {
         </aside>
         {open && <div className="side-backdrop" onClick={() => setOpen(false)} />}
         <main id="main" className="main">
+          <EmailVerifyBanner user={user} />
           <Outlet />
           <footer className="site-foot">
             Цахим виз · Энэхүү систем нь материалын бүрдлийг зохион байгуулна; виз олгох шийдвэрийг эрх бүхий байгууллага гаргана.

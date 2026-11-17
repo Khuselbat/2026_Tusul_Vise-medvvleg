@@ -8,7 +8,8 @@
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 78 интеграцын тест бодит MySQL дээр; Playwright E2E 2 урсгал × (desktop + mobile) |
+| Тест | Node test runner + Supertest — 102 интеграцын тест бодит MySQL дээр; Playwright E2E 4 урсгал × (desktop + mobile) |
+| Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
 | Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
 
@@ -83,7 +84,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 78 интеграцын тест (API, migration, лог, Үе 1, UC A/E урсгал)
+cd server && npm test     # civiz_test сан дээр 102 интеграцын тест (API, migration, лог, Үе 1–2, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -93,6 +94,20 @@ npm run test:e2e          # Playwright: зочин → бүртгэл → анк
 ```
 E2E нь `client/dist`-ийг 4100 порт дээр үйлчилж, `civiz_test` санг цэвэрлэж ажиллана. CI (`.github/workflows/ci.yml`) push бүрд
 lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр ажиллуулна.
+
+### Нэвтрэлт, 2FA, имэйл (Үе 2)
+
+* **Ажилтан (оператор, админ)** анх нэвтрэхэд QR код гарна → Google/Microsoft Authenticator апп-аар уншуулж 6 оронтой кодоо
+  оруулна → **10 нөөц код** нэг удаа харагдана (хадгална). Дараа нь нэвтрэх бүрд апп-ийн код асууна.
+  Утсаа гээвэл нөөц кодоор нэвтэрнэ, эсвэл өөр админ “Хэрэглэгчид” дэлгэцээс **2FA дахин тохируулах**.
+  Зөвхөн хөгжүүлэлтэд түр унтраах: `server/.env` → `MFA_REQUIRED=0` (production-д үл тооно).
+* **Мэдүүлэгч** бүртгүүлэхэд баталгаажуулах холбоос имэйлээр очно; баталгаажуулаагүй бол мэдүүлэг илгээхгүй (самбарт сануулга, “Дахин илгээх”).
+* **Нууц үг сэргээх:** `/forgot-password` → 30 минутын нэг удаагийн холбоос → бүх төхөөрөмжөөс гарна.
+* **Сесс:** Профайл → “Нэвтэрсэн төхөөрөмжүүд” — нэг бүрчлэн хаах, бүх төхөөрөмжөөс гарах; нууц үг солиход бусад сесс хүчингүй.
+* **Имэйл хөгжүүлэлтэд:** SMTP хэрэггүй — захидлууд `server/mail-outbox/` хавтсанд `.eml` (+ уншихад хялбар `.json`) болж хадгалагдана.
+  Production: `MAIL_TRANSPORT=smtp`, `SMTP_*`, `APP_URL` тохируулна.
+* **Мэдэгдэл:** илгээсэн, хуваарилагдсан, “Дутуу”, “Бүрэн”, нэмэлт материал ирсэн, хүргүүлсэн — дээд мөрний 🔔 болон имэйл.
+  Имэйлд зөвхөн лавлах дугаар ба холбоос (тайлбар, хувийн мэдээлэлгүй); outbox амжилтгүй бол 5 хүртэл дахин оролдоно.
 
 ### Лог
 
@@ -198,6 +213,7 @@ visa-system/
 | 47 | `/app/applications` | 60 | `/admin/assignments` |
 | 48 | `/app/applications/:id` | 61 | `/admin/audit` |
 | 49 | `/app/profile` (+ operator, admin) | + | `/operator/history`, `/help` |
+| Үе 2 | `/login/mfa`, `/forgot-password`, `/reset-password`, `/verify-email` | Үе 2 | Мэдэгдлийн хонх (дээд мөр), профайлд сесс |
 | Үе 1 | `/app/imports`, `/app/imports/new`, `/app/imports/:id` | Үе 1 | Нэмэлт багц, хүргүүлсэн, албан үр дүн — `/app/applications/:id`, `/operator/applications/:id` дотор |
 
 ---
@@ -219,6 +235,10 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
 ```
 Нийтийн   GET  /api/countries · /api/visas · /api/visas/:versionId · /api/health
 Нэвтрэлт  POST /api/auth/register · login · logout   GET /api/auth/me   PUT /api/auth/me/profile · me/password
+          POST /api/auth/verify-email {token} · verify-email/resend · password/forgot {email} · password/reset {token,…}
+          POST /api/auth/mfa/setup · mfa/enable {code} · mfa/verify {code | recoveryCode}   (login → {mfa: ENROLL|VERIFY})
+          GET  /api/auth/sessions   DELETE /api/auth/sessions/:sid   POST /api/auth/sessions/revoke-all
+Мэдэгдэл  GET  /api/notifications[?unread=1]   POST /api/notifications/:id/read · read-all
 Мэдүүлэгч GET  /api/app/dashboard
           POST /api/app/drafts   GET/DELETE /api/app/drafts/:id   PUT /api/app/drafts/:id/form
           POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId
@@ -238,7 +258,7 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
 Админ     GET  /api/admin/dashboard · /audit
           CRUD /api/admin/countries · /visa-types · /visa-types/:id/versions · /versions/:id · /versions/:id/requirements · /requirements/:id
           POST /api/admin/versions/:id/publish
-          GET/POST /api/admin/users   PUT /api/admin/users/:id/status
+          GET/POST /api/admin/users   PUT /api/admin/users/:id/status   POST /api/admin/users/:id/mfa-reset
           GET  /api/admin/assignments   PUT /api/admin/assignments/:publicId {operatorId, expectedOperatorId}
 ```
 Өөрчлөх хүсэлт бүр `X-Requested-With: civiz` толгойтой байна (CSRF хамгаалалт).

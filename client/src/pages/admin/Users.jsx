@@ -16,7 +16,7 @@ import {
   Alert,
   fmtDate,
 } from '../../components/ui.jsx';
-import { ROLE_LABEL } from '../../auth.jsx';
+import { ROLE_LABEL, useAuth } from '../../auth.jsx';
 
 // Зураг 59 Хэрэглэгч ба эрхийн удирдлага — паспорт, анкет, файл нээхгүй
 export default function Users() {
@@ -31,6 +31,24 @@ export default function Users() {
   const [busy, setBusy] = useState(false);
   const [toggle, setToggle] = useState(null);
   const [toggleErr, setToggleErr] = useState('');
+  const [mfaReset, setMfaReset] = useState(null);
+  const [mfaErr, setMfaErr] = useState('');
+  const { user: me } = useAuth();
+
+  async function doMfaReset() {
+    setBusy(true);
+    setMfaErr('');
+    try {
+      await api.post(`/api/admin/users/${mfaReset.id}/mfa-reset`);
+      toast('2FA дахин тохируулагдлаа. Ажилтан дараагийн нэвтрэлтэд QR-аар бүртгүүлнэ.');
+      setMfaReset(null);
+      reload();
+    } catch (ex) {
+      setMfaErr(ex.message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function create() {
     const fe = {};
@@ -118,6 +136,7 @@ export default function Users() {
                   <th>Имэйл</th>
                   <th>Эрх</th>
                   <th>Төлөв</th>
+                  <th>2FA</th>
                   <th>Нээлттэй хуваарилалт</th>
                   <th>Бүртгэсэн</th>
                   <th />
@@ -130,6 +149,15 @@ export default function Users() {
                     <td>{u.email}</td>
                     <td>{ROLE_LABEL[u.role]}</td>
                     <td>{u.isActive ? <Badge tone="ok">Идэвхтэй</Badge> : <Badge tone="danger">Хаалттай</Badge>}</td>
+                    <td>
+                      {u.role === 'APPLICANT' ? (
+                        '—'
+                      ) : u.mfaEnabled ? (
+                        <Badge tone="ok">Идэвхтэй</Badge>
+                      ) : (
+                        <Badge tone="warn">Тохируулаагүй</Badge>
+                      )}
+                    </td>
                     <td>{u.role === 'OPERATOR' ? u.openAssignments : '—'}</td>
                     <td>{fmtDate(u.createdAt)}</td>
                     <td>
@@ -142,6 +170,18 @@ export default function Users() {
                       >
                         {u.isActive ? 'Идэвхгүй болгох' : 'Идэвхжүүлэх'}
                       </button>
+                      {u.role !== 'APPLICANT' && u.mfaEnabled && u.email !== me?.email && (
+                        <button
+                          className="btn-link"
+                          style={{ marginLeft: 12 }}
+                          onClick={() => {
+                            setMfaReset(u);
+                            setMfaErr('');
+                          }}
+                        >
+                          2FA дахин тохируулах
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -198,6 +238,23 @@ export default function Users() {
           <p>
             <strong>{toggle?.name}</strong> ({toggle?.email}){' '}
             {toggle?.isActive ? 'системд нэвтрэх эрхээ даруй алдана.' : 'дахин нэвтрэх боломжтой болно.'}
+          </p>
+        )}
+      </Confirm>
+      <Confirm
+        open={!!mfaReset}
+        title="2FA-г дахин тохируулах уу?"
+        tone="danger"
+        loading={busy}
+        onClose={() => setMfaReset(null)}
+        onConfirm={doMfaReset}
+      >
+        {mfaErr ? (
+          <Alert tone="danger">{mfaErr}</Alert>
+        ) : (
+          <p>
+            <strong>{mfaReset?.name}</strong>-ийн 2FA болон нөөц кодууд устаж, бүх төхөөрөмжөөс гарна. Дараагийн нэвтрэлтэд QR-аар дахин
+            бүртгүүлнэ. Ажилтны биеийг баталгаажуулсны дараа л хийнэ үү.
           </p>
         )}
       </Confirm>

@@ -25,8 +25,14 @@ export default function Login() {
     if (Object.keys(fe).length) return;
     setBusy(true);
     try {
-      const u = await login(f.email, f.password);
+      const r = await login(f.email, f.password);
       const next = sp.get('next');
+      if (r.mfa) {
+        // Ажилтны 2FA: эхний удаа QR-аар бүртгүүлэх, дараа нь код
+        navigate(`/login/mfa?mode=${r.mfa}${next ? `&next=${encodeURIComponent(next)}` : ''}`, { replace: true });
+        return;
+      }
+      const u = r.user;
       const home = HOME_BY_ROLE[u.role];
       navigate(next && next.startsWith(home) ? next : home, { replace: true });
     } catch (ex) {
@@ -40,7 +46,11 @@ export default function Login() {
   return (
     <Page crumb={[{ label: 'Нэвтрэх' }]} title="Системд нэвтрэх" subtitle="Мэдүүлэгч, оператор, админ нэг хуудсаар нэвтэрнэ">
       <Card className="auth-card">
-        {sp.get('registered') && <Alert tone="ok">Бүртгэл амжилттай үүслээ. Одоо нэвтэрнэ үү.</Alert>}
+        {sp.get('registered') && (
+          <Alert tone="ok">Бүртгэл амжилттай үүслээ. Имэйлээр ирсэн холбоосоор хаягаа баталгаажуулаад нэвтэрнэ үү.</Alert>
+        )}
+        {sp.get('reset') && <Alert tone="ok">Нууц үг шинэчлэгдлээ. Шинэ нууц үгээрээ нэвтэрнэ үү.</Alert>}
+        {sp.get('mfa') === 'expired' && <Alert tone="warn">Баталгаажуулалтын хугацаа дууссан. Дахин нэвтэрнэ үү.</Alert>}
         {err && <Alert tone="danger">{err}</Alert>}
         <form onSubmit={submit} className="stack" noValidate>
           <Field label="Имэйл" htmlFor="email" error={errors.email}>
@@ -69,6 +79,9 @@ export default function Login() {
               Бүртгүүлэх
             </Link>
           </div>
+          <Link className="small" to="/forgot-password">
+            Нууц үгээ мартсан уу?
+          </Link>
         </form>
       </Card>
     </Page>

@@ -9,6 +9,10 @@ import Register from './pages/public/Register.jsx';
 import Visas from './pages/public/Visas.jsx';
 import VisaDetail from './pages/public/VisaDetail.jsx';
 import Help from './pages/public/Help.jsx';
+import Mfa from './pages/public/Mfa.jsx';
+import ForgotPassword from './pages/public/ForgotPassword.jsx';
+import ResetPassword from './pages/public/ResetPassword.jsx';
+import VerifyEmail from './pages/public/VerifyEmail.jsx';
 
 import AppDashboard from './pages/app/Dashboard.jsx';
 import NewForm from './pages/app/NewForm.jsx';
@@ -61,6 +65,11 @@ export default function App() {
         <Route path="/visas" element={<Visas />} />
         <Route path="/visas/:versionId" element={<VisaDetail />} />
         <Route path="/help" element={<Help />} />
+        {/* Үе 2 — 2FA, нууц үг сэргээх, имэйл баталгаажуулалт */}
+        <Route path="/login/mfa" element={<Mfa />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* Мэдүүлэгч — Зураг 42–50 */}
         <Route path="/app" element={guard('APPLICANT', <AppDashboard />)} />

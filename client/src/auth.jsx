@@ -29,10 +29,24 @@ export function AuthProvider({ children }) {
     });
   }, []);
 
+  // Ажилтан бол { mfa: 'ENROLL' | 'VERIFY' } буцна — сесс 2FA-ийн дараа л үүснэ (Үе 2)
   const login = useCallback(async (email, password) => {
     const r = await api.post('/api/auth/login', { email, password });
-    setUser(r.user);
+    if (r.user) {
+      setUser(r.user);
+      setExpired(false);
+    }
+    return r;
+  }, []);
+
+  const completeLogin = useCallback((u) => {
+    setUser(u);
     setExpired(false);
+  }, []);
+
+  const refresh = useCallback(async () => {
+    const r = await api.get('/api/auth/me');
+    setUser(r.user);
     return r.user;
   }, []);
 
@@ -46,7 +60,10 @@ export function AuthProvider({ children }) {
     navigate('/');
   }, [navigate]);
 
-  const value = useMemo(() => ({ user, setUser, login, logout, expired, setExpired }), [user, login, logout, expired]);
+  const value = useMemo(
+    () => ({ user, setUser, login, logout, expired, setExpired, completeLogin, refresh }),
+    [user, login, logout, expired, completeLogin, refresh],
+  );
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }
 

@@ -11,7 +11,7 @@ export default defineConfig({
   workers: 1, // нэг сан, дараалсан урсгал
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  timeout: 60_000,
+  timeout: 120_000, // ажилтны 2FA код давтагдахгүйн тулд дараагийн 30 сек цонхыг хүлээж магадгүй
   expect: { timeout: 10_000 },
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {

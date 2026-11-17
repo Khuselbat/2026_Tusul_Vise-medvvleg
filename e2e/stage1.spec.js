@@ -1,6 +1,7 @@
 // Үе 1 UI: нэмэлт материал → “Бүрэн” → хүргүүлсэн → албан үр дүн бүртгэх → оператор тулгах → өмнөх мэдүүлэг импортлох.
 // Урьдчилсан нөхцөлийг (илгээлт, хуваарилалт, “Дутуу”) API-аар бэлтгэж, Үе 1-ийн дэлгэцүүдийг хөтчөөр шалгана.
 import { test, expect } from '@playwright/test';
+import { staffApiLogin, mailToken } from './helpers.js';
 
 const H = { 'X-Requested-With': 'civiz' };
 const PDF = Buffer.from('%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n');
@@ -32,9 +33,12 @@ test('Үе 1: нэмэлт материал, хүргүүлсэн, албан ү
       data: { displayName: 'Үе Нэг', email, password: pw, passwordConfirm: pw },
     }),
   );
+  await ok(
+    await applicant.request.post('/api/auth/verify-email', { headers: H, data: { token: await mailToken(email, '/verify-email') } }),
+  );
   await signIn(applicant, email, pw);
-  await signIn(operator, 'operator@civiz.mn', 'Operator1234');
-  await signIn(admin, 'admin@civiz.mn', 'Admin1234');
+  await staffApiLogin(operator, 'operator@civiz.mn', 'Operator1234');
+  await staffApiLogin(admin, 'admin@civiz.mn', 'Admin1234');
 
   const { visas } = await ok(await applicant.request.get('/api/visas'));
   const versionId = visas.find((v) => v.code === 'C-3-9').versionId;

@@ -1,6 +1,20 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, Card, Field, Button, useToast, DL } from '../../components/ui.jsx';
+import {
+  Page,
+  Card,
+  Field,
+  Button,
+  useToast,
+  DL,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Badge,
+  Confirm,
+  fmtDateTime,
+} from '../../components/ui.jsx';
 import { useAuth, ROLE_LABEL } from '../../auth.jsx';
 
 // Зураг 49 Миний профайл (мэдүүлэгч, оператор, админ ижил бүрэлдэхүүн)
@@ -43,9 +57,9 @@ export default function Profile() {
     if (Object.keys(fe).length) return;
     setBusy2(true);
     try {
-      await api.put('/api/auth/me/password', pw);
+      const r = await api.put('/api/auth/me/password', pw);
       setPw({ currentPassword: '', newPassword: '', newPasswordConfirm: '' });
-      toast('Нууц үг солигдлоо.');
+      toast(r.otherSessionsRevoked ? `Нууц үг солигдлоо. Бусад ${r.otherSessionsRevoked} төхөөрөмжөөс гаргалаа.` : 'Нууц үг солигдлоо.');
     } catch (ex) {
       setPwErr(ex.fields || { currentPassword: ex.message });
     } finally {
@@ -62,6 +76,30 @@ export default function Profile() {
             items={[
               ['Имэйл', user.email],
               ['Эрх', ROLE_LABEL[user.role]],
+              [
+                'Имэйл баталгаажуулалт',
+                user.emailVerified ? (
+                  <Badge key="ev" tone="ok">
+                    Баталгаажсан
+                  </Badge>
+                ) : (
+                  <Badge key="ev" tone="warn">
+                    Баталгаажаагүй
+                  </Badge>
+                ),
+              ],
+              user.role !== 'APPLICANT' && [
+                'Хоёр шатлалт баталгаажуулалт',
+                user.mfaEnabled ? (
+                  <Badge key="mfa" tone="ok">
+                    Идэвхтэй (TOTP)
+                  </Badge>
+                ) : (
+                  <Badge key="mfa" tone="warn">
+                    Тохируулаагүй
+                  </Badge>
+                ),
+              ],
             ]}
           />
           <form className="stack mt" onSubmit={saveName} noValidate>
@@ -114,6 +152,97 @@ export default function Profile() {
           </form>
         </Card>
       </div>
+      <Sessions />
     </Page>
+  );
+}
+
+/** Үе 2 — идэвхтэй сессүүд: нэг бүрчлэн хаах, бүх төхөөрөмжөөс гарах */
+function Sessions() {
+  const { setUser } = useAuth();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { data, error, loading, reload } = useAsync(() => api.get('/api/auth/sessions'), []);
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function revoke(s) {
+    await api.del(`/api/auth/sessions/${s.id}`);
+    if (s.current) {
+      setUser(null);
+      navigate('/login', { replace: true });
+    } else {
+      toast('Сесс хаагдлаа.');
+      reload();
+    }
+  }
+
+  async function revokeAll() {
+    setBusy(true);
+    try {
+      await api.post('/api/auth/sessions/revoke-all');
+      setUser(null);
+      navigate('/login', { replace: true });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="mt">
+      <div className="between">
+        <h2>Нэвтэрсэн төхөөрөмжүүд</h2>
+        <Button variant="ghost" className="btn-sm" onClick={() => setConfirm(true)}>
+          Бүх төхөөрөмжөөс гарах
+        </Button>
+      </div>
+      <ErrorBox error={error} onRetry={reload} />
+      {loading && !data ? (
+        <Skeleton rows={2} />
+      ) : (
+        data && (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Төхөөрөмж</th>
+                  <th>Нэвтэрсэн</th>
+                  <th>Сүүлд идэвхтэй</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((s) => (
+                  <tr key={s.id}>
+                    <td className="small" style={{ maxWidth: 320 }}>
+                      {s.userAgent || 'Тодорхойгүй'} {s.current && <Badge tone="info">Энэ төхөөрөмж</Badge>}
+                    </td>
+                    <td>{fmtDateTime(s.createdAt)}</td>
+                    <td>{fmtDateTime(s.lastSeenAt)}</td>
+                    <td>
+                      <button className="btn-link danger" onClick={() => revoke(s)}>
+                        {s.current ? 'Гарах' : 'Хаах'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
+      )}
+      <p className="small muted mb0">Нууц үг солиход бусад төхөөрөмжөөс автоматаар гарна.</p>
+      <Confirm
+        open={confirm}
+        title="Бүх төхөөрөмжөөс гарах уу?"
+        tone="danger"
+        confirmLabel="Бүгдээс гарах"
+        loading={busy}
+        onClose={() => !busy && setConfirm(false)}
+        onConfirm={revokeAll}
+      >
+        Энэ төхөөрөмж орно. Дахин нэвтрэх шаардлагатай болно.
+      </Confirm>
+    </Card>
   );
 }

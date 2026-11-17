@@ -40,6 +40,8 @@ export async function sendMail({ to, subject, text, html }) {
     await fs.mkdir(config.mail.outboxDir, { recursive: true });
     const name = `${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}.eml`;
     await fs.writeFile(path.join(config.mail.outboxDir, name), info.message);
+    // Уншихад хялбар хуулбар (dev, E2E) — .eml нь MIME кодлогдсон байдаг
+    await fs.writeFile(path.join(config.mail.outboxDir, name.replace(/\.eml$/, '.json')), JSON.stringify({ to, subject, text }, null, 2));
   }
   logger.info({ to: maskEmail(to), subject, transport: t }, 'mail sent');
 }

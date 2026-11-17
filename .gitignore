@@ -7,3 +7,5 @@ backups/
 *.log
 playwright-report/
 test-results/
+server/mail-outbox/
+e2e/.mail/

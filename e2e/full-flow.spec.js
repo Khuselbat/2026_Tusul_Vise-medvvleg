@@ -1,6 +1,7 @@
 // Бүтэн урсгал: зочин → бүртгэл → анкет → файл → илгээх → админ хуваарилах → оператор үнэлэх → мэдүүлэгч харах.
 // UC-01, 02, 03, 04, 05, 07 + BR-08/09 (дотоод дугаар ≠ албан, "Дутуу" ≠ визийн шийдвэр).
 import { test, expect } from '@playwright/test';
+import { uiLogin, mailToken } from './helpers.js';
 
 const DEMO = {
   admin: { email: 'admin@civiz.mn', password: 'Admin1234' },
@@ -13,13 +14,8 @@ const PNG = Buffer.from(
 );
 const day = (offset) => new Date(Date.now() + offset * 864e5).toISOString().slice(0, 10);
 
-async function login(page, email, password) {
-  await page.goto('/login');
-  await page.locator('#email').fill(email);
-  await page.locator('#pw').fill(password);
-  await page.getByRole('button', { name: 'Нэвтрэх' }).click();
-  await expect(page.getByRole('button', { name: 'Гарах' })).toBeVisible();
-}
+// Ажилтан (админ, оператор) бол 2FA кодын хуудсыг бөглөнө (Үе 2)
+const login = (page, email, password) => uiLogin(page, email, password, { staff: !email.startsWith('e2e.') });
 
 async function logout(page) {
   await page.getByRole('button', { name: 'Гарах' }).click();
@@ -54,7 +50,12 @@ test('мэдүүлэгчээс оператор хүртэлх бүтэн урс
   await page.locator('#pw2').fill(password);
   await page.getByRole('button', { name: 'Бүртгүүлэх' }).click();
   await expect(page.getByText('Бүртгэл амжилттай үүслээ')).toBeVisible();
+  // Үе 2: имэйлээр ирсэн холбоосоор баталгаажуулна (мэдүүлэг илгээхэд шаардлагатай)
+  await page.goto(`/verify-email?token=${encodeURIComponent(await mailToken(email, '/verify-email'))}`);
+  await expect(page.getByText('Имэйл хаяг баталгаажлаа')).toBeVisible();
+  await expect(page).toHaveURL(/\/verify-email$/); // токен хаягийн мөрөөс арилсан
   await login(page, email, password);
+  await expect(page.getByText('баталгаажуулаагүй байна')).toHaveCount(0);
 
   // ── Анкет (UC-04, FR-04) ──
   await page.goto('/app/new');
@@ -123,4 +124,16 @@ test('мэдүүлэгчээс оператор хүртэлх бүтэн урс
   await expect(page.getByText('Оператор нэмэлт материал шаардсан')).toBeVisible();
   await expect(page.getByText(reason).first()).toBeVisible();
   await expect(page.getByText('автоматаар татгалзсан виз гэсэн үг биш')).toBeVisible(); // BR-09
+
+  // ── Үе 2: мэдэгдлийн хонх (илгээсэн + “Дутуу”) ──
+  await page.goto('/app');
+  const bell = page.getByRole('button', { name: /^Мэдэгдэл \(2 уншаагүй\)/ });
+  await expect(bell).toBeVisible();
+  await bell.click();
+  await page
+    .getByRole('region', { name: 'Мэдэгдлүүд' })
+    .getByRole('button', { name: /Нэмэлт материал шаардлагатай/ })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/app/applications/${ref}$`));
+  await expect(page.getByRole('button', { name: /^Мэдэгдэл \(1 уншаагүй\)/ })).toBeVisible();
 });
