@@ -5,3 +5,5 @@ server/storage-test/
 backups/
 .env
 *.log
+playwright-report/
+test-results/
