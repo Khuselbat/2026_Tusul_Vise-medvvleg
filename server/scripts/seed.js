@@ -17,27 +17,46 @@ export const DEMO = {
 const KR_RESULT_URL = 'https://www.visa.go.kr/openPage.do?MENU_ID=10301';
 const C39_SOURCE = 'https://www.visaforkorea.mn/sites/g/files/tmzbdl2131/files/inline-files/C-3-9_Eng.pdf';
 
+// Тайлан Хүснэгт 7 (KVAC C-3-9 баримт [6]): [код, нэр, заавар, заавал, хэнд хамаарах, эх/хуулбар, хэл/орчуулга].
+// Хураамж, шийдвэрлэх хугацааг энд бичихгүй.
 const C39_REQS = [
   [
     'FORM_PHOTO',
     'Визийн анкет ба цээж зураг',
-    'Анкетыг англи эсвэл солонгос хэлээр бөглөнө. Сүүлийн 6 сард авсан 3.5 × 4.5 см цээж зураг хавсаргана.',
+    'Сүүлийн 6 сард авсан 3.5 × 4.5 см цээж зураг хавсаргана.',
     1,
+    'Бүх мэдүүлэгч',
+    'ORIGINAL',
+    'Анкетыг англи эсвэл солонгос хэлээр бөглөнө.',
   ],
   [
     'PASSPORT_COPY',
     'Гадаад паспортын хуулбар',
     'Мэдээлэл бүхий хуудасны хуулбарыг байршуулна. Эх хувийг материал хүлээлгэн өгөхдөө заавал авч очно.',
     1,
+    'Бүх мэдүүлэгч',
+    'BOTH',
+    null,
   ],
   [
     'FINANCIAL',
     'Санхүүгийн чадварын нотолгоо',
-    'Ажил, бизнес болон бусад нөхцөлөөс хамаарна (ажлын газрын тодорхойлолт, банкны хуулга г.м.). Нэг баримтыг бүх хүнд ижил шаардахгүй.',
+    'Ажлын газрын тодорхойлолт, банкны хуулга г.м. Нэг баримтыг бүх хүнд ижил шаардахгүй.',
     1,
+    'Ажил, бизнес болон бусад нөхцөлөөс хамаарна',
+    null,
+    'Монгол баримтын орчуулгын шаардлагыг ЭСЯ-ны журмаас шалгана.',
   ],
-  ['FAMILY', 'Гэр бүлийн баримт (хамаарах бол)', 'Гэрлэлтийн лавлагаа; насанд хүрээгүй хүүхэдтэй зорчих бол нэмэлт баримт.', 0],
-  ['ADDITIONAL', 'Нэмэлт материал', 'ЭСЯ эсвэл оператор нэмэлт баримт шаардсан үед энд хавсаргана.', 0],
+  [
+    'FAMILY',
+    'Гэр бүлийн баримт (хамаарах бол)',
+    'Гэрлэлтийн лавлагаа; насанд хүрээгүй хүүхэдтэй зорчих бол нэмэлт баримт.',
+    0,
+    'Гэрлэсэн эсвэл насанд хүрээгүй хүүхэдтэй зорчих мэдүүлэгч',
+    null,
+    null,
+  ],
+  ['ADDITIONAL', 'Нэмэлт материал', 'ЭСЯ эсвэл оператор нэмэлт баримт шаардсан үед энд хавсаргана.', 0, 'Шаардсан тохиолдолд', null, null],
 ];
 
 // Хамгийн жижиг хүчинтэй PDF ба PNG (жишээ хавсралт)
@@ -87,8 +106,8 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
     const c39 = (await q('INSERT INTO visa_types (country_id, code, is_active) VALUES (?,?,1)', [kr, 'C-3-9'])).insertId;
     const v1 = (
       await q(
-        `INSERT INTO visa_info_versions (visa_type_id, version_no, name_mn, description, source_url, verified_at, created_by, published_at)
-       VALUES (?,?,?,?,?,?,?, CURRENT_TIMESTAMP(6))`,
+        `INSERT INTO visa_info_versions (visa_type_id, version_no, name_mn, description, source_url, verified_at, verified_by, created_by, published_at)
+       VALUES (?,?,?,?,?,?,?,?, CURRENT_TIMESTAMP(6))`,
         [
           c39,
           1,
@@ -97,22 +116,20 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
           C39_SOURCE,
           '2026-10-30',
           adminId,
+          adminId,
         ],
       )
     ).insertId;
     const reqIds = {};
     let i = 0;
-    for (const [code, title, instr, req] of C39_REQS) {
+    for (const [code, title, instr, req, appliesTo, origCopy, lang] of C39_REQS) {
       i += 1;
       reqIds[code] = (
-        await q('INSERT INTO visa_requirements (version_id, code, title, instructions, is_required, sort_order) VALUES (?,?,?,?,?,?)', [
-          v1,
-          code,
-          title,
-          instr,
-          req,
-          i * 10,
-        ])
+        await q(
+          `INSERT INTO visa_requirements (version_id, code, title, instructions, applies_to, original_or_copy, translation_note, is_required, sort_order)
+           VALUES (?,?,?,?,?,?,?,?,?)`,
+          [v1, code, title, instr, appliesTo, origCopy, lang, req, i * 10],
+        )
       ).insertId;
     }
 

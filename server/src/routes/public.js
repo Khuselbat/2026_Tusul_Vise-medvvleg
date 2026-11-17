@@ -89,7 +89,7 @@ r.get(
     );
     if (!v) throw notFound('Нийтлэгдсэн визийн мэдээлэл олдсонгүй.');
     const reqs = await query(
-      'SELECT requirement_id, code, title, instructions, is_required FROM visa_requirements WHERE version_id = ? ORDER BY sort_order, requirement_id',
+      'SELECT requirement_id, code, title, instructions, applies_to, original_or_copy, translation_note, is_required FROM visa_requirements WHERE version_id = ? ORDER BY sort_order, requirement_id',
       [id],
     );
     res.json({
@@ -111,6 +111,9 @@ r.get(
           code: q.code,
           title: q.title,
           instructions: q.instructions,
+          appliesTo: q.applies_to,
+          originalOrCopy: q.original_or_copy,
+          translationNote: q.translation_note,
           isRequired: !!q.is_required,
         })),
       },

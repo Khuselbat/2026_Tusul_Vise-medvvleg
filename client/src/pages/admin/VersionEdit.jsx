@@ -176,7 +176,7 @@ export default function VersionEdit() {
             </div>
             {v && (
               <p className="small muted mt mb0">
-                Үүсгэсэн: {v.createdBy} · {fmtDateTime(v.createdAt)} ·{' '}
+                Үүсгэсэн: {v.createdBy} · {fmtDateTime(v.createdAt)} ·{v.verifiedBy ? ` Шалгасан ажилтан: ${v.verifiedBy} ·` : ''}{' '}
                 {published ? <Badge tone="ok">Нийтэлсэн</Badge> : <Badge tone="muted">Ноорог</Badge>}
               </p>
             )}

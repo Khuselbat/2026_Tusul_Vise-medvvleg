@@ -151,3 +151,25 @@ export const NotDecisionNote = () => (
 
 /** Нотолгоо файлыг FileViewer-д нээх хэлбэрт оруулна (/api/files/evidence/:id). */
 export const asEvidence = (e) => (e ? { ...e, url: `/api/files/evidence/${e.id}` } : null);
+
+const ORIG = { ORIGINAL: 'Эх хувь', COPY: 'Хуулбар', BOTH: 'Эх хувь ба хуулбар' };
+export const ORIGINAL_OR_COPY = ORIG;
+
+/** Тайлан 5.2: шаардлагын нэмэлт мэдээлэл — хэнд хамаарах, эх/хуулбар, хэл/орчуулга */
+export function RequirementMeta({ r }) {
+  const parts = [
+    r.appliesTo && ['Хэнд', r.appliesTo],
+    r.originalOrCopy && ['Хэлбэр', ORIG[r.originalOrCopy]],
+    r.translationNote && ['Хэл, орчуулга', r.translationNote],
+  ].filter(Boolean);
+  if (!parts.length) return null;
+  return (
+    <div className="small muted">
+      {parts.map(([k, v]) => (
+        <div key={k}>
+          <strong>{k}:</strong> {v}
+        </div>
+      ))}
+    </div>
+  );
+}

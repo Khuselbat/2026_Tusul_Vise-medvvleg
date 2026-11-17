@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, Card, useAsync, ErrorBox, Skeleton, Badge, Button, Alert, fmtDate, LinkButton } from '../../components/ui.jsx';
+import { RequirementMeta } from '../../components/shared.jsx';
 import { useAuth } from '../../auth.jsx';
 
 // Зураг 41 Визийн төрөл ба шаардлага
@@ -47,6 +48,7 @@ export default function VisaDetail() {
                       {r.isRequired ? <Badge tone="info">Заавал</Badge> : <Badge tone="muted">Хамаарах бол</Badge>}
                     </div>
                     {r.instructions && <p className="muted small mb0">{r.instructions}</p>}
+                    <RequirementMeta r={r} />
                   </li>
                 ))}
               </ol>

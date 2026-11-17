@@ -16,8 +16,18 @@ import {
   Alert,
   LinkButton,
 } from '../../components/ui.jsx';
+import { RequirementMeta, ORIGINAL_OR_COPY } from '../../components/shared.jsx';
 
-const EMPTY = { code: '', title: '', instructions: '', isRequired: true, sortOrder: 10 };
+const EMPTY = {
+  code: '',
+  title: '',
+  instructions: '',
+  appliesTo: '',
+  originalOrCopy: '',
+  translationNote: '',
+  isRequired: true,
+  sortOrder: 10,
+};
 
 // Зураг 58 Бүрдүүлэх материалын шаардлага — зөвхөн нийтлээгүй хувилбарт засна
 export default function Requirements() {
@@ -37,7 +47,16 @@ export default function Requirements() {
     setEdit(r || {});
     setF(
       r
-        ? { code: r.code, title: r.title, instructions: r.instructions || '', isRequired: r.isRequired, sortOrder: r.sortOrder }
+        ? {
+            code: r.code,
+            title: r.title,
+            instructions: r.instructions || '',
+            appliesTo: r.appliesTo || '',
+            originalOrCopy: r.originalOrCopy || '',
+            translationNote: r.translationNote || '',
+            isRequired: r.isRequired,
+            sortOrder: r.sortOrder,
+          }
         : { ...EMPTY, sortOrder: maxSort + 10 },
     );
     setErrs({});
@@ -134,6 +153,7 @@ export default function Requirements() {
                     </td>
                     <td className="small muted" style={{ maxWidth: 380 }}>
                       {r.instructions}
+                      <RequirementMeta r={r} />
                     </td>
                     <td>{r.isRequired ? <Badge tone="info">Заавал</Badge> : <Badge tone="muted">Хамаарах бол</Badge>}</td>
                     {!ro && (
@@ -178,6 +198,22 @@ export default function Requirements() {
           </Field>
           <Field label="Заавар" htmlFor="i">
             <textarea id="i" value={f.instructions} onChange={(e) => setF({ ...f, instructions: e.target.value })} />
+          </Field>
+          <Field label="Хэнд хамаарах" htmlFor="ap" error={errs.appliesTo} hint="ж: Бүх мэдүүлэгч; гэрлэсэн бол">
+            <input id="ap" maxLength={300} value={f.appliesTo} onChange={(e) => setF({ ...f, appliesTo: e.target.value })} />
+          </Field>
+          <Field label="Эх хувь / хуулбар" htmlFor="oc" error={errs.originalOrCopy}>
+            <select id="oc" value={f.originalOrCopy} onChange={(e) => setF({ ...f, originalOrCopy: e.target.value })}>
+              <option value="">— заагаагүй —</option>
+              {Object.entries(ORIGINAL_OR_COPY).map(([k, l]) => (
+                <option key={k} value={k}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Хэл, орчуулгын шаардлага" htmlFor="tn" error={errs.translationNote} hint="Эх сурвалжид заасныг л бичнэ">
+            <input id="tn" maxLength={500} value={f.translationNote} onChange={(e) => setF({ ...f, translationNote: e.target.value })} />
           </Field>
           <Field label="Дараалал" htmlFor="o">
             <input id="o" type="number" min={0} value={f.sortOrder} onChange={(e) => setF({ ...f, sortOrder: e.target.value })} />

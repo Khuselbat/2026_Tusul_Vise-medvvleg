@@ -226,6 +226,7 @@ function serializeVersion(v) {
     description: v.description,
     sourceUrl: v.source_url,
     verifiedAt: v.verified_at,
+    verifiedBy: v.verifier_name ?? null,
     createdAt: v.created_at,
     publishedAt: v.published_at,
     createdBy: v.creator_name,
@@ -284,23 +285,45 @@ r.post(
           if (copyFrom) {
             const sv = (await q('SELECT * FROM visa_info_versions WHERE version_id = ? AND visa_type_id = ?', [copyFrom, typeId]))[0];
             if (!sv) throw notFound('Хуулах хувилбар олдсонгүй.');
-            src = { nameMn: sv.name_mn, description: sv.description, sourceUrl: sv.source_url, verifiedAt: sv.verified_at };
+            src = {
+              nameMn: sv.name_mn,
+              description: sv.description,
+              sourceUrl: sv.source_url,
+              verifiedAt: sv.verified_at,
+              verifiedBy: sv.verified_by,
+            };
             srcReqs = await q('SELECT * FROM visa_requirements WHERE version_id = ?', [copyFrom]);
           }
           const ins = await q(
-            `INSERT INTO visa_info_versions (visa_type_id, version_no, name_mn, description, source_url, verified_at, created_by)
-           VALUES (?,?,?,?,?,?,?)`,
-            [typeId, next, src.nameMn, src.description || null, src.sourceUrl ?? null, src.verifiedAt ?? null, req.user.id],
+            `INSERT INTO visa_info_versions (visa_type_id, version_no, name_mn, description, source_url, verified_at, verified_by, created_by)
+           VALUES (?,?,?,?,?,?,?,?)`,
+            [
+              typeId,
+              next,
+              src.nameMn,
+              src.description || null,
+              src.sourceUrl ?? null,
+              src.verifiedAt ?? null,
+              src.verifiedAt ? (src.verifiedBy ?? req.user.id) : null,
+              req.user.id,
+            ],
           );
           for (const sr of srcReqs) {
-            await q('INSERT INTO visa_requirements (version_id, code, title, instructions, is_required, sort_order) VALUES (?,?,?,?,?,?)', [
-              ins.insertId,
-              sr.code,
-              sr.title,
-              sr.instructions,
-              sr.is_required,
-              sr.sort_order,
-            ]);
+            await q(
+              `INSERT INTO visa_requirements (version_id, code, title, instructions, applies_to, original_or_copy, translation_note, is_required, sort_order)
+               VALUES (?,?,?,?,?,?,?,?,?)`,
+              [
+                ins.insertId,
+                sr.code,
+                sr.title,
+                sr.instructions,
+                sr.applies_to,
+                sr.original_or_copy,
+                sr.translation_note,
+                sr.is_required,
+                sr.sort_order,
+              ],
+            );
           }
           await audit(req, { action: 'VERSION_CREATE', entityType: 'visa_info_version', entityKey: ins.insertId }, q);
           return { id: ins.insertId, versionNo: next };
@@ -315,8 +338,9 @@ r.post(
 
 async function loadVersion(id) {
   const v = await one(
-    `SELECT v.*, u.display_name AS creator_name, t.code AS type_code, c.name_mn AS country_name
+    `SELECT v.*, u.display_name AS creator_name, uv.display_name AS verifier_name, t.code AS type_code, c.name_mn AS country_name
        FROM visa_info_versions v JOIN users u ON u.user_id = v.created_by
+       LEFT JOIN users uv ON uv.user_id = v.verified_by
        JOIN visa_types t ON t.visa_type_id = v.visa_type_id JOIN countries c ON c.country_id = t.country_id
       WHERE v.version_id = ?`,
     [id],
@@ -337,6 +361,9 @@ r.get(
         code: q.code,
         title: q.title,
         instructions: q.instructions,
+        appliesTo: q.applies_to,
+        originalOrCopy: q.original_or_copy,
+        translationNote: q.translation_note,
         isRequired: !!q.is_required,
         sortOrder: q.sort_order,
       })),
@@ -359,13 +386,15 @@ r.put(
     const d = parse(versionSchema, req.body);
     await tx(async (q) => {
       await lockDraftVersion(q, id);
-      await q('UPDATE visa_info_versions SET name_mn=?, description=?, source_url=?, verified_at=? WHERE version_id=?', [
-        d.nameMn,
-        d.description || null,
-        d.sourceUrl ?? null,
-        d.verifiedAt ?? null,
-        id,
-      ]);
+      // Шалгасан ажилтан (тайлан 5.2): огноо өөрчлөгдвөл хадгалсан админ. SET зүүнээс баруун тийш үнэлэгддэг тул verified_by эхэнд.
+      const vAt = d.verifiedAt ?? null;
+      await q(
+        `UPDATE visa_info_versions
+            SET verified_by = CASE WHEN ? IS NULL THEN NULL WHEN verified_at <=> ? AND verified_by IS NOT NULL THEN verified_by ELSE ? END,
+                name_mn=?, description=?, source_url=?, verified_at=?
+          WHERE version_id=?`,
+        [vAt, vAt, req.user.id, d.nameMn, d.description || null, d.sourceUrl ?? null, vAt, id],
+      );
       await audit(req, { action: 'VERSION_UPDATE', entityType: 'visa_info_version', entityKey: id }, q);
     });
     res.json({ ok: true });
@@ -421,6 +450,12 @@ const reqSchema = z.object({
     .regex(/^[A-Z0-9_-]+$/, 'Код: латин том үсэг, тоо, _ -'),
   title: z.string().trim().min(2, 'Нэр оруулна уу.').max(200),
   instructions: z.string().trim().max(5000).optional().default(''),
+  appliesTo: z.string().trim().max(300).optional().default(''),
+  originalOrCopy: z
+    .union([z.enum(['ORIGINAL', 'COPY', 'BOTH']), z.literal(''), z.null()])
+    .optional()
+    .transform((v) => v || null),
+  translationNote: z.string().trim().max(500).optional().default(''),
   isRequired: z.boolean(),
   sortOrder: z.coerce.number().int().min(0).max(65535).default(0),
 });
@@ -434,8 +469,19 @@ r.post(
       const id = await tx(async (q) => {
         await lockDraftVersion(q, vid);
         const ins = await q(
-          'INSERT INTO visa_requirements (version_id, code, title, instructions, is_required, sort_order) VALUES (?,?,?,?,?,?)',
-          [vid, d.code, d.title, d.instructions || null, d.isRequired, d.sortOrder],
+          `INSERT INTO visa_requirements (version_id, code, title, instructions, applies_to, original_or_copy, translation_note, is_required, sort_order)
+           VALUES (?,?,?,?,?,?,?,?,?)`,
+          [
+            vid,
+            d.code,
+            d.title,
+            d.instructions || null,
+            d.appliesTo || null,
+            d.originalOrCopy,
+            d.translationNote || null,
+            d.isRequired,
+            d.sortOrder,
+          ],
         );
         await audit(req, { action: 'REQUIREMENT_CREATE', entityType: 'visa_requirement', entityKey: ins.insertId }, q);
         return ins.insertId;
@@ -458,14 +504,21 @@ r.put(
         const row = (await q('SELECT version_id FROM visa_requirements WHERE requirement_id = ?', [id]))[0];
         if (!row) throw notFound('Шаардлага олдсонгүй.');
         await lockDraftVersion(q, row.version_id);
-        await q('UPDATE visa_requirements SET code=?, title=?, instructions=?, is_required=?, sort_order=? WHERE requirement_id=?', [
-          d.code,
-          d.title,
-          d.instructions || null,
-          d.isRequired,
-          d.sortOrder,
-          id,
-        ]);
+        await q(
+          `UPDATE visa_requirements SET code=?, title=?, instructions=?, applies_to=?, original_or_copy=?, translation_note=?, is_required=?, sort_order=?
+            WHERE requirement_id=?`,
+          [
+            d.code,
+            d.title,
+            d.instructions || null,
+            d.appliesTo || null,
+            d.originalOrCopy,
+            d.translationNote || null,
+            d.isRequired,
+            d.sortOrder,
+            id,
+          ],
+        );
         await audit(req, { action: 'REQUIREMENT_UPDATE', entityType: 'visa_requirement', entityKey: id }, q);
       });
       res.json({ ok: true });
