@@ -86,6 +86,7 @@ export function pingClamd({ host = config.clamav.host, port = config.clamav.port
 const TABLES = [
   { table: 'application_documents', id: 'document_id', entity: 'document' },
   { table: 'evidence_files', id: 'file_id', entity: 'evidence_file' },
+  { table: 'profile_documents', id: 'document_id', entity: 'profile_document', noApp: true },
 ];
 
 let running = false;
@@ -106,7 +107,7 @@ async function scanBatch(limit) {
   const out = { accepted: 0, rejected: 0 };
   for (const t of TABLES) {
     const rows = await query(
-      `SELECT ${t.id} AS id, storage_key, application_id FROM ${t.table} WHERE scan_status = 'PENDING' ORDER BY ${t.id} LIMIT ?`,
+      `SELECT ${t.id} AS id, storage_key, ${t.noApp ? 'NULL AS' : ''} application_id FROM ${t.table} WHERE scan_status = 'PENDING' ORDER BY ${t.id} LIMIT ?`,
       [limit],
     );
     for (const row of rows) {

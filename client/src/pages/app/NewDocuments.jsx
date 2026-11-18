@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, uploadWithProgress } from '../../api.js';
 import { Page, Card, Button, Alert, ErrorBox, Skeleton, Badge, useAsync, fmtBytes, useToast } from '../../components/ui.jsx';
 import { Steps, FileViewer, usePendingScanPoll } from '../../components/shared.jsx';
@@ -7,6 +7,27 @@ import { t } from '../../i18n.js';
 const MAX_FILE = 10 * 1024 * 1024;
 const MAX_TOTAL = 100 * 1024 * 1024;
 const OK_EXT = /\.(pdf|jpe?g|png)$/i;
+const SKIP_REASON = {
+  EXPIRED: (x) => t('хугацаа {{v0}}-нд дууссан', { v0: x.validUntil }),
+  SCAN_PENDING: () => t('вирус шалгаж байна — дараа дахин оролдоно уу'),
+  SCAN_REJECTED: () => t('вирус илэрсэн'),
+  SIZE_LIMIT: () => t('нийт 100 MiB-аас хэтэрнэ'),
+  INTEGRITY: () => t('файлын бүрэн бүтэн байдал зөрсөн'),
+};
+const sessionGet = (k) => {
+  try {
+    return sessionStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const sessionSet = (k, v) => {
+  try {
+    sessionStorage.setItem(k, v);
+  } catch {
+    /* хувийн горимд хадгалахгүй байж болно */
+  }
+};
 
 // Зураг 44 Материал хавсаргах
 export default function NewDocuments() {
@@ -21,6 +42,28 @@ export default function NewDocuments() {
   const [drag, setDrag] = useState(false);
   const [viewing, setViewing] = useState(null);
   const inputRef = useRef();
+  // Профайлын баримтын сангаас автоматаар хавсаргах — нооргийн анх орох үед нэг удаа (дараа нь товчоор)
+  const [auto, setAuto] = useState(null);
+  const [autoBusy, setAutoBusy] = useState(false);
+  async function runAutofill() {
+    setAutoBusy(true);
+    try {
+      const r = await api.post(`/api/app/drafts/${ref}/autofill-documents`);
+      setAuto(r);
+      if (r.attached.length) reload();
+    } catch (ex) {
+      toast(ex.message, 'danger');
+    } finally {
+      setAutoBusy(false);
+    }
+  }
+  useEffect(() => {
+    if (!ref || !data?.draft) return;
+    const key = `civiz-autofill-${ref}`;
+    if (sessionGet(key)) return;
+    sessionSet(key, '1');
+    runAutofill();
+  }, [ref, !!data?.draft]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!ref) return <Navigate to="/app/new" replace />;
   const d = data?.draft;
   const total = d ? d.documents.reduce((s, x) => s + x.sizeBytes, 0) : 0;
@@ -116,6 +159,24 @@ export default function NewDocuments() {
     >
       <Steps current={1} />
       <ErrorBox error={error} onRetry={reload} />
+      {auto && (auto.attached.length > 0 || auto.skipped.length > 0) && (
+        <Alert tone={auto.skipped.length ? 'warn' : 'info'} title={t('Бичиг баримтын сангаас')}>
+          {auto.attached.length > 0 && (
+            <p className="mb0">
+              {t('{{v0}} баримтыг хуулж хавсаргалаа — шалгаж, шаардлагатай бол сольж эсвэл арилгана уу.', { v0: auto.attached.length })}
+            </p>
+          )}
+          {auto.skipped.length > 0 && (
+            <ul className="mb0">
+              {auto.skipped.map((x, i) => (
+                <li key={i}>
+                  {x.requirementTitle}: {x.name} — {t('хавсаргаагүй')} ({(SKIP_REASON[x.reason] || (() => x.reason))(x)})
+                </li>
+              ))}
+            </ul>
+          )}
+        </Alert>
+      )}
       {loading && !d ? (
         <Skeleton rows={4} />
       ) : (
@@ -170,6 +231,7 @@ export default function NewDocuments() {
                           {doc.originalName}
                         </button>
                         <span>{fmtBytes(doc.sizeBytes)}</span>
+                        {doc.fromProfile && <Badge tone="info">{t('Профайлаас')}</Badge>}
                         <Badge tone={doc.scanStatus === 'ACCEPTED' ? 'ok' : doc.scanStatus === 'REJECTED' ? 'danger' : 'info'}>
                           {doc.scanStatus === 'ACCEPTED'
                             ? t('Шалгагдсан')
@@ -228,6 +290,13 @@ export default function NewDocuments() {
                 {missingRequired.map((m) => m.title).join(', ')}.
               </Alert>
             )}
+            <p className="small muted">
+              <Button variant="ghost" className="btn-sm" loading={autoBusy} onClick={runAutofill}>
+                {t('Профайлаас хавсаргах')}
+              </Button>{' '}
+              {t('Хоосон шаардлагад бичиг баримтын сангаас тохирох баримтыг хуулж хавсаргана.')}{' '}
+              <Link to="/app/documents">{t('Бичиг баримтын сан')}</Link>
+            </p>
             <div className="page-footer">
               <Button disabled={missingRequired.length > 0 || busy} onClick={() => navigate(`/app/new/confirm?draft=${ref}`)}>
                 {t('Үргэлжлүүлэх')}

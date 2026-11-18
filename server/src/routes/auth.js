@@ -10,7 +10,7 @@ import { wrap, parse, badRequest, conflict, notFound, HttpError } from '../lib/e
 import { audit } from '../lib/audit.js';
 import { logger } from '../lib/logger.js';
 import { encryptPassport as encryptSecret, decryptPassport as decryptSecret } from '../lib/crypto.js';
-import { sendMail, verifyEmailMail, resetPasswordMail } from '../lib/mailer.js';
+import { sendMail, verifyEmailMail, resetPasswordMail, mailReady, MailError } from '../lib/mailer.js';
 import { createToken, findToken, markUsed, sha256 } from '../lib/tokens.js';
 import { generateSecret, otpauthUrl, verifyCode } from '../lib/totp.js';
 import { issueSession, clearSession, requireAuth, revokeSessions, cookieOptions, STAFF_ROLES } from '../middleware/auth.js';
@@ -35,7 +35,7 @@ const ipEmail = (req) => `${ipKeyGenerator(req.ip)}|${String(req.body?.email || 
 // Нэвтрэх оролдлогыг сервер хязгаарлана (Зураг 38)
 const loginLimiter = limiter(10, 15, ipEmail);
 const forgotLimiter = limiter(5, 15, ipEmail);
-const resendLimiter = limiter(3, 60, (req) => `u${req.user?.id}`);
+const resendLimiter = limiter(10, 60, (req) => `u${req.user?.id}`); // + 60 сек хүлээлт (RESEND_COOLDOWN_SEC)
 const mfaLimiter = limiter(20, 15, (req) => ipKeyGenerator(req.ip));
 
 export const passwordSchema = z
@@ -56,14 +56,23 @@ const registerSchema = z
   })
   .refine((d) => d.password === d.passwordConfirm, { path: ['passwordConfirm'], message: 'Нууц үг таарахгүй байна.' });
 
-/** Имэйл илгээлт бүтэлгүйтсэн ч хэрэглэгчийн үйлдлийг унагаахгүй (логлоно). */
+/** Имэйл илгээлт бүтэлгүйтсэн ч хэрэглэгчийн үйлдлийг унагаахгүй (sendMail өөрөө логлоно). true = илгээгдсэн */
 async function trySend(mail, to) {
   try {
     await sendMail({ to, ...mail });
-  } catch (err) {
-    logger.error({ err }, 'transactional mail failed');
+    return true;
+  } catch {
+    return false;
   }
 }
+
+// Токены хугацаа: баталгаажуулалт 24 цаг, нууц үг сэргээх 1 цаг; “Дахин илгээх”-ийн хооронд 60 сек
+export const VERIFY_TTL_MIN = 24 * 60;
+export const RESET_TTL_MIN = 60;
+export const RESEND_COOLDOWN_SEC = 60;
+const MAIL_SEND_FAILED =
+  'Баталгаажуулах имэйлийг илгээж чадсангүй. Хэдэн минутын дараа дахин оролдоно уу; асуудал үргэлжилбэл админд хандана уу.';
+const MAIL_UNAVAILABLE = 'Имэйл илгээх үйлчилгээ түр ажиллахгүй байна. Хэсэг хугацааны дараа дахин оролдоно уу.';
 
 const publicUser = (u) => ({
   publicId: u.public_id,
@@ -92,7 +101,7 @@ r.post(
          VALUES (?, (SELECT role_id FROM roles WHERE code='APPLICANT'), ?, ?, ?)`,
           [crypto.randomUUID(), data.email, hash, data.displayName],
         );
-        const token = await createToken(q, { userId: ins.insertId, purpose: 'VERIFY_EMAIL', ttlMinutes: 24 * 60 });
+        const token = await createToken(q, { userId: ins.insertId, purpose: 'VERIFY_EMAIL', ttlMinutes: VERIFY_TTL_MIN });
         await audit(req, { action: 'USER_REGISTER', entityType: 'user', entityKey: ins.insertId, actorId: ins.insertId }, q);
         return { userId: ins.insertId, token };
       });
@@ -102,8 +111,9 @@ r.post(
       }
       throw e;
     }
-    await trySend(verifyEmailMail(out.token), data.email);
-    res.status(201).json({ ok: true, userId: out.userId });
+    // Бүртгэл үүссэн хэвээр; имэйл явж чадаагүй бол UI “Дахин илгээх”-ийг санал болгоно
+    const mailSent = await trySend(verifyEmailMail(out.token), data.email);
+    res.status(201).json({ ok: true, userId: out.userId, mailSent });
   }),
 );
 
@@ -227,13 +237,29 @@ r.post(
   resendLimiter,
   wrap(async (req, res) => {
     if (req.user.emailVerified) return res.json({ ok: true, alreadyVerified: true });
-    const token = await tx(async (q) => {
-      const t = await createToken(q, { userId: req.user.id, purpose: 'VERIFY_EMAIL', ttlMinutes: 24 * 60 });
+    // 60 секундын хүлээлт (сервер дээр) — сүүлийн токен үүссэнээс хойш
+    const last = await one(
+      `SELECT TIMESTAMPDIFF(SECOND, MAX(created_at), CURRENT_TIMESTAMP(6)) AS ago FROM user_tokens WHERE user_id = ? AND purpose = 'VERIFY_EMAIL'`,
+      [req.user.id],
+    );
+    if (last?.ago != null && Number(last.ago) < RESEND_COOLDOWN_SEC) {
+      const wait = RESEND_COOLDOWN_SEC - Number(last.ago);
+      res.set('Retry-After', String(wait));
+      throw new HttpError(429, 'RESEND_COOLDOWN', `Дахин илгээхийн өмнө ${wait} секунд хүлээнэ үү.`, { retryAfter: wait });
+    }
+    const created = await tx(async (q) => {
+      const t = await createToken(q, { userId: req.user.id, purpose: 'VERIFY_EMAIL', ttlMinutes: VERIFY_TTL_MIN });
       await audit(req, { action: 'EMAIL_VERIFY_RESEND', entityType: 'user', entityKey: req.user.id }, q);
       return t;
     });
-    await trySend(verifyEmailMail(token), req.user.email);
-    res.json({ ok: true });
+    try {
+      await sendMail({ to: req.user.email, ...verifyEmailMail(created) });
+    } catch (err) {
+      // Хүрээгүй токеныг устгана — хэрэглэгч хүлээлгүйгээр дахин оролдож болно
+      await query("DELETE FROM user_tokens WHERE user_id = ? AND purpose = 'VERIFY_EMAIL' AND used_at IS NULL", [req.user.id]);
+      throw new HttpError(502, err instanceof MailError ? err.code : 'MAIL_FAILED', MAIL_SEND_FAILED);
+    }
+    res.json({ ok: true, cooldownSec: RESEND_COOLDOWN_SEC });
   }),
 );
 
@@ -244,7 +270,7 @@ async function processForgot(req, email) {
   const u = await one('SELECT user_id, email, is_active FROM users WHERE email = ?', [email]);
   if (!u || !u.is_active) return;
   const token = await tx(async (q) => {
-    const t = await createToken(q, { userId: u.user_id, purpose: 'RESET_PASSWORD', ttlMinutes: 30 });
+    const t = await createToken(q, { userId: u.user_id, purpose: 'RESET_PASSWORD', ttlMinutes: RESET_TTL_MIN });
     await audit(req, { action: 'PASSWORD_RESET_REQUEST', entityType: 'user', entityKey: u.user_id, actorId: null }, q);
     return t;
   });
@@ -256,6 +282,8 @@ r.post(
   forgotLimiter,
   wrap(async (req, res) => {
     const { email } = parse(z.object({ email: emailSchema }), req.body);
+    // SMTP тохиргоо/холболт эвдэрсэн бол бүх хүнд ижил 503 (хэрэглэгчээс хамаарахгүй — бүртгэл таагдахгүй)
+    if (await mailReady()) throw new HttpError(503, 'MAIL_UNAVAILABLE', MAIL_UNAVAILABLE);
     // Хариуг шууд, ижил хугацаанд буцааж, ажлыг ар талд хийнэ (хугацааны ялгаагаар бүртгэл таагдахгүй)
     if (config.isTest) await processForgot(req, email);
     else setImmediate(() => processForgot(req, email).catch((err) => logger.error({ err }, 'forgot password failed')));

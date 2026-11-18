@@ -39,6 +39,23 @@ export default function Requirements() {
   const [errs, setErrs] = useState({});
   const [busy, setBusy] = useState(false);
   const [del, setDel] = useState(null);
+  // Шаардлага ↔ профайлын баримтын төрөл (нийтэлсэн хувилбарт ч — зөвхөн автомат бөглөлтийн санал, audit-тай)
+  const [mapFor, setMapFor] = useState(null);
+  const [mapSel, setMapSel] = useState([]);
+  const typeName = (code) => t(data?.documentTypes?.find((x) => x.code === code)?.name || code);
+  async function saveMap() {
+    setBusy(true);
+    try {
+      await api.put(`/api/admin/requirements/${mapFor.id}/document-types`, { typeCodes: mapSel });
+      toast(t('Хадгалагдлаа.'));
+      setMapFor(null);
+      reload();
+    } catch (ex) {
+      toast(ex.message, 'danger');
+    } finally {
+      setBusy(false);
+    }
+  }
   const v = data?.version;
   const ro = !!v?.publishedAt;
   const open = (r) => {
@@ -159,6 +176,7 @@ export default function Requirements() {
                   <th>{t('Нэр')}</th>
                   <th>{t('Заавар')}</th>
                   <th>{t('Заавал')}</th>
+                  <th>{t('Профайлын баримт')}</th>
                   {!ro && <th />}
                 </tr>
               </thead>
@@ -180,6 +198,19 @@ export default function Requirements() {
                       <RequirementMeta r={r} />
                     </td>
                     <td>{r.isRequired ? <Badge tone="info">{t('Заавал')}</Badge> : <Badge tone="muted">{t('Хамаарах бол')}</Badge>}</td>
+                    <td className="small">
+                      {(r.documentTypes || []).map(typeName).join(', ') || <span className="muted">—</span>}{' '}
+                      <button
+                        className="btn-link"
+                        aria-label={t('{{v0}}: профайлын баримтын төрөл тохируулах', { v0: r.title })}
+                        onClick={() => {
+                          setMapFor(r);
+                          setMapSel(r.documentTypes || []);
+                        }}
+                      >
+                        {t('Тохируулах')}
+                      </button>
+                    </td>
                     {!ro && (
                       <td className="row-actions">
                         <button className="btn-link" onClick={() => open(r)}>
@@ -197,6 +228,40 @@ export default function Requirements() {
           </div>
         ))
       )}
+      <Modal
+        open={!!mapFor}
+        title={mapFor ? t('Профайлын баримт — {{v0}}', { v0: mapFor.title }) : ''}
+        onClose={() => setMapFor(null)}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setMapFor(null)}>
+              {t('Цуцлах')}
+            </Button>
+            <Button loading={busy} onClick={saveMap}>
+              {t('Хадгалах')}
+            </Button>
+          </>
+        }
+      >
+        <p className="small muted">
+          {t(
+            'Мэдүүлэгчийн бичиг баримтын сангаас энэ шаардлагад автоматаар хуулж хавсаргах баримтын төрлүүд. Нийтэд харагдах агуулга өөрчлөгдөхгүй.',
+          )}
+        </p>
+        <fieldset className="stack">
+          <legend className="sr-only">{t('Баримтын төрөл')}</legend>
+          {(data?.documentTypes || []).map((dt) => (
+            <label key={dt.code} className="check">
+              <input
+                type="checkbox"
+                checked={mapSel.includes(dt.code)}
+                onChange={(e) => setMapSel(e.target.checked ? [...mapSel, dt.code] : mapSel.filter((x) => x !== dt.code))}
+              />
+              <span>{t(dt.name)}</span>
+            </label>
+          ))}
+        </fieldset>
+      </Modal>
       <Modal
         open={!!edit}
         title={edit?.id ? t('Шаардлага засах') : t('Шаардлага нэмэх')}

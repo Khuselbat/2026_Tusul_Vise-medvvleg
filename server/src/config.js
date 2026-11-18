@@ -1,8 +1,12 @@
-import 'dotenv/config';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import dotenv from 'dotenv';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+// server/.env (хаанаас ч эхлүүлсэн). Репоны үндсэн .env нь Docker compose-ийнх — энд уншихгүй (өөр DB нууц үгтэй байж болно).
+// Аль хэдийн тохируулсан орчны хувьсагч давуу. Тестэд .env-ийн MAIL_TRANSPORT-ыг үл тооно (бодит имэйл илгээхгүй).
+const mailTransportFromProcess = process.env.MAIL_TRANSPORT;
+dotenv.config({ path: path.join(root, '.env'), quiet: true });
 const isTest = process.env.NODE_ENV === 'test';
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -73,18 +77,24 @@ export const config = {
   clientDist: path.resolve(root, process.env.CLIENT_DIST || '../client/dist'),
   // BR-03: эхний хувилбарт зөвхөн БНСУ
   // Үе 2: имэйл доторх холбоосын үндэс (production-д домэйнээ заавал тохируулна)
-  appUrl: (process.env.APP_URL || (isProd ? '' : 'http://localhost:5173')).replace(/\/+$/, ''),
+  // APP_BASE_URL (шинэ нэр) эсвэл APP_URL (хуучин, хэвээр дэмжинэ)
+  appUrl: (process.env.APP_BASE_URL || process.env.APP_URL || (isProd ? '' : 'http://localhost:5173')).replace(/\/+$/, ''),
   mail: {
-    // smtp | file | memory | log. Production — smtp; dev — file (server/mail-outbox); test — memory
-    transport: process.env.MAIL_TRANSPORT || (isProd ? 'smtp' : isTest ? 'memory' : 'file'),
+    // smtp | file | console | ethereal | memory | log.
+    // Анхдагч: production — smtp; test — memory; dev — SMTP_HOST тохируулсан бол smtp, үгүй бол file (server/mail-outbox + консолд холбоос)
+    transport: isTest
+      ? mailTransportFromProcess || 'memory'
+      : process.env.MAIL_TRANSPORT || (isProd ? 'smtp' : process.env.SMTP_HOST ? 'smtp' : 'file'),
     from: process.env.MAIL_FROM || 'Цахим виз <no-reply@localhost>',
     outboxDir: path.resolve(root, process.env.MAIL_OUTBOX_DIR || 'mail-outbox'),
     smtp: {
-      host: process.env.SMTP_HOST,
+      host: process.env.SMTP_HOST || '',
       port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === '1',
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD,
+      // 465 (Gmail) = шууд TLS; 587 = STARTTLS. SMTP_SECURE заагаагүй бол портоор шийднэ
+      secure: process.env.SMTP_SECURE ? ['1', 'true'].includes(process.env.SMTP_SECURE) : Number(process.env.SMTP_PORT) === 465,
+      user: process.env.SMTP_USER || '',
+      // SMTP_PASS (шинэ нэр) эсвэл SMTP_PASSWORD (хуучин). Хэзээ ч логлохгүй, API-аар буцаахгүй
+      pass: process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '',
     },
     // Outbox-ийг дахин оролдох ажил (тестэд гараар дуудна)
     workerIntervalMs: Number(process.env.MAIL_WORKER_INTERVAL_MS || 60000),

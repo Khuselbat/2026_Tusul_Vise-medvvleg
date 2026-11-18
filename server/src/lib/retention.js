@@ -41,9 +41,11 @@ async function retentionPass({ now = new Date(), dryRun = false } = {}) {
 
   // 2. Өнчин файл: санд бичлэггүй (тасарсан upload, бүтэлгүй транзакц) — хэсэг хугацааны дараа
   const known = new Set(
-    (await query('SELECT storage_key FROM application_documents UNION ALL SELECT storage_key FROM evidence_files')).map(
-      (x) => x.storage_key,
-    ),
+    (
+      await query(
+        'SELECT storage_key FROM application_documents UNION ALL SELECT storage_key FROM evidence_files UNION ALL SELECT storage_key FROM profile_documents',
+      )
+    ).map((x) => x.storage_key),
   );
   const cutoff = now.getTime() - r.orphanFileHours * 3600 * 1000;
   for await (const f of listStoredFiles()) {

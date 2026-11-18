@@ -62,6 +62,11 @@ export default function Login() {
         {sp.get('registered') && (
           <Alert tone="ok">{t('Бүртгэл амжилттай үүслээ. Имэйлээр ирсэн холбоосоор хаягаа баталгаажуулаад нэвтэрнэ үү.')}</Alert>
         )}
+        {sp.get('mail') === 'failed' && (
+          <Alert tone="warn">
+            {t('Баталгаажуулах имэйлийг илгээж чадсангүй. Нэвтэрсний дараа дээд хэсгийн “Дахин илгээх” товчоор дахин илгээнэ үү.')}
+          </Alert>
+        )}
         {sp.get('reset') && <Alert tone="ok">{t('Нууц үг шинэчлэгдлээ. Шинэ нууц үгээрээ нэвтэрнэ үү.')}</Alert>}
         {sp.get('mfa') === 'expired' && <Alert tone="warn">{t('Баталгаажуулалтын хугацаа дууссан. Дахин нэвтэрнэ үү.')}</Alert>}
         {err && <Alert tone="danger">{err}</Alert>}

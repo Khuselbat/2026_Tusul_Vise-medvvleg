@@ -42,6 +42,26 @@ try {
     }
   }
 
+  // 1б. Профайлын паспортын дугаар (migration 011)
+  for (const r of await query(
+    'SELECT user_id, passport_number_enc, passport_key_id FROM applicant_profiles WHERE passport_number_enc IS NOT NULL AND passport_key_id <> ?',
+    [current],
+  )) {
+    try {
+      const enc = reencrypt(r.passport_number_enc, r.passport_key_id);
+      if (!dryRun) {
+        await query(
+          'UPDATE applicant_profiles SET passport_number_enc = ?, passport_key_id = ? WHERE user_id = ? AND passport_key_id = ?',
+          [enc.data, enc.keyId, r.user_id, r.passport_key_id],
+        );
+      }
+      out.passports += 1;
+    } catch (e) {
+      out.errors += 1;
+      console.error(`Профайлын паспорт (хэрэглэгч ${r.user_id}): ${e.message}`);
+    }
+  }
+
   // 2. Ажилтны 2FA нууц
   for (const r of await query(
     'SELECT user_id, mfa_secret_enc, mfa_key_id FROM users WHERE mfa_secret_enc IS NOT NULL AND mfa_key_id <> ?',
@@ -69,6 +89,7 @@ try {
     const keys = [
       ...(await query("SELECT storage_key FROM application_documents WHERE scan_status <> 'REJECTED'")),
       ...(await query("SELECT storage_key FROM evidence_files WHERE scan_status <> 'REJECTED'")),
+      ...(await query("SELECT storage_key FROM profile_documents WHERE scan_status <> 'REJECTED'")),
     ].map((x) => x.storage_key);
     for (const k of keys) {
       try {

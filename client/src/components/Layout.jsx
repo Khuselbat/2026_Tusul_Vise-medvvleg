@@ -18,6 +18,7 @@ const MENUS = {
     ['/app/new', t('Шинэ мэдүүлэг')],
     ['/app/applications', t('Миний архив')],
     ['/app/imports', t('Өмнөх мэдүүлэг')],
+    ['/app/documents', t('Бичиг баримтын сан')],
     ['/app/official-result', t('Үр дүн шалгах')],
     ['/visas', t('Визийн мэдээлэл')],
     ['/app/profile', t('Профайл')],

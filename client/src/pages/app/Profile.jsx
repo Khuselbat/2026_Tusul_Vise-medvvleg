@@ -17,6 +17,7 @@ import {
 } from '../../components/ui.jsx';
 import { useAuth, ROLE_LABEL } from '../../auth.jsx';
 import { PrivacyCard } from '../../components/Privacy.jsx';
+import PersonalInfoCard from '../../components/PersonalInfoCard.jsx';
 
 // Зураг 49 Миний профайл (мэдүүлэгч, оператор, админ ижил бүрэлдэхүүн)
 import { t } from '../../i18n.js';
@@ -201,6 +202,7 @@ export default function Profile() {
           </form>
         </Card>
       </div>
+      {user.role === 'APPLICANT' && <PersonalInfoCard />}
       <Sessions />
       {user.role === 'APPLICANT' && <PrivacyCard />}
     </Page>

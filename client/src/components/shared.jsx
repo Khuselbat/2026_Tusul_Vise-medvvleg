@@ -78,6 +78,12 @@ export function Steps({ current }) {
     </ol>
   );
 }
+const MARITAL_LABEL = {
+  SINGLE: () => t('Гэрлээгүй'),
+  MARRIED: () => t('Гэрлэсэн'),
+  DIVORCED: () => t('Салсан'),
+  WIDOWED: () => t('Бэлэвсэн'),
+};
 export function FormSummary({ form }) {
   if (!form) return <p className="muted">{t('Анкет бөглөөгүй.')}</p>;
   const x = form.extraFields || {};
@@ -86,14 +92,18 @@ export function FormSummary({ form }) {
       items={[
         [t('Овог / нэр'), `${form.familyName} ${form.givenName}`],
         [t('Төрсөн огноо'), fmtDate(form.birthDate)],
+        x.sex && [t('Хүйс'), x.sex === 'M' ? t('Эрэгтэй') : x.sex === 'F' ? t('Эмэгтэй') : x.sex],
         [t('Иргэншил'), form.nationalityCode],
+        x.maritalStatus && [t('Гэр бүлийн байдал'), MARITAL_LABEL[x.maritalStatus]?.() || x.maritalStatus],
         [t('Паспорт'), form.passportNumber],
+        x.passportIssuedOn && [t('Паспорт олгосон'), fmtDate(x.passportIssuedOn)],
         [t('Паспорт дуусах'), fmtDate(form.passportExpiresOn)],
         [t('Имэйл'), form.contactEmail],
         [t('Утас'), form.contactPhone],
         [t('Аяллын зорилго'), form.travelPurpose],
         [t('Орох / гарах'), `${fmtDate(form.intendedEntryOn)} — ${fmtDate(form.intendedExitOn)}`],
         x.occupation && [t('Ажил эрхлэлт'), x.occupation],
+        x.employerOrSchool && [t('Ажлын газар / сургууль'), x.employerOrSchool],
         x.homeAddress && [t('Гэрийн хаяг'), x.homeAddress],
         x.stayAddress && [t('Байрлах хаяг'), x.stayAddress],
       ]}
@@ -123,6 +133,7 @@ export function DocumentList({ requirements, documents, onOpen }) {
                 <div key={d.id} className="file-line">
                   <FileOpenButton doc={d} onOpen={onOpen} />
                   <span>{fmtBytes(d.sizeBytes)}</span>
+                  {d.fromProfile && <Badge tone="info">{t('Профайлаас')}</Badge>}
                 </div>
               ))}
             </div>

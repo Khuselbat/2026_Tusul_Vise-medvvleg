@@ -21,7 +21,18 @@ startScanWorker();
 if (scannerEnabled()) processPendingScans().catch((err) => logger.error({ err }, 'initial scan failed'));
 startRetentionWorker();
 dispatchPending().catch((err) => logger.error({ err }, 'initial mail dispatch failed'));
-if (config.isProd && !config.appUrl) logger.warn('APP_URL тохируулаагүй — имэйл доторх холбоос буруу болно.');
+if (config.isProd && !config.appUrl) logger.warn('APP_BASE_URL тохируулаагүй — имэйл доторх холбоос буруу болно.');
+// Имэйлийн горимыг эхлэхэд тодорхой хэлнэ — “имэйл ирэхгүй” гэх асуудлын хамгийн түгээмэл шалтгаан
+{
+  const t = config.mail.transport;
+  if (t === 'smtp' && !config.mail.smtp.host) logger.error('MAIL_TRANSPORT=smtp боловч SMTP_HOST тохируулаагүй — имэйл ИЛГЭЭГДЭХГҮЙ.');
+  else if (t === 'smtp') logger.info({ host: config.mail.smtp.host, port: config.mail.smtp.port, appUrl: config.appUrl }, 'mail: SMTP');
+  else
+    logger.warn(
+      { transport: t, appUrl: config.appUrl },
+      `Имэйл “${t}” горимд — жинхэнэ хаяг руу ЯВАХГҮЙ (холбоос консолд хэвлэгдэнэ). Gmail-ээр илгээх: WINDOWS_SETUP.md “Имэйл (SMTP)”.`,
+    );
+}
 
 // Үе 5: зогсоох дохио (docker stop, systemd) — шинэ холболт хүлээж авахаа больж, эхэлсэн хүсэлтүүдийг дуусгаад,
 // DB холболтыг хаана. 10 секундэд дуусахгүй бол албадан гарна (Docker-ийн анхдагч stop_grace_period).

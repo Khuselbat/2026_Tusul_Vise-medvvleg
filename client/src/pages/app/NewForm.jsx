@@ -16,6 +16,7 @@ import {
   fmtDateTime,
 } from '../../components/ui.jsx';
 import { Steps } from '../../components/shared.jsx';
+import { SEX_OPTIONS, MARITAL_OPTIONS } from '../../components/PersonalInfoCard.jsx';
 import { t } from '../../i18n.js';
 const today = () => new Date().toISOString().slice(0, 10);
 const EMPTY = {
@@ -34,6 +35,10 @@ const EMPTY = {
     occupation: '',
     homeAddress: '',
     stayAddress: '',
+    sex: '',
+    maritalStatus: '',
+    passportIssuedOn: '',
+    employerOrSchool: '',
   },
 };
 
@@ -84,6 +89,8 @@ export default function NewForm() {
   const [err, setErr] = useState(null);
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  // Профайлаас автоматаар бөглөсөн талбарууд (санал — хэрэглэгч засвал тэмдэг арилна)
+  const [prefilled, setPrefilled] = useState(() => new Set());
   // Үе 4: автомат хадгалалт (серверт шифрлэгдэнэ)
   const createdRef = useRef(null);
   const touched = useRef(false);
@@ -93,8 +100,10 @@ export default function NewForm() {
   });
   const currentRef = () => draftRef || createdRef.current;
   const ctx = useAsync(async () => {
+    const loadPrefill = () => api.get('/api/app/profile/prefill').catch(() => null);
     if (draftRef) {
       const { draft } = await api.get(`/api/app/drafts/${draftRef}`);
+      const prefill = !draft.form && !draft.autosave ? await loadPrefill() : null;
       return {
         visa: {
           ...draft.visa,
@@ -102,6 +111,7 @@ export default function NewForm() {
           blockReason: draft.blockReason,
         },
         draft,
+        prefill,
       };
     }
     if (versionId) {
@@ -110,6 +120,7 @@ export default function NewForm() {
       return {
         visa,
         copy,
+        prefill: copy ? null : await loadPrefill(),
       };
     }
     const { visas } = await api.get('/api/visas');
@@ -125,7 +136,10 @@ export default function NewForm() {
         status: 'restored',
         at: auto.savedAt,
       });
-    const src = auto?.form || ctx.data?.draft?.form || ctx.data?.copy;
+    const pf = ctx.data?.prefill;
+    const fromProfile = !auto?.form && !ctx.data?.draft?.form && !ctx.data?.copy && pf?.filled?.length;
+    const src = auto?.form || ctx.data?.draft?.form || ctx.data?.copy || (fromProfile ? pf.form : null);
+    setPrefilled(new Set(fromProfile ? pf.filled : []));
     if (src)
       setForm({
         ...EMPTY,
@@ -138,8 +152,16 @@ export default function NewForm() {
         intendedExitOn: src.intendedExitOn || '',
       });
   }, [ctx.data]);
+  const unmark = (k) =>
+    setPrefilled((p) => {
+      if (!p.has(k)) return p;
+      const n = new Set(p);
+      n.delete(k);
+      return n;
+    });
   const set = (k) => (e) => {
     touched.current = true;
+    unmark(k);
     setForm((f) => ({
       ...f,
       [k]: e.target.value,
@@ -147,6 +169,7 @@ export default function NewForm() {
   };
   const setX = (k) => (e) => {
     touched.current = true;
+    unmark(`extraFields.${k}`);
     setForm((f) => ({
       ...f,
       extraFields: {
@@ -284,11 +307,16 @@ export default function NewForm() {
                 </div>
                 <h3
                   style={{
-                    margin: '6px 0 12px',
+                    margin: '6px 0 8px',
                   }}
                 >
                   {v.name}
                 </h3>
+                {v.description && <p className="small mb0 clamp-3">{v.description}</p>}
+                <p className="small muted">
+                  {t('{{v0}} материал', { v0: v.requirementCount })}
+                  {v.verifiedAt && ` · ${t('шалгасан {{v0}}', { v0: String(v.verifiedAt).slice(0, 10) })}`}
+                </p>
                 <div className="row-actions">
                   <LinkButton to={`/app/new?version=${v.versionId}`}>{t('Сонгох')}</LinkButton>
                   <LinkButton variant="ghost" to={`/visas/${v.versionId}`}>
@@ -304,7 +332,14 @@ export default function NewForm() {
   }
   const v = ctx.data.visa;
   const F = (k, label, props = {}) => (
-    <Field label={label} htmlFor={k} error={errors[k]} required={props.required !== false} hint={props.hint} className={props.className}>
+    <Field
+      label={label}
+      htmlFor={k}
+      error={errors[k]}
+      required={props.required !== false}
+      hint={prefilled.has(k) ? [props.hint, t('Профайлаас бөглөсөн')].filter(Boolean).join(' · ') : props.hint}
+      className={[props.className, prefilled.has(k) ? 'prefilled' : ''].filter(Boolean).join(' ')}
+    >
       {props.textarea ? (
         <textarea id={k} value={form[k]} onChange={set(k)} maxLength={500} />
       ) : (
@@ -327,6 +362,32 @@ export default function NewForm() {
       )}
     </Field>
   );
+  // Сонголттой нэмэлт талбар (extraFields)
+  const X = (k, label, props = {}) => {
+    const id = `x-${k}`;
+    const mark = prefilled.has(`extraFields.${k}`);
+    return (
+      <Field
+        label={label}
+        htmlFor={id}
+        error={errors[`extraFields.${k}`]}
+        hint={mark ? t('Профайлаас бөглөсөн') : undefined}
+        className={[props.className, mark ? 'prefilled' : ''].filter(Boolean).join(' ')}
+      >
+        {props.options ? (
+          <select id={id} value={form.extraFields[k]} onChange={setX(k)}>
+            {props.options.map(([val, l]) => (
+              <option key={val} value={val}>
+                {l}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input id={id} type={props.type || 'text'} max={props.max} value={form.extraFields[k]} onChange={setX(k)} />
+        )}
+      </Field>
+    );
+  };
   return (
     <Page
       crumb={[
@@ -347,6 +408,17 @@ export default function NewForm() {
         <Alert tone="info">
           {t('Өмнөх мэдүүлгээс анкетын мэдээллийг хуулсан. Паспорт, огноо зэрэг хугацаатай мэдээллийг дахин шалгана уу.')}
         </Alert>
+      )}
+      {prefilled.size > 0 && (
+        <Alert tone="info">
+          {t('Профайлаас {{v0}} талбар автоматаар бөглөгдлөө — энэ нь зөвхөн санал. Илгээхээс өмнө шалгаж, шаардлагатай бол засна уу.', {
+            v0: prefilled.size,
+          })}{' '}
+          <Link to="/app/profile">{t('Профайл засах')}</Link>
+        </Alert>
+      )}
+      {ctx.data.prefill?.passportExpired && (
+        <Alert tone="warn">{t('Профайлд хадгалсан паспортын хугацаа дууссан байна — шинэ паспортын мэдээллээ оруулна уу.')}</Alert>
       )}
       {err && !Object.keys(err.fields || {}).length && <ErrorBox error={err} />}
       <form onSubmit={next} noValidate>
@@ -403,15 +475,13 @@ export default function NewForm() {
               textarea: true,
               className: 'span-2',
             })}
-            <Field label={t('Ажил эрхлэлт')} htmlFor="occ">
-              <input id="occ" value={form.extraFields.occupation} onChange={setX('occupation')} />
-            </Field>
-            <Field label={t('Байрлах хаяг (очих улсад)')} htmlFor="stay">
-              <input id="stay" value={form.extraFields.stayAddress} onChange={setX('stayAddress')} />
-            </Field>
-            <Field label={t('Гэрийн хаяг')} htmlFor="home" className="span-2">
-              <input id="home" value={form.extraFields.homeAddress} onChange={setX('homeAddress')} />
-            </Field>
+            {X('sex', t('Хүйс'), { options: SEX_OPTIONS() })}
+            {X('maritalStatus', t('Гэр бүлийн байдал'), { options: MARITAL_OPTIONS() })}
+            {X('passportIssuedOn', t('Паспорт олгосон огноо'), { type: 'date', max: today() })}
+            {X('occupation', t('Ажил эрхлэлт'))}
+            {X('employerOrSchool', t('Ажлын газар / сургууль'))}
+            {X('stayAddress', t('Байрлах хаяг (очих улсад)'))}
+            {X('homeAddress', t('Гэрийн хаяг'), { className: 'span-2' })}
           </div>
         </Card>
         <div className="page-footer">

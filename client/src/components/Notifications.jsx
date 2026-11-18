@@ -149,14 +149,26 @@ export function NotificationBell() {
 export function EmailVerifyBanner({ user }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [wait, setWait] = useState(0); // “Дахин илгээх”-ийн 60 секундын хүлээлт (сервер ч шалгана)
+  const [error, setError] = useState('');
+  useEffect(() => {
+    if (wait <= 0) return undefined;
+    const id = setTimeout(() => setWait((w) => w - 1), 1000);
+    return () => clearTimeout(id);
+  }, [wait]);
   if (!user || user.role !== 'APPLICANT' || user.emailVerified) return null;
   async function resend() {
     setBusy(true);
+    setError('');
     try {
-      await api.post('/api/auth/verify-email/resend');
-      toast(t('Баталгаажуулах холбоос илгээгдлээ. Имэйлээ шалгана уу.'));
+      const r = await api.post('/api/auth/verify-email/resend');
+      if (r.alreadyVerified) toast(t('Имэйл аль хэдийн баталгаажсан байна.'));
+      else toast(t('Баталгаажуулах холбоос илгээгдлээ. Имэйлээ (Spam хавтсыг оролцуулан) шалгана уу.'));
+      setWait(r.cooldownSec || 60);
     } catch (ex) {
-      toast(ex.message, 'danger');
+      if (ex.retryAfter) setWait(ex.retryAfter);
+      // Илгээж чадаагүй шалтгааныг тод харуулна (өмнө нь чимээгүй алдаж байв)
+      setError(ex.message);
     } finally {
       setBusy(false);
     }
@@ -167,9 +179,15 @@ export function EmailVerifyBanner({ user }) {
         {t('Имэйл хаягаа (')}
         <strong>{user.email}</strong>
         {t(') баталгаажуулаагүй байна. Мэдүүлэг илгээх, мэдэгдэл авахын тулд имэйлээр ирсэн холбоосыг нээнэ үү.')}
+        {error && (
+          <span className="verify-error" role="alert">
+            <br />
+            {error}
+          </span>
+        )}
       </span>
-      <Button variant="ghost" className="btn-sm" loading={busy} onClick={resend}>
-        {t('Дахин илгээх')}
+      <Button variant="ghost" className="btn-sm" loading={busy} disabled={wait > 0} onClick={resend}>
+        {wait > 0 ? t('Дахин илгээх ({{v0}} сек)', { v0: wait }) : t('Дахин илгээх')}
       </Button>
     </div>
   );

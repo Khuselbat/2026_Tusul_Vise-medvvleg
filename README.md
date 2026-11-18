@@ -8,8 +8,8 @@
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас эсвэл S3-тэй нийцтэй сан (MinIO), сонголтоор AES-256-GCM (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 147 интеграцын тест бодит MySQL/MariaDB дээр (+ S3 драйверийн тест CI-д); Playwright E2E 10 тест × (desktop + mobile), axe хүртээмж |
-| Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, ZIP татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
+| Тест | Node test runner + Supertest — 166 интеграцын тест бодит MySQL/MariaDB дээр (+ S3 драйверийн тест CI-д); Playwright E2E 12 тест × (desktop + mobile), axe хүртээмж |
+| Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, бүх мэдээллээ нэг PDF-ээр татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
 | Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
 | Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E · нөөц/сэргээлт · Docker), pino бүтэцтэй лог |
 | Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS + ClamAV + Uptime Kuma), `/api/health`, нөөц → шифрлэсэн гадаад сан, сар бүрийн сэргээлтийн туршилт — [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
@@ -25,7 +25,7 @@
 
 ```bash
 cp .env.example .env
-# .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY, FILE_KEY, APP_URL-ийг солино:
+# .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY, FILE_KEY, APP_BASE_URL-ийг солино:
 #   openssl rand -hex 32      ← JWT_SECRET, PASSPORT_KEY, FILE_KEY тус бүрд
 docker compose up -d --build                 # app эхлэхдээ migration-уудыг автоматаар ажиллуулна
 docker compose exec app node scripts/create-admin.js --email admin@example.mn --name "Админ"
@@ -86,7 +86,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 147 интеграцын тест (API, migration, лог, Үе 1–5, аюулгүй байдал, UC A/E урсгал)
+cd server && npm test     # civiz_test сан дээр 166 интеграцын тест (API, migration, лог, Үе 1–6, аюулгүй байдал, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -107,7 +107,8 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
 * **Нууц үг сэргээх:** `/forgot-password` → 30 минутын нэг удаагийн холбоос → бүх төхөөрөмжөөс гарна.
 * **Сесс:** Профайл → “Нэвтэрсэн төхөөрөмжүүд” — нэг бүрчлэн хаах, бүх төхөөрөмжөөс гарах; нууц үг солиход бусад сесс хүчингүй.
 * **Имэйл хөгжүүлэлтэд:** SMTP хэрэггүй — захидлууд `server/mail-outbox/` хавтсанд `.eml` (+ уншихад хялбар `.json`) болж хадгалагдана.
-  Production: `MAIL_TRANSPORT=smtp`, `SMTP_*`, `APP_URL` тохируулна.
+  SMTP (жишээ нь Gmail App Password): `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `APP_BASE_URL` —
+  алхам алхмаар [WINDOWS_SETUP.md “Имэйл (SMTP)”](WINDOWS_SETUP.md). Админы самбар → “Туршилтын имэйл илгээх”.
 * **Мэдэгдэл:** илгээсэн, хуваарилагдсан, “Дутуу”, “Бүрэн”, нэмэлт материал ирсэн, хүргүүлсэн — дээд мөрний 🔔 болон имэйл.
   Имэйлд зөвхөн лавлах дугаар ба холбоос (тайлбар, хувийн мэдээлэлгүй); outbox амжилтгүй бол 5 хүртэл дахин оролдоно.
 
@@ -120,7 +121,8 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
   ClamAV-гүй орчинд (dev) зөвхөн агуулгын төрлийн (magic byte) шалгалт.
 * **Хадгалах хугацаа:** сервер өдөр бүр (мөн `npm run maintenance:retention [-- --dry-run]`) — `RETENTION_DRAFT_DAYS` (30) хэтэрсэн ноорог,
   өнчин файл, хуучин токен/сесс, уншсан хуучин мэдэгдлийг устгана. **Илгээсэн мэдүүлгийн архивыг автоматаар устгахгүй.**
-* **Мэдээллээ татах:** Профайл → “Бүх мэдээллээ татах (ZIP)” (нууц үгээр) — анкет (паспорт бүтнээр), хавсралт, архив, импорт, мэдэгдэл.
+* **Мэдээллээ татах:** Профайл → “Бүх мэдээллээ татах (PDF)” (нууц үгээр) — нэг PDF: профайл, баримтын сангийн жагсаалт, мэдүүлэг бүрийн
+  анкет (паспорт бүтнээр), үнэлгээний түүх, хавсралтын жагсаалт (SHA-256) + хавсаргасан PDF/зураг хуудсаараа; хуудас бүрт “АЛБАН БАРИМТ БИШ”.
 * **Бүртгэл устгах:** Профайл → хүсэлт (нууц үгээр) → админ “Устгах хүсэлт” дэлгэцээс баталгаажуулна → анкет, бүх файл, импорт,
   мэдэгдэл бүрмөсөн устаж, илгээсэн мэдүүлэг нэргүй статистик болж үлдэнэ (хянагдаж буй мэдүүлэгтэй бол хүлээнэ).
 * **Түлхүүр эргүүлэх:** шинэ түлхүүрийг `PASSPORT_KEY/_ID` (`FILE_KEY/_ID`), хуучныг `PASSPORT_KEYS_OLD=k1:hex` (`FILE_KEYS_OLD`)-д тавиад
@@ -141,6 +143,24 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
 * **Оператор:** хайлт (лавлах дугаар, мэдүүлэгч), төлөв, эрэмбэ, хуудаслалт. **Админ:** олноор сонгож хуваарилах (≤100, бүгд эсвэл юу ч биш).
 * **Олон улс:** шинэ улсыг админы “Улс” → “Визийн төрөл” → хувилбар нийтлэх + `SUBMITTABLE_COUNTRIES=KR,JP` л хангалттай —
   код өөрчлөхгүй (`test/stage4.test.js` баталгаажуулна).
+
+### Профайл, бичиг баримтын сан, автомат бөглөлт, имэйл (Үе 6)
+
+* **Имэйл:** `.env` байхгүй бол захидал `server/mail-outbox/`-д хадгалагдаж, холбоос терминалд тод хэвлэгдэнэ (жинхэнэ хаяг руу явахгүй —
+  “имэйл ирэхгүй байна” гэх асуудлын шалтгаан). Gmail: [WINDOWS_SETUP.md](WINDOWS_SETUP.md). “Дахин илгээх” 60 сек хүлээлттэй,
+  илгээлт амжилтгүй бол ойлгомжтой мессеж; баталгаажуулах токен 24 цаг, нууц үг сэргээх 1 цаг, нэг удаагийн. Туршилт: Ethereal
+  (`MAIL_TRANSPORT=ethereal`) эсвэл Mailpit (`docker compose --profile mail up -d mailpit`).
+* **Профайл → хувийн мэдээлэл:** анкетын бүх (аяллаас бусад) талбар + хүйс, гэр бүлийн байдал, паспорт олгосон огноо,
+  ажил/сургууль; паспорт AES-256-GCM. Зөвхөн эзэмшигчид.
+* **Бичиг баримтын сан** (`/app/documents`): паспортын хуулбар, цээж зураг, ажлын тодорхойлолт, банкны хуулга, гэр бүлийн лавлагаа,
+  сургуулийн тодорхойлолт г.м.; олгосон/хүчинтэй огноо, хугацаа дууссан/дуусах гэж буйг анхааруулна (`DOC_EXPIRY_WARN_DAYS`).
+* **Автомат бөглөлт:** шинэ мэдүүлэгт анкет профайлаас санал болгож бөглөгдөнө (“Профайлаас бөглөсөн”), “Материал” алхамд шаардлага
+  бүрт тохирох баримт **хуулагдаж** (шинэ storage_key) хавсрагдана — профайлын баримтыг сольсон/устгасан ч илгээсэн мэдүүлэг өөрчлөгдөхгүй.
+  Хугацаа дууссан баримтыг хавсаргахгүй. Админ шаардлага бүрт тохирох баримтын төрлийг сонгоно (нийтэлсэн хувилбарт ч, audit-тай).
+* **Визийн төрлийн ноорог:** `cd server && node scripts/import-visa-drafts.js --admin <имэйл>` — KVAC-ын албан хуудаснаас уншсан
+  C-3-1, D-2, D-4-ийн **нийтлээгүй** ноорог (`database/reference/kr-visa-drafts.json`, эх сурвалжтай, шалгасан огноогүй).
+  Админ эх сурвалжтай тулгаж, огноо тавиад нийтэлнэ.
+* Ахиц, үлдсэн ажил: [docs/PROGRESS.md](docs/PROGRESS.md).
 
 ### Production (Үе 5)
 
@@ -322,7 +342,13 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
           POST /api/auth/mfa/setup · mfa/enable {code} · mfa/verify {code | recoveryCode}   (login → {mfa: ENROLL|VERIFY})
           GET  /api/auth/sessions   DELETE /api/auth/sessions/:sid   POST /api/auth/sessions/revoke-all
 Мэдэгдэл  GET  /api/notifications[?unread=1]   POST /api/notifications/:id/read · read-all
-Хувийн    POST /api/app/privacy/export {password} → ZIP   GET/POST/DELETE /api/app/privacy/deletion {password, reason?}
+Хувийн    POST /api/app/privacy/export {password} → PDF   GET/POST/DELETE /api/app/privacy/deletion {password, reason?}
+Профайл   GET/PUT /api/app/profile · GET /api/app/profile/prefill
+          POST /api/app/profile/documents multipart {typeCode, title?, issuedOn?, validUntil?, file}   PUT/DELETE …/documents/:docId
+          GET /api/files/profile/:docId (зөвхөн эзэмшигч)
+          POST /api/app/drafts/:id/autofill-documents · GET /api/app/drafts/:id/document-matches
+Имэйл     GET /api/admin/mail/status · POST /api/admin/mail/test (админы өөрийн хаяг руу)
+          PUT /api/admin/requirements/:id/document-types {typeCodes[]}
 Мэдүүлэгч GET  /api/app/dashboard
           POST /api/app/drafts   GET/DELETE /api/app/drafts/:id   PUT /api/app/drafts/:id/form
           POST /api/app/drafts/:id/documents   DELETE /api/app/drafts/:id/documents/:docId

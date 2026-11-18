@@ -9,6 +9,7 @@ export class ApiError extends Error {
     this.fields = Object.fromEntries(Object.entries(body?.error?.fields || {}).map(([k, v]) => [k, translateServer(v)]));
     this.missing = (body?.error?.missing || []).map((m) => ({ ...m, message: translateServer(m.message) }));
     this.conflicts = body?.error?.conflicts || [];
+    this.retryAfter = Number(body?.error?.retryAfter) || 0;
   }
 }
 let onUnauthorized = null;

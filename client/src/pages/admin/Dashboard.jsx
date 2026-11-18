@@ -4,6 +4,7 @@ import { Page, Card, useAsync, ErrorBox, Skeleton, LinkButton } from '../../comp
 
 // Зураг 54 Админы хянах самбар — нэгтгэл тоо; хувийн анкет/файл нээх холбоосгүй
 import { t } from '../../i18n.js';
+import MailCheck from '../../components/MailCheck.jsx';
 export default function AdminDashboard() {
   const { data: d, error, loading, reload } = useAsync(() => api.get('/api/admin/dashboard'), []);
   const n = (x) => x ?? 0;
@@ -84,6 +85,9 @@ export default function AdminDashboard() {
                 </p>
                 <Link to="/admin/users">{t('Удирдах →')}</Link>
               </Card>
+            </div>
+            <div className="mt">
+              <MailCheck />
             </div>
             <p className="small muted mt">
               {t(

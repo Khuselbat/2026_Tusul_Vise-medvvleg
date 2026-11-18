@@ -310,7 +310,7 @@ r.post(
             ],
           );
           for (const sr of srcReqs) {
-            await q(
+            const insReq = await q(
               `INSERT INTO visa_requirements (version_id, code, title, instructions, applies_to, original_or_copy, translation_note, is_required, sort_order)
                VALUES (?,?,?,?,?,?,?,?,?)`,
               [
@@ -324,6 +324,11 @@ r.post(
                 sr.is_required,
                 sr.sort_order,
               ],
+            );
+            // Баримтын төрлийн холболтыг хамт хуулна (migration 013)
+            await q(
+              'INSERT INTO requirement_document_types (requirement_id, type_code) SELECT ?, type_code FROM requirement_document_types WHERE requirement_id = ?',
+              [insReq.insertId, sr.requirement_id],
             );
           }
           await audit(req, { action: 'VERSION_CREATE', entityType: 'visa_info_version', entityKey: ins.insertId }, q);
@@ -355,7 +360,16 @@ r.get(
   wrap(async (req, res) => {
     const v = await loadVersion(idParam(req.params.id));
     const reqs = await query('SELECT * FROM visa_requirements WHERE version_id = ? ORDER BY sort_order, requirement_id', [v.version_id]);
+    const maps = await query(
+      'SELECT m.requirement_id, m.type_code FROM requirement_document_types m JOIN visa_requirements r ON r.requirement_id = m.requirement_id WHERE r.version_id = ?',
+      [v.version_id],
+    );
+    const typesOf = (id) => maps.filter((m) => m.requirement_id === id).map((m) => m.type_code);
     res.json({
+      documentTypes: (await query('SELECT code, name_mn FROM document_types WHERE is_active = 1 ORDER BY sort_order')).map((t) => ({
+        code: t.code,
+        name: t.name_mn,
+      })),
       version: { ...serializeVersion(v), typeCode: v.type_code, countryName: v.country_name },
       requirements: reqs.map((q) => ({
         id: q.requirement_id,
@@ -367,6 +381,7 @@ r.get(
         translationNote: q.translation_note,
         isRequired: !!q.is_required,
         sortOrder: q.sort_order,
+        documentTypes: typesOf(q.requirement_id),
       })),
     });
   }),
@@ -542,6 +557,31 @@ r.delete(
       await audit(req, { action: 'REQUIREMENT_DELETE', entityType: 'visa_requirement', entityKey: id }, q);
     });
     res.json({ ok: true });
+  }),
+);
+
+/**
+ * Шаардлагад тохирох баримтын төрлүүд (профайлаас автоматаар хавсаргахад). Нийтэлсэн хувилбарт ч зөвшөөрнө (D-62):
+ * нийтэд харагдах агуулга (нэр, заавар, эх сурвалж) өөрчлөгдөхгүй, зөвхөн автомат бөглөлтийн санал. Audit-тай.
+ */
+r.put(
+  '/requirements/:id/document-types',
+  wrap(async (req, res) => {
+    const id = idParam(req.params.id);
+    const { typeCodes } = parse(z.object({ typeCodes: z.array(z.string().trim().min(1).max(40)).max(10) }), req.body);
+    const codes = [...new Set(typeCodes)];
+    await tx(async (q) => {
+      if (!(await q('SELECT requirement_id FROM visa_requirements WHERE requirement_id = ? FOR UPDATE', [id]))[0])
+        throw notFound('Шаардлага олдсонгүй.');
+      if (codes.length) {
+        const known = await q('SELECT code FROM document_types WHERE code IN (?) AND is_active = 1', [codes]);
+        if (known.length !== codes.length) throw badRequest('Баримтын төрөл буруу байна.');
+      }
+      await q('DELETE FROM requirement_document_types WHERE requirement_id = ?', [id]);
+      for (const c of codes) await q('INSERT INTO requirement_document_types (requirement_id, type_code) VALUES (?, ?)', [id, c]);
+      await audit(req, { action: 'REQUIREMENT_DOCTYPES_SET', entityType: 'visa_requirement', entityKey: id }, q);
+    });
+    res.json({ requirementId: id, documentTypes: codes });
   }),
 );
 

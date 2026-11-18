@@ -169,7 +169,18 @@ const autosaveSchema = z
     travelPurpose: s200,
     intendedEntryOn: s200,
     intendedExitOn: s200,
-    extraFields: z.object({ occupation: s200, homeAddress: s200, stayAddress: s200 }).partial().optional(),
+    extraFields: z
+      .object({
+        occupation: s200,
+        homeAddress: s200,
+        stayAddress: s200,
+        sex: s200,
+        maritalStatus: s200,
+        passportIssuedOn: s200,
+        employerOrSchool: s200,
+      })
+      .partial()
+      .optional(),
   })
   .strict();
 

@@ -146,6 +146,16 @@ export async function seed({ withDemoApplications = true, rounds = config.isTest
         )
       ).insertId;
     }
+    // Шаардлага ↔ профайлын баримтын төрөл (migration 013). Санхүүгийн нотолгоонд хэд хэдэн төрөл тохирно.
+    const C39_DOC_TYPES = {
+      FORM_PHOTO: ['PHOTO'],
+      PASSPORT_COPY: ['PASSPORT_COPY'],
+      FINANCIAL: ['EMPLOYMENT_CERT', 'BANK_STATEMENT'],
+      FAMILY: ['FAMILY_CERT'],
+    };
+    for (const [code, types] of Object.entries(C39_DOC_TYPES)) {
+      for (const t of types) await q('INSERT INTO requirement_document_types (requirement_id, type_code) VALUES (?, ?)', [reqIds[code], t]);
+    }
 
     // Админы ноорог хувилбарын жишээ (нийтлэгдээгүй тул зочинд харагдахгүй)
     const d2 = (await q('INSERT INTO visa_types (country_id, code, is_active) VALUES (?,?,0)', [kr, 'D-2'])).insertId;

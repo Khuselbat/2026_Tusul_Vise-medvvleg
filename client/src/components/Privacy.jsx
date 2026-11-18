@@ -1,4 +1,4 @@
-// Үе 3 — мэдүүлэгчийн хувийн мэдээлэл: бүгдийг ZIP-ээр татах, бүртгэл устгах хүсэлт (тайлан 4.5).
+// Үе 3 — мэдүүлэгчийн хувийн мэдээлэл: бүгдийг нэг PDF-ээр татах, бүртгэл устгах хүсэлт (тайлан 4.5).
 import { useState } from 'react';
 import { api, downloadPost } from '../api.js';
 import { Card, Button, Field, Alert, Badge, Modal, useAsync, ErrorBox, Skeleton, useToast, fmtDateTime } from './ui.jsx';
@@ -91,13 +91,13 @@ export function PrivacyCard({ onErased }) {
         }}
       >
         {t(
-          'Системд хадгалагдаж буй бүх мэдээллээ (анкет, хавсралт, архив, мэдэгдэл) нэг ZIP файлаар татаж авах, эсвэл бүртгэлээ устгуулах хүсэлт гаргах боломжтой.',
+          'Системд хадгалагдаж буй бүх мэдээллээ (профайл, анкет, үнэлгээний түүх, хавсралт, мэдэгдэл) нэг PDF файлаар татаж авах, эсвэл бүртгэлээ устгуулах хүсэлт гаргах боломжтой. PDF-д паспортын дугаар бүтнээр орно — найдвартай хадгална уу.',
         )}
       </p>
       <ErrorBox error={error} onRetry={reload} />
       <div className="row-actions">
         <Button variant="ghost" onClick={() => setModal('export')}>
-          {t('Бүх мэдээллээ татах (ZIP)')}
+          {t('Бүх мэдээллээ татах (PDF)')}
         </Button>
         {!pending && (
           <Button variant="ghost" className="danger" onClick={() => setModal('delete')}>
@@ -147,10 +147,10 @@ export function PrivacyCard({ onErased }) {
               {
                 password,
               },
-              'civiz-export.zip',
+              'civiz-export.pdf',
             );
             setModal(null);
-            toast(t('Мэдээллийн ZIP татагдлаа.'));
+            toast(t('Мэдээллийн PDF татагдлаа.'));
           }}
         >
           <Alert tone="warn">{t('Файлд паспортын дугаар зэрэг нууц мэдээлэл бүтнээр орно. Найдвартай газар хадгална уу.')}</Alert>

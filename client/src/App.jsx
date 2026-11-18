@@ -22,6 +22,7 @@ import ApplicationDetail from './pages/app/ApplicationDetail.jsx';
 import Profile from './pages/app/Profile.jsx';
 import OfficialResult from './pages/app/OfficialResult.jsx';
 import Imports from './pages/app/Imports.jsx';
+import Documents from './pages/app/Documents.jsx';
 import ImportNew from './pages/app/ImportNew.jsx';
 import ImportDetail from './pages/app/ImportDetail.jsx';
 import Worklist from './pages/operator/Worklist.jsx';
@@ -78,6 +79,7 @@ export default function App() {
         <Route path="/app/profile" element={guard('APPLICANT', <Profile />)} />
         <Route path="/app/official-result" element={guard('APPLICANT', <OfficialResult />)} />
         <Route path="/app/imports" element={guard('APPLICANT', <Imports />)} />
+        <Route path="/app/documents" element={guard('APPLICANT', <Documents />)} />
         <Route path="/app/imports/new" element={guard('APPLICANT', <ImportNew />)} />
         <Route path="/app/imports/:id" element={guard('APPLICANT', <ImportDetail />)} />
 

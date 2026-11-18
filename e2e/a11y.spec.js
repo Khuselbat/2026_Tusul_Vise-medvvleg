@@ -35,7 +35,15 @@ test('WCAG 2.1 AA — зочин, мэдүүлэгч, оператор, адми
   await ctx.request.post('/api/auth/verify-email', { headers: H, data: { token: await mailToken(email, '/verify-email') } });
   const ap = await ctx.newPage();
   await uiLogin(ap, email, 'A11yTest1234');
-  for (const p of ['/app', '/app/applications', '/app/imports', '/app/imports/new', '/app/profile', '/app/official-result']) {
+  for (const p of [
+    '/app',
+    '/app/applications',
+    '/app/imports',
+    '/app/imports/new',
+    '/app/profile',
+    '/app/official-result',
+    '/app/documents',
+  ]) {
     await ap.goto(p);
     await ap.waitForLoadState('networkidle');
     await audit(ap, p);
@@ -75,6 +83,16 @@ test('WCAG 2.1 AA — зочин, мэдүүлэгч, оператор, адми
     await adPage.waitForLoadState('networkidle');
     await audit(adPage, p);
   }
+  // Шаардлага ↔ профайлын баримтын төрөл (цонх нээлттэй)
+  const { visas } = await (await ad.request.get('/api/visas')).json();
+  await adPage.goto(`/admin/versions/${visas.find((v) => v.code === 'C-3-9').versionId}/requirements`);
+  await adPage.waitForLoadState('networkidle');
+  await adPage
+    .getByRole('button', { name: /профайлын баримтын төрөл тохируулах/ })
+    .first()
+    .click();
+  await expect(adPage.getByRole('dialog')).toBeVisible();
+  await audit(adPage, 'requirement document types');
   await Promise.all([ctx.close(), op.close(), ad.close(), guestCtx.close()]);
 });
 
@@ -103,7 +121,7 @@ test('цонхны фокус: дотогш орж, гадагш гарахгү�
   const page = await ctx.newPage();
   await uiLogin(page, email, 'Keyboard1234');
   await page.goto('/app/profile');
-  const opener = page.getByRole('button', { name: 'Бүх мэдээллээ татах (ZIP)' });
+  const opener = page.getByRole('button', { name: 'Бүх мэдээллээ татах (PDF)' });
   await opener.focus();
   await page.keyboard.press('Enter');
   const dlg = page.getByRole('dialog');

@@ -3,14 +3,14 @@ import { query, one } from '../db.js';
 import { decryptPassport, maskPassport } from './crypto.js';
 import { STATUS_LABEL } from './visa.js';
 
-const today = () => new Date().toISOString().slice(0, 10);
-const isoDate = (msg) =>
+export const today = () => new Date().toISOString().slice(0, 10);
+export const isoDate = (msg) =>
   z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, msg)
     .refine((s) => !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s), msg);
 // Албан ёсны анкетыг англи хэлээр бөглөнө — паспорт дээрх латин бичлэг
-const latinName = z
+export const latinName = z
   .string()
   .trim()
   .min(1, 'Заавал бөглөнө.')
@@ -50,6 +50,17 @@ export const formSchema = z
         occupation: z.string().trim().max(120).optional().default(''),
         homeAddress: z.string().trim().max(300).optional().default(''),
         stayAddress: z.string().trim().max(300).optional().default(''),
+        // Профайлаас (migration 011) — сонголттой
+        sex: z.enum(['', 'M', 'F'], { message: 'Хүйсээ сонгоно уу.' }).optional().default(''),
+        maritalStatus: z
+          .enum(['', 'SINGLE', 'MARRIED', 'DIVORCED', 'WIDOWED'], { message: 'Гэр бүлийн байдлаа сонгоно уу.' })
+          .optional()
+          .default(''),
+        passportIssuedOn: z
+          .union([z.literal(''), isoDate('Бодит огноо оруулна уу.').refine((d) => d <= today(), 'Олгосон огноо ирээдүйд байж болохгүй.')])
+          .optional()
+          .default(''),
+        employerOrSchool: z.string().trim().max(200).optional().default(''),
       })
       .optional()
       .default({}),
@@ -59,6 +70,9 @@ export const formSchema = z
       ctx.addIssue({ code: 'custom', path: ['intendedExitOn'], message: 'Гарах огноо орох огнооноос хойш байна.' });
     if (d.passportExpiresOn <= d.intendedExitOn)
       ctx.addIssue({ code: 'custom', path: ['passportExpiresOn'], message: 'Паспорт аяллын хугацаанд хүчинтэй байх ёстой.' });
+    const issued = d.extraFields?.passportIssuedOn;
+    if (issued && issued >= d.passportExpiresOn)
+      ctx.addIssue({ code: 'custom', path: ['extraFields', 'passportIssuedOn'], message: 'Олгосон огноо дуусах огнооноос өмнө байна.' });
   });
 
 /** Талбарын алдаа болон огнооны харьцуулалтыг нэг дор буцаана (zod нь суурь алдаатай үед superRefine-ийг алгасдаг). */
@@ -123,6 +137,7 @@ export function serializeDoc(d) {
     sha256: d.sha256,
     scanStatus: d.scan_status,
     uploadedAt: d.uploaded_at,
+    fromProfile: !!d.source_profile_document_id,
   };
 }
 

@@ -41,8 +41,8 @@ export default function Register() {
     if (Object.keys(fe).length) return;
     setBusy(true);
     try {
-      await api.post('/api/auth/register', f);
-      navigate('/login?registered=1');
+      const r = await api.post('/api/auth/register', f);
+      navigate(r.mailSent === false ? '/login?registered=1&mail=failed' : '/login?registered=1');
     } catch (ex) {
       setErrors(ex.fields || {});
       setErr(ex.message);

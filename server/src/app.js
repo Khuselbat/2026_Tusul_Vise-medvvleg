@@ -21,6 +21,8 @@ import notificationRoutes from './routes/notifications.js';
 import privacyRoutes from './routes/privacy.js';
 import privacyAdminRoutes from './routes/privacyAdmin.js';
 import statsRoutes from './routes/stats.js';
+import adminMailRoutes from './routes/adminMail.js';
+import profileRoutes from './routes/profile.js';
 
 export function createApp({ logger = defaultLogger } = {}) {
   const app = express();
@@ -92,10 +94,12 @@ export function createApp({ logger = defaultLogger } = {}) {
   app.use('/api/app', supplementRoutes);
   app.use('/api/app', officialResultRoutes);
   app.use('/api/app', importRoutes);
+  app.use('/api/app', profileRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/app', privacyRoutes);
   app.use('/api/admin', privacyAdminRoutes);
   app.use('/api/admin', statsRoutes);
+  app.use('/api/admin', adminMailRoutes);
   app.use('/api/files', fileRoutes);
   app.use('/api/operator', operatorRoutes);
   app.use('/api/admin', adminRoutes);

@@ -5,6 +5,10 @@ import { test, expect, devices } from '@playwright/test';
 import { uiLogin } from '../helpers.js';
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'docs', 'screenshots', 'guide');
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGNgYGD4z8DAwMDAwMDAAAAOAAH0o4HcAAAAAElFTkSuQmCC',
+  'base64',
+);
 const DEMO = {
   admin: ['admin@civiz.mn', 'Admin1234'],
   operator: ['operator@civiz.mn', 'Operator1234'],
@@ -49,6 +53,13 @@ test('мэдүүлэгч', async ({ page }) => {
   await shot(page, 'a10_imports');
   await page.goto('/app/profile');
   await shot(page, 'a11_profile', { full: true });
+  // Бичиг баримтын сан (жишээ баримттай)
+  await page.request.post('/api/app/profile/documents', {
+    headers: { 'X-Requested-With': 'civiz' },
+    multipart: { typeCode: 'PHOTO', file: { name: 'photo.png', mimeType: 'image/png', buffer: PNG } },
+  });
+  await page.goto('/app/documents');
+  await shot(page, 'a13_documents', { full: true });
 });
 
 test('мэдүүлэгч — гар утас', async ({ browser }) => {

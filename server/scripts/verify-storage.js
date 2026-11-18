@@ -12,6 +12,9 @@ const rows = [
   ...(await query(
     "SELECT file_id AS id, 'evidence' AS kind, storage_key, sha256, size_bytes FROM evidence_files WHERE scan_status <> 'REJECTED'",
   )),
+  ...(await query(
+    "SELECT document_id AS id, 'profile' AS kind, storage_key, sha256, size_bytes FROM profile_documents WHERE scan_status <> 'REJECTED'",
+  )),
 ];
 let ok = 0;
 const bad = [];

@@ -115,4 +115,22 @@ r.get(
   }),
 );
 
+/**
+ * Профайлын бичиг баримтын сан: ЗӨВХӨН эзэмшигч. Оператор, админ хэзээ ч үзэхгүй — мэдүүлэгт хуулсан хувилбарыг
+ * (application_documents) л оператор харна.
+ */
+r.get(
+  '/profile/:docId',
+  requireAuth,
+  wrap(async (req, res) => {
+    const id = idParam(req.params.docId);
+    const f = await one(
+      'SELECT document_id AS id, user_id, storage_key, mime_type, original_name, scan_status FROM profile_documents WHERE document_id = ?',
+      [id],
+    );
+    if (!f || req.user.role !== 'APPLICANT' || f.user_id !== req.user.id) return deny(req, req.user, !!f, id, 'profile_document');
+    return sendFile(req, res, f, { entityType: 'profile_document', applicationId: null });
+  }),
+);
+
 export default r;

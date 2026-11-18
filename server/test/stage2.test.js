@@ -78,6 +78,11 @@ describe('Имэйл баталгаажуулалт', () => {
 
   test('дахин илгээхэд хуучин токен хүчингүй; буруу/хуучин токен 400; зөв нь нэг удаа', async () => {
     const old = lastMailToken(u.email, '/verify-email');
+    // 60 секундын хүлээлтийг алгасна (email.test.js-д тусад нь шалгана)
+    await query(
+      "UPDATE user_tokens t JOIN users x ON x.user_id = t.user_id SET t.created_at = t.created_at - INTERVAL 2 MINUTE WHERE x.email = ? AND t.purpose = 'VERIFY_EMAIL'",
+      [u.email],
+    );
     assert.equal((await c.post('/api/auth/verify-email/resend')).status, 200);
     const fresh = lastMailToken(u.email, '/verify-email');
     assert.notEqual(old, fresh);

@@ -33,6 +33,11 @@ export async function eraseApplicant(q, userId) {
     ),
   );
 
+  // Профайл ба бичиг баримтын сан (migration 011–012)
+  keys.push(...(await q('SELECT storage_key FROM profile_documents WHERE user_id = ?', [userId])).map((x) => x.storage_key));
+  await q('DELETE FROM profile_documents WHERE user_id = ?', [userId]);
+  await q('DELETE FROM applicant_profiles WHERE user_id = ?', [userId]);
+
   // Албан үр дүн, хүргүүлсэн, нотолгоо, импорт
   await q(
     'DELETE v FROM official_result_verifications v JOIN official_results r ON r.result_id = v.result_id WHERE r.application_id IN (?)',

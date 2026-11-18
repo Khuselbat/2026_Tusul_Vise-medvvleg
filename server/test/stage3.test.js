@@ -12,34 +12,7 @@ import { encryptBlob, decryptBlob, isEncrypted, saveFile } from '../src/lib/stor
 import { processPendingScans } from '../src/lib/scanner.js';
 import { runRetention } from '../src/lib/retention.js';
 import { REDACTED } from '../src/lib/erasure.js';
-import { crc32 } from '../src/lib/zip.js';
-import zlib from 'node:zlib';
-import { setup, login, client, newApplicant, submitApplication, assign, review, DEMO, PDF, PNG, uuid } from './helpers.js';
-
-/** Жижиг ZIP уншигч (тестэд): central directory → {name: Buffer}; CRC шалгана. */
-function unzip(buf) {
-  const eocd = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-  assert.ok(eocd >= 0, 'EOCD байхгүй');
-  const count = buf.readUInt16LE(eocd + 10);
-  let p = buf.readUInt32LE(eocd + 16);
-  const files = {};
-  for (let i = 0; i < count; i += 1) {
-    assert.equal(buf.readUInt32LE(p), 0x02014b50);
-    const method = buf.readUInt16LE(p + 10);
-    const crc = buf.readUInt32LE(p + 16);
-    const csize = buf.readUInt32LE(p + 20);
-    const nlen = buf.readUInt16LE(p + 28);
-    const local = buf.readUInt32LE(p + 42);
-    const name = buf.subarray(p + 46, p + 46 + nlen).toString('utf8');
-    const start = local + 30 + buf.readUInt16LE(local + 26) + buf.readUInt16LE(local + 28);
-    const raw = buf.subarray(start, start + csize);
-    const data = method === 8 ? zlib.inflateRawSync(raw) : raw;
-    assert.equal(crc32(data), crc, `CRC ${name}`);
-    files[name] = data;
-    p += 46 + nlen;
-  }
-  return files;
-}
+import { setup, login, client, newApplicant, submitApplication, assign, review, DEMO, PDF, uuid } from './helpers.js';
 
 const serverDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 let app, ids, admin, op;
@@ -220,49 +193,7 @@ describe('Хадгалах хугацаа', () => {
   });
 });
 
-describe('Мэдээлэл татах (ZIP)', () => {
-  test('нууц үг заавал; өөрийн мэдээлэл л; оператор/админ хандахгүй', async () => {
-    const { c, user } = await newApplicant(app, 'export');
-    const ref = await submitApplication(c, ids);
-    await c.multipart('/api/app/imports', { countryName: 'БНСУ', visaCategory: 'C-3-9', appliedOn: '2024-01-02', idempotencyKey: uuid() }, [
-      { field: 'files', buf: PNG, name: 'old.png' },
-    ]);
-    assert.equal((await c.post('/api/app/privacy/export', { password: 'wrong-pass1' })).status, 400);
-    const r = await binary(c.post('/api/app/privacy/export', { password: user.password }));
-    assert.equal(r.status, 200);
-    assert.equal(r.headers['content-type'], 'application/zip');
-    const files = unzip(r.body);
-    const names = Object.keys(files).join('|');
-    for (const n of [
-      'README.txt',
-      'profile.json',
-      'notifications.json',
-      `applications/${ref}/application.json`,
-      `applications/${ref}/files/`,
-      'imports/IMP-',
-    ]) {
-      assert.ok(names.includes(n), n);
-    }
-    const appJson = JSON.parse(files[`applications/${ref}/application.json`].toString('utf8'));
-    assert.equal(appJson.form.passportNumber, 'E7654321', 'өөрийн паспорт бүтнээр');
-    assert.equal(appJson.files.filter((f) => f.included).length, 3);
-    assert.ok(!JSON.stringify(appJson).includes('operatorName'), 'ажилтны нэр орохгүй');
-    const pdfName = Object.keys(files).find((n) => n.startsWith(`applications/${ref}/files/`) && n.endsWith('.pdf'));
-    assert.deepEqual(files[pdfName], PDF);
-    assert.equal(JSON.parse(files['profile.json']).email, user.email);
-    const others = (
-      await query('SELECT public_id FROM applications WHERE applicant_id <> (SELECT user_id FROM users WHERE email = ?)', [user.email])
-    ).map((x) => x.public_id);
-    assert.ok(
-      others.every((x) => !names.includes(x)),
-      'бусдын мэдүүлэг орохгүй',
-    );
-    assert.equal((await op.post('/api/app/privacy/export', { password: DEMO.operator.password })).status, 403);
-    assert.equal((await admin.post('/api/app/privacy/export', { password: DEMO.admin.password })).status, 403);
-    assert.ok(await one("SELECT 1 AS x FROM audit_events WHERE action = 'DATA_EXPORT'"));
-  });
-});
-
+// Мэдээлэл татах — ZIP-ийн оронд PDF болсон: test/stage6.test.js
 describe('Бүртгэл устгах хүсэлт', () => {
   let c, user, ref, docKeys, reqId;
   before(async () => {

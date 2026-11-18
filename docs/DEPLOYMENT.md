@@ -73,9 +73,9 @@ cp .env.example .env && chmod 600 .env
 | `PASSPORT_KEY` | `openssl rand -hex 32` — паспортын дугаар, 2FA нууцын шифрлэлт |
 | `FILE_KEY` | `openssl rand -hex 32` — хавсралтын шифрлэлт (PASSPORT_KEY-ээс **өөр**) |
 | `DOMAIN` | `viz.example.mn` |
-| `APP_URL` | `https://viz.example.mn` (имэйл доторх холбоос) |
+| `APP_BASE_URL` | `https://viz.example.mn` (имэйл доторх холбоос; хуучин нэр `APP_URL` хэвээр ажиллана) |
 | `FORCE_HTTPS` / `COOKIE_SECURE` | `1` / `1` |
-| `MAIL_TRANSPORT` | `smtp` + `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` |
+| `MAIL_TRANSPORT` | `smtp` + `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (Gmail: 465/1 + App Password — WINDOWS_SETUP.md). Шалгах: админы самбар → “Туршилтын имэйл илгээх” |
 | `CLAMAV_HOST` | `clamav` (вирус шалгалт асаах бол, §4.3) |
 | `RETENTION_*`, `KEEP_DAYS` | Байгууллагын журмаар батлагдсан хугацаа |
 
@@ -103,6 +103,9 @@ curl -fsS https://viz.example.mn/api/health
 docker compose exec app node scripts/create-admin.js --email admin@example.mn --name "Системийн админ"
 # Түр нууц үгийг НЭГ удаа хэвлэнэ. ADMIN_PASSWORD орчны хувьсагчаар өөрөө өгч болно.
 ```
+
+Визийн төрлийн нийтлээгүй ноорог (KVAC-ын албан эх сурвалжаас; админ шалгаж нийтэлнэ):
+`docker compose exec app node scripts/import-visa-drafts.js --admin admin@example.mn`
 
 `https://viz.example.mn/login` → нэвтрэх → 2FA (Google/Microsoft Authenticator) QR бүртгэх → **10 нөөц кодыг** хадгална →
 Профайлаас нууц үгээ солино. Дараа нь админ “Хэрэглэгчид” дэлгэцээс операторуудыг үүсгэнэ, “Улс/Визийн төрөл”-өөс
@@ -292,7 +295,7 @@ curl -fsS https://viz.example.mn/api/health
 ## 10. Production хяналтын хуудас
 
 - [ ] DNS A бичлэг → VPS; `ufw status` — зөвхөн 22, 80, 443
-- [ ] `.env`: бүх нууц санамсаргүй, `FORCE_HTTPS=1`, `COOKIE_SECURE=1`, `APP_URL=https://…`, SMTP
+- [ ] `.env`: бүх нууц санамсаргүй, `FORCE_HTTPS=1`, `COOKIE_SECURE=1`, `APP_BASE_URL=https://…`, SMTP (туршилтын имэйл ирсэн)
 - [ ] `.env` + `rclone.conf`-ийн хуулбар сервергүй, найдвартай газар
 - [ ] `https://<домэйн>/api/health` → `"status":"ok"`; SSL Labs үнэлгээ A
 - [ ] Анхны админ 2FA-тай; түр нууц үг солигдсон; операторууд үүссэн

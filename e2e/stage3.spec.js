@@ -1,4 +1,4 @@
-// Үе 3 UI: мэдээллээ ZIP-ээр татах, бүртгэл устгах хүсэлт → админ баталгаажуулах → нэвтрэх боломжгүй.
+// Үе 3 UI: мэдээллээ PDF-ээр татах, бүртгэл устгах хүсэлт → админ баталгаажуулах → нэвтрэх боломжгүй.
 import { test, expect } from '@playwright/test';
 import { uiLogin, mailToken, H } from './helpers.js';
 
@@ -18,15 +18,15 @@ test('мэдээлэл татах ба бүртгэл устгах', async ({ br
   await uiLogin(ap, email, pw);
   await ap.goto('/app/profile');
 
-  // ── ZIP татах: нууц үг буруу бол алдаа, зөв бол файл ──
-  await ap.getByRole('button', { name: 'Бүх мэдээллээ татах (ZIP)' }).click();
+  // ── PDF татах: нууц үг буруу бол алдаа, зөв бол файл ──
+  await ap.getByRole('button', { name: 'Бүх мэдээллээ татах (PDF)' }).click();
   const dlg = ap.getByRole('dialog');
   await dlg.locator('#pv-pw').fill('wrong-password1');
   await dlg.getByRole('button', { name: 'Татах' }).click();
   await expect(dlg.getByText('Нууц үг буруу байна.')).toBeVisible();
   await dlg.locator('#pv-pw').fill(pw);
   const [download] = await Promise.all([ap.waitForEvent('download'), dlg.getByRole('button', { name: 'Татах' }).click()]);
-  expect(download.suggestedFilename()).toMatch(/^civiz-export-\d{8}\.zip$/);
+  expect(download.suggestedFilename()).toMatch(/^civiz-export-\d{8}\.pdf$/);
 
   // ── Устгах хүсэлт ──
   await ap.getByRole('button', { name: 'Бүртгэл устгах хүсэлт' }).click();

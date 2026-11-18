@@ -57,15 +57,16 @@ services:
       FORCE_HTTPS: ${FORCE_HTTPS:-0}
       COOKIE_SECURE: ${COOKIE_SECURE:-1}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      # Үе 2: имэйл (SMTP) ба холбоосын домэйн
-      APP_URL: '${APP_URL:?APP_URL тохируулна уу, жишээ нь https://viz.example.mn}'
+      # Имэйл (SMTP) ба холбоосын домэйн. APP_BASE_URL / SMTP_PASS — шинэ нэр; APP_URL / SMTP_PASSWORD хэвээр дэмжинэ
+      APP_BASE_URL: '${APP_BASE_URL:-${APP_URL:?APP_BASE_URL тохируулна уу, жишээ нь https://viz.example.mn}}'
       MAIL_TRANSPORT: ${MAIL_TRANSPORT:-smtp}
       MAIL_FROM: '${MAIL_FROM:-Цахим виз <no-reply@example.mn>}'
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_SECURE: ${SMTP_SECURE:-0}
+      SMTP_SECURE: ${SMTP_SECURE:-}
       SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_PASS: '${SMTP_PASS:-${SMTP_PASSWORD:-}}'
+      DOC_EXPIRY_WARN_DAYS: ${DOC_EXPIRY_WARN_DAYS:-30}
       # Үе 3: файлын сан, шифрлэлт, вирус шалгалт, хадгалах хугацаа
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
       STORAGE_ENCRYPT: ${STORAGE_ENCRYPT:-1}
@@ -111,6 +112,15 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data
       - caddyconfig:/config
+
+  # Имэйл туршилт (dev): `docker compose --profile mail up -d mailpit` → .env-д SMTP_HOST=mailpit, SMTP_PORT=1025, SMTP_SECURE=0
+  # Бүх захидлыг барьж http://127.0.0.1:8025 дээр харуулна — жинхэнэ хаяг руу ЯВАХГҮЙ. Production-д ашиглахгүй.
+  mailpit:
+    image: axllent/mailpit:latest
+    profiles: ['mail']
+    restart: unless-stopped
+    logging: *logging
+    ports: ['127.0.0.1:8025:8025', '127.0.0.1:1025:1025']
 
   # Uptime мониторинг (Үе 5): `docker compose --profile monitoring up -d` → SSH туннелээр http://127.0.0.1:3001
   # Монитор: HTTP(s) — https://<DOMAIN>/api/health, 60 сек; мэдэгдэл (имэйл/Telegram) тохируулна. docs/DEPLOYMENT.md §7
