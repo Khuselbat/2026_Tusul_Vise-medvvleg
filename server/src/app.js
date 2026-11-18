@@ -4,8 +4,8 @@ import cookieParser from 'cookie-parser';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from './config.js';
-import { pool } from './db.js';
 import { HttpError } from './lib/errors.js';
+import { checkHealth } from './lib/health.js';
 import { logger as defaultLogger, httpLogger } from './lib/logger.js';
 import { loadUser } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
@@ -76,12 +76,14 @@ export function createApp({ logger = defaultLogger } = {}) {
 
   app.use(loadUser);
 
-  app.get('/api/health', async (_req, res) => {
+  // Үе 5 мониторинг: live — процесс амьд (хамааралгүй); health — DB + файлын сан (+ ClamAV) бэлэн эсэх
+  app.get('/api/health/live', (_req, res) => res.json({ ok: true }));
+  app.get('/api/health', async (_req, res, next) => {
     try {
-      await pool.query('SELECT 1');
-      res.json({ ok: true });
-    } catch {
-      res.status(503).json({ ok: false });
+      const h = await checkHealth();
+      res.status(h.ok ? 200 : 503).json(h);
+    } catch (err) {
+      next(err);
     }
   });
   app.use('/api/auth', authRoutes);

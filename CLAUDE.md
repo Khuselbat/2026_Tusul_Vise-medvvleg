@@ -23,6 +23,8 @@ cd server && npm test           # интеграцын тест — заавал
 cd server && npm run db:migrate # хэрэгжээгүй migration (өгөгдөл устгахгүй)
 cd server && npm run db:reset   # dev/test: бүх хүснэгт устгаад migration + seed (production-д татгалзана)
 cd client && npm run build      # production build → server үйлчилнэ
+scripts/backup.sh · restore-drill.sh   # нөөц / сар бүрийн туршилт (Windows: .ps1); BACKUP_MODE=docker
+npm run loadtest · npm run docs:screenshots   # ачааллын туршилт (тусдаа сан) · гарын авлагын зураг
 npm run lint && npm run format:check   # репоны үндсэнд
 npm run test:e2e                # Playwright (client build хэрэгтэй)
 ```
@@ -54,6 +56,11 @@ bash-аас хамааралтай алхам нэмбэл PowerShell/Node ху�
     англи орчуулгыг `client/src/locales/en.json`-д нэмнэ. Локал хувьсагчийг `t` гэж нэрлэхгүй (орчуулгын функцийг дарна).
 15. **Хүртээмж:** шинэ дэлгэцийг `e2e/a11y.spec.js`-д нэмж axe (WCAG 2.1 AA) зөрчил 0 байлгана; цонхыг зөвхөн `Modal/Confirm`-оор
     (фокус удирдлагатай); өнгийг `--muted`-аас цайруулахгүй (контраст ≥4.5:1).
+16. **Production (Үе 5):** шинэ ар талын (setInterval) ажлыг `withLock(name, fn)` (`db.js`)-ээр — олон инстанст нэг л удаа.
+    Нууц үгийг зөвхөн `lib/password.js` (`hashPassword/verifyPassword`, worker_threads)-оор — `bcrypt`-ийг route-оос шууд дуудахгүй.
+    Шинэ хадгалалт/гадаад хамаарал нэмбэл `lib/health.js`-д шалгалт нэмнэ. Шинэ хувийн мэдээллийн хүснэгт/файл нь `scripts/backup.*`-д
+    автоматаар орно (бүх сан + storage); өөр газар хадгалбал нөөц ба `restore-drill`-д нэмнэ. Production image-д зөвхөн
+    `server/src`, `server/scripts` (seed/reset-гүй), `database/`, `client/dist` орно — dev скриптийг `.dockerignore`-д нэмнэ.
 
 ## Кодын хэв маяг
 - Серверийн алдааны мессеж, UI текст — **монгол хэл (кирилл)**. Код, хувьсагч, коммит — англи.

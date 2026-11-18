@@ -1,16 +1,26 @@
 # Ажиллуулах:  cp .env.example .env  (нууц утгуудаа солино)  →  docker compose up -d --build
-# Схем: app эхлэхдээ migration-уудыг автоматаар ажиллуулна.
-# Анхны админ: docker compose exec app npm run user:create-admin -- --email admin@example.mn --name "Админ"
+# Схем: app эхлэхдээ DB-г хүлээж, migration-уудыг автоматаар ажиллуулна. Production image-д seed байхгүй.
+# Анхны админ: docker compose exec app node scripts/create-admin.js --email admin@example.mn --name "Админ"
+# Production (VPS): docs/DEPLOYMENT.md
+
+# Лог эргүүлэлт (Үе 5): контейнер бүр ≤ 5 × 20 MB, диск дүүрэхгүй. `docker compose logs -f app`
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '20m'
+    max-file: '5'
+
 services:
   db:
     image: mysql:8.0
     restart: unless-stopped
+    logging: *logging
     environment:
       MYSQL_DATABASE: ${DB_NAME:-civiz}
       MYSQL_USER: ${DB_USER:-civiz}
       MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD тохируулна уу}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD тохируулна уу}
-    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci']
+    command: ['--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', '--skip-name-resolve']
     volumes:
       - dbdata:/var/lib/mysql
     healthcheck:
@@ -20,7 +30,17 @@ services:
 
   app:
     build: .
+    image: civiz-app:${APP_VERSION:-latest}
     restart: unless-stopped
+    logging: *logging
+    # PID 1 нь tini — SIGTERM-ийг node руу дамжуулж, эхэлсэн хүсэлтүүдийг дуусгаад зогсооно (src/index.js)
+    init: true
+    stop_grace_period: 15s
+    # Код зөвхөн уншигдана; бичих газар — хувийн файлын volume ба /tmp
+    read_only: true
+    tmpfs: ['/tmp']
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
     depends_on:
       db: { condition: service_healthy }
     environment:
@@ -36,6 +56,7 @@ services:
       TRUST_PROXY: '1'
       FORCE_HTTPS: ${FORCE_HTTPS:-0}
       COOKIE_SECURE: ${COOKIE_SECURE:-1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       # Үе 2: имэйл (SMTP) ба холбоосын домэйн
       APP_URL: '${APP_URL:?APP_URL тохируулна уу, жишээ нь https://viz.example.mn}'
       MAIL_TRANSPORT: ${MAIL_TRANSPORT:-smtp}
@@ -59,16 +80,19 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       CLAMAV_HOST: ${CLAMAV_HOST:-}
       RETENTION_DRAFT_DAYS: ${RETENTION_DRAFT_DAYS:-30}
+      SUBMITTABLE_COUNTRIES: ${SUBMITTABLE_COUNTRIES:-KR}
     volumes:
       - files:/app/server/storage
     ports:
-      - '${APP_PORT:-4000}:4000'
+      # Анхдагчаар зөвхөн localhost — интернэтээс Caddy (HTTPS)-ээр л хандана. Шууд нээх бол APP_BIND=0.0.0.0
+      - '${APP_BIND:-127.0.0.1}:${APP_PORT:-4000}:4000'
 
   # Вирус шалгалт (Үе 3): `docker compose --profile av up -d` + .env-д CLAMAV_HOST=clamav
   clamav:
     image: clamav/clamav:1.4
     profiles: ['av']
     restart: unless-stopped
+    logging: *logging
     volumes:
       - clamdb:/var/lib/clamav
 
@@ -77,16 +101,32 @@ services:
     image: caddy:2
     profiles: ['https']
     restart: unless-stopped
-    depends_on: [app]
+    logging: *logging
+    depends_on:
+      app: { condition: service_healthy }
     environment:
       DOMAIN: ${DOMAIN:-localhost}
-    ports: ['80:80', '443:443']
+    ports: ['80:80', '443:443', '443:443/udp']
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddydata:/data
+      - caddyconfig:/config
+
+  # Uptime мониторинг (Үе 5): `docker compose --profile monitoring up -d` → SSH туннелээр http://127.0.0.1:3001
+  # Монитор: HTTP(s) — https://<DOMAIN>/api/health, 60 сек; мэдэгдэл (имэйл/Telegram) тохируулна. docs/DEPLOYMENT.md §7
+  uptime:
+    image: louislam/uptime-kuma:1
+    profiles: ['monitoring']
+    restart: unless-stopped
+    logging: *logging
+    ports: ['127.0.0.1:3001:3001']
+    volumes:
+      - uptimedata:/app/data
 
 volumes:
   clamdb:
   dbdata:
   files:
   caddydata:
+  caddyconfig:
+  uptimedata:

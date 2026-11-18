@@ -67,7 +67,8 @@ export function httpLogger(log = logger) {
       res.setHeader('X-Request-Id', id);
       return id;
     },
-    autoLogging: { ignore: (req) => req.url === '/api/health' },
+    // Мониторингийн тогтмол хүсэлтээр логийг дүүргэхгүй (бүтэлгүй шалгалтыг lib/health.js өөрөө логлоно)
+    autoLogging: { ignore: (req) => pathOnly(req.url).startsWith('/api/health') },
     customLogLevel: (_req, res, err) => (err || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
     customProps: (req) => ({ userId: req.user?.id ?? null, role: req.user?.role ?? null }),
     serializers: {

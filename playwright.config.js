@@ -7,6 +7,7 @@ const PORT = Number(process.env.E2E_PORT || 4100);
 
 export default defineConfig({
   testDir: 'e2e',
+  testIgnore: ['docs/**'], // гарын авлагын дэлгэцийн зураг — playwright.docs.config.js
   fullyParallel: false,
   workers: 1, // нэг сан, дараалсан урсгал
   forbidOnly: !!process.env.CI,

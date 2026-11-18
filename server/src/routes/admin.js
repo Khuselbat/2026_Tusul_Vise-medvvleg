@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../lib/password.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { query, one, tx } from '../db.js';
@@ -8,7 +8,7 @@ import { audit } from '../lib/audit.js';
 import { STATUS_LABEL } from '../lib/visa.js';
 import { requireRole, revokeSessions } from '../middleware/auth.js';
 import { notify, kickMailer } from '../lib/notify.js';
-import { passwordSchema, BCRYPT_ROUNDS } from './auth.js';
+import { passwordSchema } from './auth.js';
 
 /**
  * Админ: улс, визийн төрөл, мэдээллийн хувилбар, шаардлага, хэрэглэгч, хуваарилалт, үйлдлийн бүртгэл.
@@ -587,7 +587,7 @@ r.post(
       }),
       req.body,
     );
-    const hash = await bcrypt.hash(d.password, BCRYPT_ROUNDS);
+    const hash = await hashPassword(d.password);
     try {
       const id = await tx(async (q) => {
         const ins = await q(

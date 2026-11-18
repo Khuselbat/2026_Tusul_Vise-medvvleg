@@ -15,6 +15,8 @@ export default [
       'server/storage-test/**',
       'playwright-report/**',
       'test-results/**',
+      'loadtest/results/**',
+      'server/storage-load/**',
     ],
   },
   js.configs.recommended,
@@ -28,7 +30,7 @@ export default [
     },
   },
   {
-    files: ['server/**/*.js', 'e2e/**/*.js', '*.config.js'],
+    files: ['server/**/*.js', 'e2e/**/*.js', 'loadtest/**/*.js', '*.config.js'],
     languageOptions: { ecmaVersion: 2023, sourceType: 'module', globals: { ...globals.node } },
     rules: {
       // Логийг pino-оор (lib/logger.js); CLI скриптүүд консол руу бичиж болно
@@ -36,7 +38,7 @@ export default [
     },
   },
   {
-    files: ['server/scripts/**/*.js', 'e2e/**/*.js'],
+    files: ['server/scripts/**/*.js', 'e2e/**/*.js', 'loadtest/**/*.js'],
     rules: { 'no-console': 'off' },
   },
   {

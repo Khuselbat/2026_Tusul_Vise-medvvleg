@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import bcrypt from 'bcryptjs';
+import { BCRYPT_ROUNDS, hashPassword, verifyPassword, verifyAgainstDummy } from '../lib/password.js';
 import crypto from 'node:crypto';
 import QRCode from 'qrcode';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
@@ -16,7 +16,6 @@ import { generateSecret, otpauthUrl, verifyCode } from '../lib/totp.js';
 import { issueSession, clearSession, requireAuth, revokeSessions, cookieOptions, STAFF_ROLES } from '../middleware/auth.js';
 
 const r = Router();
-const BCRYPT_ROUNDS = config.isTest ? 4 : 12;
 const MFA_COOKIE = 'civiz_mfa';
 const MFA_TTL_MIN = 10;
 const MFA_MAX_ATTEMPTS = 5;
@@ -84,7 +83,7 @@ r.post(
   '/register',
   wrap(async (req, res) => {
     const data = parse(registerSchema, req.body);
-    const hash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+    const hash = await hashPassword(data.password);
     let out;
     try {
       out = await tx(async (q) => {
@@ -113,8 +112,6 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Нууц үгээ оруулна уу.').max(256),
 });
 
-const DUMMY_HASH = bcrypt.hashSync('timing-equaliser', 4);
-
 // ───────────── UC-02 Нэвтрэх. Ажилтан бол 2FA (TOTP) — сесс зөвхөн код зөвшөөрөгдсөний дараа ─────────────
 r.post(
   '/login',
@@ -122,7 +119,7 @@ r.post(
   wrap(async (req, res) => {
     const data = parse(loginSchema, req.body);
     const u = await one(`${USER_SELECT} WHERE u.email = ?`, [data.email]);
-    const ok = await bcrypt.compare(data.password, u ? u.password_hash : DUMMY_HASH);
+    const ok = u ? await verifyPassword(data.password, u.password_hash) : await verifyAgainstDummy(data.password);
     if (!u || !ok || !u.is_active) {
       await audit(req, { action: 'LOGIN_FAILED', entityType: 'user', entityKey: u?.user_id ?? null, actorId: null });
       // E1: ерөнхий алдааны мэдэгдэл — аль талбар буруу болохыг задлахгүй
@@ -189,10 +186,10 @@ r.put(
       req.body,
     );
     const u = await one('SELECT password_hash FROM users WHERE user_id = ?', [req.user.id]);
-    if (!(await bcrypt.compare(data.currentPassword, u.password_hash))) {
+    if (!(await verifyPassword(data.currentPassword, u.password_hash))) {
       throw badRequest('Одоогийн нууц үг буруу байна.', { fields: { currentPassword: 'Одоогийн нууц үг буруу байна.' } });
     }
-    const hash = await bcrypt.hash(data.newPassword, BCRYPT_ROUNDS);
+    const hash = await hashPassword(data.newPassword);
     const revoked = await tx(async (q) => {
       await q('UPDATE users SET password_hash = ?, password_changed_at = CURRENT_TIMESTAMP(6) WHERE user_id = ?', [hash, req.user.id]);
       const n = await revokeSessions(q, req.user.id, { exceptSid: req.user.sid });
@@ -275,7 +272,7 @@ r.post(
         .refine((d) => d.newPassword === d.newPasswordConfirm, { path: ['newPasswordConfirm'], message: 'Нууц үг таарахгүй байна.' }),
       req.body,
     );
-    const hash = await bcrypt.hash(data.newPassword, BCRYPT_ROUNDS);
+    const hash = await hashPassword(data.newPassword);
     const ok = await tx(async (q) => {
       const t = await findToken(q, data.token, 'RESET_PASSWORD');
       if (!t) return false;

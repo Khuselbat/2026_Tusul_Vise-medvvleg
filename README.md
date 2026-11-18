@@ -8,11 +8,12 @@
 | Backend | Node.js 22+ / Express 4 (REST API) |
 | Өгөгдлийн сан | MySQL 8 / MariaDB 10.6+ — 11 үндсэн (Зураг 36) + 6 Үе 1-ийн хүснэгт, хувилбартай migration (`database/migrations/`) |
 | Файлын сан | Сервер дээрх хувийн хавтас эсвэл S3-тэй нийцтэй сан (MinIO), сонголтоор AES-256-GCM (вэбээс шууд хандахгүй) |
-| Тест | Node test runner + Supertest — 135 интеграцын тест бодит MySQL дээр (+ S3 драйверийн тест CI-д); Playwright E2E 10 тест × (desktop + mobile), axe хүртээмж |
+| Тест | Node test runner + Supertest — 147 интеграцын тест бодит MySQL/MariaDB дээр (+ S3 драйверийн тест CI-д); Playwright E2E 10 тест × (desktop + mobile), axe хүртээмж |
 | Хувийн мэдээлэл | Файлын сан local/S3 + AES-256-GCM, ClamAV, хадгалах хугацааны цэвэрлэгээ, ZIP татах, бүртгэл устгах хүсэлт, түлхүүр эргүүлэх; `npm audit` 0 |
 | Нэвтрэлт | Серверт хадгалагдах сесс, имэйл баталгаажуулалт, нууц үг сэргээх, ажилтны 2FA (TOTP) заавал, мэдэгдэл (хонх + имэйл) |
-| Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E), pino бүтэцтэй лог |
-| Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS) |
+| Чанар | ESLint + Prettier, GitHub Actions CI (lint · test · build · E2E · нөөц/сэргээлт · Docker), pino бүтэцтэй лог |
+| Байршуулалт | Docker Compose (MySQL + App + Caddy HTTPS + ClamAV + Uptime Kuma), `/api/health`, нөөц → шифрлэсэн гадаад сан, сар бүрийн сэргээлтийн туршилт — [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
+| Гарын авлага | [docs/USER_GUIDE.md](docs/USER_GUIDE.md) — мэдүүлэгч, оператор, админ (дэлгэцийн зурагтай) |
 
 ---
 
@@ -24,13 +25,13 @@
 
 ```bash
 cp .env.example .env
-# .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY-г солино:
-#   openssl rand -hex 32      ← JWT_SECRET болон PASSPORT_KEY-д
+# .env дотор DB_PASSWORD, DB_ROOT_PASSWORD, JWT_SECRET, PASSPORT_KEY, FILE_KEY, APP_URL-ийг солино:
+#   openssl rand -hex 32      ← JWT_SECRET, PASSPORT_KEY, FILE_KEY тус бүрд
 docker compose up -d --build                 # app эхлэхдээ migration-уудыг автоматаар ажиллуулна
-docker compose exec app npm run user:create-admin -- --email admin@example.mn --name "Админ"
+docker compose exec app node scripts/create-admin.js --email admin@example.mn --name "Админ"
 ```
 Production-д жишээ өгөгдөл (seed) хориглогдсон — анхны админыг дээрх командаар үүсгэнэ (түр нууц үгийг нэг удаа хэвлэнэ).
-Нээх: <http://localhost:4000>
+Нээх: <http://localhost:4000> (app порт анхдагчаар зөвхөн localhost-д нээгдэнэ). VPS дээр алхам алхмаар: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 HTTPS-тэй (домэйн DNS тохируулсан үед): `.env` дотор `DOMAIN=viz.example.mn`, `FORCE_HTTPS=1` болгоод
 `docker compose --profile https up -d` — Caddy автоматаар Let's Encrypt гэрчилгээ авна.
@@ -85,7 +86,7 @@ baseline хийнэ (001-ийг хэрэгжсэн гэж тэмдэглэнэ).
 ### Тест ба чанар
 
 ```bash
-cd server && npm test     # civiz_test сан дээр 135 интеграцын тест (API, migration, лог, Үе 1–4, аюулгүй байдал, UC A/E урсгал)
+cd server && npm test     # civiz_test сан дээр 147 интеграцын тест (API, migration, лог, Үе 1–5, аюулгүй байдал, UC A/E урсгал)
 cd client && npm run build
 npm install               # (репоны үндсэнд, нэг удаа) ESLint, Prettier, Playwright
 npx playwright install chromium   # нэг удаа
@@ -141,6 +142,51 @@ lint, тест (Node 22/24), build, E2E-г MySQL 8 контейнер дээр �
 * **Олон улс:** шинэ улсыг админы “Улс” → “Визийн төрөл” → хувилбар нийтлэх + `SUBMITTABLE_COUNTRIES=KR,JP` л хангалттай —
   код өөрчлөхгүй (`test/stage4.test.js` баталгаажуулна).
 
+### Production (Үе 5)
+
+Алхам алхмаар VPS байршуулалт, HTTPS, нөөц, мониторинг, шинэчлэлт — **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+Хэрэглэгчийн гарын авлага — **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)**.
+
+* **Docker image:** олон шатлалт build, зөвхөн production хамаарал; seed, `db:reset`, тест, npm image-д **байхгүй**
+  (`.dockerignore`). Non-root, зөвхөн уншигдах root FS, capability-гүй, `init` + SIGTERM-д эхэлсэн хүсэлтүүдийг дуусгаж зогсоно.
+  Эхлэхдээ DB-г хүлээж (≤60 сек) migration-уудыг автоматаар ажиллуулна. Лог 5 × 20 MB-аар эргэлдэнэ.
+* **Мониторинг:** `GET /api/health` — DB + файлын сан (+ ClamAV) шалгаж 200 `ok`/`degraded` эсвэл 503 `down`
+  (шалгалт тус бүр ≤3 сек, дотоод мэдээлэл задлахгүй); `GET /api/health/live` — процесс амьд. Uptime Kuma:
+  `docker compose --profile monitoring up -d`.
+* **Нөөц:** `scripts/backup.sh` / `backup.ps1` (host эсвэл `BACKUP_MODE=docker`) → `db.sql.gz` + `files.tar.gz` + `MANIFEST.txt`
+  + `SHA256SUMS` → rclone **crypt** remote руу (шифрлэлтгүй remote-ыг татгалзана). `restore.sh` / `restore.ps1` — бүх хүснэгтийг
+  устгаж сэргээгээд `verify-storage`. **`restore-drill.sh` / `.ps1`** — сар бүр нөөцийг тусдаа `civiz_restore_drill` санд сэргээж
+  файл бүрийн SHA-256-г тулгаад `backups/restore-drill.log`-д PASS/FAIL бичнэ (production-д хүрэхгүй).
+* **Олон инстанс:** имэйл outbox, вирус шалгалт, хадгалах хугацааны ажил MySQL-ийн `GET_LOCK`-оор нэг л инстанст ажиллана.
+
+#### Ачааллын туршилт (100 зэрэг хэрэглэгч)
+
+```bash
+cd server && DB_NAME=civiz_load npm run db:reset && DB_NAME=civiz_load node scripts/loadtest-prepare.js --users 100 && cd ..
+# сервер: NODE_ENV=production DB_NAME=civiz_load STORAGE_ENCRYPT=1 … npm start  (дэлгэрэнгүй: loadtest/run.js толгой)
+npm run loadtest -- --url http://127.0.0.1:4000 --users 100 --duration 20
+```
+
+100 өөр мэдүүлэгч (тус бүр өөрийн сесстэй), 100 зэрэг холболт × 20 сек, сервер **production горимд** (файл шифрлэлттэй,
+bcrypt cost 12), нэг Node процесс + MariaDB 11.4, нэг машин дээр (Intel Core Ultra 7 265, 20 thread, 15 GB RAM, Windows 11, Node 22.21):
+
+| Хувилбар | Хүсэлт/сек | p50 мс | p90 мс | p99 мс | max мс | Алдаа / 2xx биш |
+|---|---:|---:|---:|---:|---:|---:|
+| 100 хэрэглэгч **зэрэг нэвтрэх** (bcrypt 12) | — | 2285 | — | 4220 (p95) | 4398 | 0 |
+| Нийтийн: визийн жагсаалт + дэлгэрэнгүй + SPA | 3158 | 30 | 48 | 59 | 82 | 0 |
+| Мэдүүлэгч: самбар + архив + мэдэгдэл | 1976 | 50 | 59 | 64 | 75 | 0 |
+| Мэдүүлэгч: анкет автомат хадгалах (шифрлэж DB-д бичих) | 2247 | 44 | 47 | 54 | 99 | 0 |
+| **50 мэдүүлэг зэрэг бүтэн илгээх** (анкет + 3 файл + илгээх, нэг мэдүүлэгт) | — | 280 | — | 318 (p95) | 321 | 0 |
+
+NFR-04/05: дээрх өгөгдлөөр (53 илгээсэн мэдүүлэг, 159 шифрлэгдсэн файл) `backup.sh` → `restore-drill.sh` болон `.ps1` хувилбар —
+**159/159 файл SHA-256 таарсан (100%)**, анкетгүй мэдүүлэг 0, сэргээх хугацаа ~2 сек.
+
+Дүгнэлт: 100 зэрэг хэрэглэгчийн ердийн үйлдлүүд p99 < 70 мс, алдаагүй. **Анхны хэмжилтээр 100 зэрэг нэвтрэлт бүгд ~18 сек**
+хүлээж, тэр хугацаанд бусад бүх хүсэлт зогсож байсан (bcryptjs үндсэн event loop дээр) → bcrypt-ийг `worker_threads`-ийн
+санд шилжүүлснээр p50 2.3 сек / p95 4.2 сек болж, бусад хүсэлт саатахгүй болсон (`server/src/lib/password.js`, D-53).
+Нэвтрэлт нь зориуд удаан (brute force-оос хамгаална); бодит хэрэглээнд 100 хүн яг нэг секундэд нэвтрэх нь ховор.
+VPS (2–4 vCPU) дээр тоо бага байна — байршуулсны дараа ижил командаар хэмжинэ.
+
 ### Лог
 
 `pino` — хүсэлт бүр `X-Request-Id`-тай (audit_events.request_id-тай ижил). Dev-д нэг мөр, production-д JSON.
@@ -167,7 +213,9 @@ visa-system/
 │   ├── pages/public|app|operator|admin   25+ дэлгэц
 │   └── components/              Layout, UI бүрэлдэхүүн, файл үзэгч
 ├── e2e/                         Playwright (full-flow.spec.js, server.js)
-├── scripts/backup.sh, restore.sh       NFR-04
+├── scripts/                     backup · restore · restore-drill (.sh + .ps1), lib/common.*  — NFR-04
+├── loadtest/run.js              ачааллын туршилт (autocannon)
+├── docs/                        DEPLOYMENT.md · USER_GUIDE.md (+ screenshots/guide) · DECISIONS.md · GAP_ANALYSIS.md
 ├── .github/workflows/ci.yml     CI
 ├── eslint.config.js, .prettierrc.json, playwright.config.js
 ├── Dockerfile, docker-compose.yml, Caddyfile
@@ -211,7 +259,8 @@ visa-system/
 | NFR-01 Хандалт | Мэдүүлэгч зөвхөн өөрийнх (бусдынх 404), оператор зөвхөн хуваарилсан (403), **админ файл/анкет үзэх эрхгүй**. Файл бүрийг эрх шалгасан API-аар (`/api/files/:id`) өгнө. Тест: 20+ сөрөг оролдлого → задрал 0 |
 | NFR-02 Нууц үг | bcrypt (cost 12, давтагдашгүй salt); лог, audit-д нууц үг бичихгүй — тестээр шалгасан |
 | NFR-03 HTTPS | `FORCE_HTTPS=1` (HTTP → 308, хувийн POST хаагдана), HSTS, Secure + HttpOnly + SameSite=Strict cookie, Caddy автоматаар TLS |
-| NFR-04 Нөөц | `scripts/backup.sh` (mysqldump + файлын архив + SHA256SUMS), `scripts/restore.sh` → `verify-storage.js` бичлэг/файлын хяналтын нийлбэрийг 100% тулгана |
+| NFR-04 Нөөц | `scripts/backup.sh`/`.ps1` (mysqldump + файлын архив + MANIFEST + SHA256SUMS → rclone crypt гадаад сан), `restore.sh`/`.ps1` → `verify-storage.js` 100% тулгана; сар бүр `restore-drill.sh`/`.ps1` тусдаа санд (CI-д ч) |
+| Үе 5 Мониторинг | `/api/health` (DB + файлын сан + ClamAV, 503/`degraded`), `/api/health/live`, Docker HEALTHCHECK, Uptime Kuma, лог эргүүлэлт, зөв зогсолт (SIGTERM) |
 | NFR-05 Бүрэн байдал | Илгээлт нэг транзакц, `(applicant_id, idempotency_key)` UNIQUE, хавсралт SHA-256 |
 
 ### Бизнес дүрэм
@@ -267,7 +316,7 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
 ## 5. API товч
 
 ```
-Нийтийн   GET  /api/countries · /api/visas · /api/visas/:versionId · /api/health
+Нийтийн   GET  /api/countries · /api/visas · /api/visas/:versionId · /api/health · /api/health/live
 Нэвтрэлт  POST /api/auth/register · login · logout   GET /api/auth/me   PUT /api/auth/me/profile · me/password
           POST /api/auth/verify-email {token} · verify-email/resend · password/forgot {email} · password/reset {token,…}
           POST /api/auth/mfa/setup · mfa/enable {code} · mfa/verify {code | recoveryCode}   (login → {mfa: ENROLL|VERIFY})
@@ -314,9 +363,4 @@ DRAFT ──submit──▶ SUBMITTED ──(админ хуваарилна)─
 
 ## 7. Production хяналтын хуудас
 
-- [ ] `.env`-ийн бүх нууц утгыг солих (`JWT_SECRET`, `PASSPORT_KEY`, DB нууц үгүүд)
-- [ ] `FORCE_HTTPS=1`, `COOKIE_SECURE=1`, `TRUST_PROXY=1` (proxy ард)
-- [ ] `backup.sh`-г cron-д өдөр бүр, нөөцийг өөр сервер/объект санд хуулах; сар бүр `restore.sh` туршилт
-- [ ] Жишээ (seed) хэрэглэгчдийг устгах эсвэл нууц үгийг солих
-- [ ] Визийн шаардлагыг ЭСЯ-ны хамгийн сүүлийн журамтай тулгаж шинэ хувилбар нийтлэх
-- [ ] Эрх бүхий байгууллагатай хамтын ажиллагааны зохицуулалт (таамаглал А3)
+Бүрэн жагсаалт: [docs/DEPLOYMENT.md §10](docs/DEPLOYMENT.md#10-production-хяналтын-хуудас).

@@ -3,7 +3,7 @@
 // Илгээсэн мэдүүлгийн мөр (лавлах дугаар, төлөв, огноо) нэргүйгээр статистик, үнэлгээний бүрэн байдалд үлдэнэ.
 // Үнэлгээний тайлбарыг хувийн мэдээлэл агуулж болох тул арилгана — reviews-ийг өөрчлөх ЦОРЫН ГАНЦ онцгой тохиолдол (D-35).
 import crypto from 'node:crypto';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from './password.js';
 
 export const ACTIVE_STATUSES = ['SUBMITTED', 'IN_REVIEW', 'INCOMPLETE'];
 export const REDACTED = '[хувийн мэдээллийн устгалаар арилгасан]';
@@ -56,7 +56,7 @@ export async function eraseApplicant(q, userId) {
   await q('DELETE FROM user_tokens WHERE user_id = ?', [userId]);
   await q('DELETE FROM mfa_recovery_codes WHERE user_id = ?', [userId]);
   await q('UPDATE account_deletion_requests SET reason = NULL WHERE user_id = ?', [userId]);
-  const unusable = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 4);
+  const unusable = await hashPassword(crypto.randomBytes(32).toString('hex'), 4);
   await q(
     `UPDATE users SET public_id = ?, email = ?, display_name = ?, password_hash = ?, is_active = 0, email_verified_at = NULL,
             mfa_secret_enc = NULL, mfa_key_id = NULL, mfa_enabled_at = NULL, mfa_last_step = NULL WHERE user_id = ?`,

@@ -2,7 +2,7 @@
 // Хоёулаа нууц үгээ дахин оруулж баталгаажуулна (сесс хулгайлагдсан үед мэдээлэл алдагдахаас хамгаална).
 import { Router } from 'express';
 import { createZip } from '../lib/zip.js';
-import bcrypt from 'bcryptjs';
+import { verifyPassword } from '../lib/password.js';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { config } from '../config.js';
@@ -27,7 +27,7 @@ const exportLimiter = rateLimit({
 
 async function confirmPassword(req, password) {
   const u = await one('SELECT password_hash FROM users WHERE user_id = ?', [req.user.id]);
-  if (!password || !(await bcrypt.compare(password, u.password_hash))) {
+  if (!password || !(await verifyPassword(password, u.password_hash))) {
     throw badRequest('Нууц үг буруу байна.', { fields: { password: 'Нууц үг буруу байна.' } });
   }
 }

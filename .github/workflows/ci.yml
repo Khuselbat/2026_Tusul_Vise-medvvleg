@@ -173,3 +173,99 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  # Үе 5: нөөц → сэргээлтийн туршилт (host горим, MySQL 8 + bash скрипт)
+  backup:
+    name: Backup + restore drill (host)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: civiz
+          MYSQL_USER: civiz
+          MYSQL_PASSWORD: civiz_pass
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+    env:
+      DB_NAME: civiz
+      DB_ADMIN_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+        working-directory: server
+      - name: Seed demo data (dev)
+        run: npm run db:reset
+        working-directory: server
+      - run: scripts/backup.sh
+      - run: scripts/restore-drill.sh
+      - name: Tampered backup must fail
+        run: |
+          B=$(ls -d backups/20*Z | tail -1)
+          cp -r "$B" backups/tampered && echo x >> backups/tampered/MANIFEST.txt
+          ! scripts/restore-drill.sh backups/tampered
+      - name: Restore over changed data
+        run: |
+          mysql -h 127.0.0.1 -uciviz -pciviz_pass civiz -e "CREATE TABLE zz_after_backup (id INT)"
+          RESTORE_CONFIRM=yes scripts/restore.sh "$(ls -d backups/20*Z | tail -1)"
+          test "$(mysql -h 127.0.0.1 -uciviz -pciviz_pass -N civiz -e "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='civiz' AND TABLE_NAME='zz_after_backup'")" = 0
+
+  # Үе 5: production image + docker compose (migration автоматаар, seed байхгүй, health, нөөц docker горимд, зөв зогсолт)
+  docker:
+    name: Docker image + compose smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Production .env (түр, санамсаргүй нууц)
+        run: |
+          cat > .env <<ENV
+          DB_PASSWORD=$(openssl rand -hex 16)
+          DB_ROOT_PASSWORD=$(openssl rand -hex 16)
+          JWT_SECRET=$(openssl rand -hex 32)
+          PASSPORT_KEY=$(openssl rand -hex 32)
+          FILE_KEY=$(openssl rand -hex 32)
+          APP_URL=http://localhost:4000
+          COOKIE_SECURE=0
+          MAIL_TRANSPORT=log
+          ENV
+      - run: docker compose build app
+      - name: Image size
+        run: docker image ls civiz-app --format '{{.Repository}}:{{.Tag}} {{.Size}}' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Image contents (seed/reset/test/npm байхгүй)
+        run: |
+          docker run --rm --entrypoint sh civiz-app:latest -c '
+            set -e
+            test ! -e scripts/seed.js && test ! -e scripts/reset.js && test ! -e test
+            if command -v npm; then echo "npm image-д байна"; exit 1; fi
+            test "$(id -u)" != 0
+            node -e "require(\"fs\").accessSync(\"src/index.js\")"'
+      - run: docker compose up -d --wait --wait-timeout 180
+      - name: Health
+        run: |
+          curl -fsS http://127.0.0.1:4000/api/health | tee /dev/stderr | grep -q '"status":"ok"'
+          curl -fsS http://127.0.0.1:4000/ | grep -qi '<div id="root"'
+          docker compose logs app | grep -q 'migration хэрэгжлээ'
+      - name: Seed нь production-д татгалзана
+        run: |
+          ! docker compose exec -T app node -e "import('./scripts/seed.js')"
+      - name: Анхны админ
+        run: docker compose exec -T -e ADMIN_PASSWORD='Ci-Admin-Pass-2026' app node scripts/create-admin.js --email admin@ci.example --name "CI Админ"
+      - name: Backup + restore drill (docker горим)
+        run: |
+          BACKUP_MODE=docker scripts/backup.sh
+          BACKUP_MODE=docker scripts/restore-drill.sh
+      - name: Graceful stop (SIGTERM → "stopped", exit 0)
+        run: |
+          docker compose stop -t 15 app
+          docker compose logs app | grep -q '"msg":"stopped"'
+          test "$(docker inspect -f '{{.State.ExitCode}}' "$(docker compose ps -aq app)")" = 0
+      - if: failure()
+        run: docker compose logs --no-color

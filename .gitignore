@@ -9,3 +9,5 @@ playwright-report/
 test-results/
 server/mail-outbox/
 e2e/.mail/
+loadtest/results/
+server/storage-load/

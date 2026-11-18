@@ -4,7 +4,7 @@
 import net from 'node:net';
 import crypto from 'node:crypto';
 import { config } from '../config.js';
-import { query } from '../db.js';
+import { query, withLock } from '../db.js';
 import { audit } from './audit.js';
 import { logger } from './logger.js';
 import { readFile, removeFile } from './storage.js';
@@ -58,6 +58,31 @@ export function scanBuffer(buf, { host = config.clamav.host, port = config.clama
 
 const sysReq = () => ({ id: crypto.randomUUID(), user: null });
 
+/** clamd-ийн амьд эсэх (Үе 5 health): PING → PONG. */
+export function pingClamd({ host = config.clamav.host, port = config.clamav.port, timeoutMs = config.clamav.timeoutMs } = {}) {
+  return new Promise((resolve, reject) => {
+    const sock = net.createConnection({ host, port });
+    let reply = '';
+    sock.setTimeout(timeoutMs, () => {
+      sock.destroy();
+      reject(new Error('clamd timeout'));
+    });
+    sock.on('error', (e) => {
+      sock.destroy();
+      reject(e);
+    });
+    sock.on('connect', () => sock.write('zPING\0'));
+    sock.on('data', (d) => {
+      reply += d.toString('utf8');
+    });
+    sock.on('end', () => {
+      sock.destroy();
+      if (reply.replace(/\0/g, '').trim() === 'PONG') resolve();
+      else reject(new Error('clamd unexpected ping reply'));
+    });
+  });
+}
+
 const TABLES = [
   { table: 'application_documents', id: 'document_id', entity: 'document' },
   { table: 'evidence_files', id: 'file_id', entity: 'evidence_file' },
@@ -68,41 +93,47 @@ let running = false;
 export async function processPendingScans({ limit = 20 } = {}) {
   if (!scannerEnabled() || running) return { accepted: 0, rejected: 0 };
   running = true;
-  const out = { accepted: 0, rejected: 0 };
   try {
-    for (const t of TABLES) {
-      const rows = await query(
-        `SELECT ${t.id} AS id, storage_key, application_id FROM ${t.table} WHERE scan_status = 'PENDING' ORDER BY ${t.id} LIMIT ?`,
-        [limit],
-      );
-      for (const row of rows) {
-        let result;
-        try {
-          result = await scanBuffer(await readFile(row.storage_key));
-        } catch (err) {
-          logger.warn({ err, [t.id]: row.id }, 'virus scan deferred');
-          return out; // clamd хүрэхгүй бол дараагийн удаа
-        }
-        if (result.clean) {
-          await query(`UPDATE ${t.table} SET scan_status = 'ACCEPTED', scanned_at = CURRENT_TIMESTAMP(6) WHERE ${t.id} = ?`, [row.id]);
-          out.accepted += 1;
-        } else {
-          await query(`UPDATE ${t.table} SET scan_status = 'REJECTED', scanned_at = CURRENT_TIMESTAMP(6) WHERE ${t.id} = ?`, [row.id]);
-          await removeFile(row.storage_key); // халдвартай агуулгыг хадгалахгүй
-          await audit(sysReq(), {
-            action: 'FILE_REJECTED',
-            entityType: t.entity,
-            entityKey: row.id,
-            applicationId: row.application_id ?? null,
-            actorId: null,
-          });
-          logger.warn({ [t.id]: row.id, signature: result.signature }, 'infected file rejected');
-          out.rejected += 1;
-        }
-      }
-    }
+    // Үе 5: олон инстанс нэг файлыг зэрэг шалгаж, давхар audit бичихгүй
+    const r = await withLock('civiz_scanner', () => scanBatch(limit));
+    return r.acquired ? r.result : { accepted: 0, rejected: 0 };
   } finally {
     running = false;
+  }
+}
+
+async function scanBatch(limit) {
+  const out = { accepted: 0, rejected: 0 };
+  for (const t of TABLES) {
+    const rows = await query(
+      `SELECT ${t.id} AS id, storage_key, application_id FROM ${t.table} WHERE scan_status = 'PENDING' ORDER BY ${t.id} LIMIT ?`,
+      [limit],
+    );
+    for (const row of rows) {
+      let result;
+      try {
+        result = await scanBuffer(await readFile(row.storage_key));
+      } catch (err) {
+        logger.warn({ err, [t.id]: row.id }, 'virus scan deferred');
+        return out; // clamd хүрэхгүй бол дараагийн удаа
+      }
+      if (result.clean) {
+        await query(`UPDATE ${t.table} SET scan_status = 'ACCEPTED', scanned_at = CURRENT_TIMESTAMP(6) WHERE ${t.id} = ?`, [row.id]);
+        out.accepted += 1;
+      } else {
+        await query(`UPDATE ${t.table} SET scan_status = 'REJECTED', scanned_at = CURRENT_TIMESTAMP(6) WHERE ${t.id} = ?`, [row.id]);
+        await removeFile(row.storage_key); // халдвартай агуулгыг хадгалахгүй
+        await audit(sysReq(), {
+          action: 'FILE_REJECTED',
+          entityType: t.entity,
+          entityKey: row.id,
+          applicationId: row.application_id ?? null,
+          actorId: null,
+        });
+        logger.warn({ [t.id]: row.id, signature: result.signature }, 'infected file rejected');
+        out.rejected += 1;
+      }
+    }
   }
   return out;
 }

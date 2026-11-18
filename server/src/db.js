@@ -22,6 +22,26 @@ export async function one(sql, params = []) {
   return rows[0] ?? null;
 }
 
+/**
+ * Үе 5: олон инстанс (2+ app контейнер) зэрэг ажиллахад ар талын ажлыг (имэйл outbox, вирус шалгалт, хадгалах хугацаа)
+ * зөвхөн нэг нь гүйцэтгэнэ. MySQL/MariaDB-ийн нэрлэсэн түгжээ (GET_LOCK) холболттой холбоотой тул процесс унавал
+ * автоматаар чөлөөлөгдөнө. Түгжээ эзэлсэн бол хүлээхгүй — `{ acquired: false }` буцаана.
+ */
+export async function withLock(name, fn) {
+  const conn = await pool.getConnection();
+  try {
+    const [[row]] = await conn.query('SELECT GET_LOCK(?, 0) AS ok', [name]);
+    if (Number(row.ok) !== 1) return { acquired: false };
+    try {
+      return { acquired: true, result: await fn() };
+    } finally {
+      await conn.query('SELECT RELEASE_LOCK(?)', [name]).catch(() => {});
+    }
+  } finally {
+    conn.release();
+  }
+}
+
 /** Транзакц: алдаа гарвал бүх өөрчлөлтийг буцаана (UC-04 E4). */
 export async function tx(fn) {
   const conn = await pool.getConnection();

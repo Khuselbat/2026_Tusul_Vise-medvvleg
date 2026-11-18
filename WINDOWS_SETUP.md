@@ -95,7 +95,7 @@ npm start
 cd server
 npm test
 ```
-→ `ℹ pass 135  ℹ fail 0`
+→ `ℹ pass 147  ℹ fail 0`
 
 ### E2E ба lint (сонголттой)
 Репоны үндсэн хавтсанд:
@@ -128,9 +128,18 @@ npm run lint
 ```
 copy .env.example .env      (дотор нь нууц үгүүдийг солино)
 docker compose up -d --build
-docker compose exec app npm run user:create-admin -- --email admin@example.mn --name "Админ"
+docker compose exec app node scripts/create-admin.js --email admin@example.mn --name "Админ"
 ```
 (Docker production горимд ажилладаг тул жишээ өгөгдөл оруулахгүй; түр нууц үг терминалд нэг удаа хэвлэгдэнэ.)
 → http://localhost:4000
 
-`scripts\backup.sh`, `restore.sh` нь bash скрипт — Windows дээр **Git Bash** (https://git-scm.com) эсвэл серверт (Linux) ажиллуулна.
+## 7. Нөөцлөлт (Windows)
+
+PowerShell скрипт — Git Bash шаардлагагүй. `mysqldump`-ийг `C:\Program Files\MySQL\MySQL Server *\bin`-ээс автоматаар олно.
+```powershell
+.\scripts\backup.ps1                                   # backups\<огноо>\ — db.sql.gz, files.tar.gz, MANIFEST.txt, SHA256SUMS
+$env:DB_ADMIN_PASSWORD='<root нууц үг>'; .\scripts\restore-drill.ps1   # тусдаа санд сэргээж 100% тулгана (өгөгдөлд хүрэхгүй)
+.\scripts\restore.ps1 backups\20261111T020000Z         # бодит сэргээлт — одоогийн өгөгдлийг ДАРЖ БИЧНЭ
+```
+Docker Desktop бол урд нь `$env:BACKUP_MODE='docker'`. Өдөр бүр автоматаар (Task Scheduler), гадаад сан руу хуулах (rclone):
+[docs/DEPLOYMENT.md §5, §9](docs/DEPLOYMENT.md). bash хувилбар (`scripts/*.sh`) Linux сервер эсвэл Git Bash-д.

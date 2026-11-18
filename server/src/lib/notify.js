@@ -2,7 +2,7 @@
 // notify() нь бизнесийн транзакц ДОТОР мөр нэмнэ (найдвартай); имэйлийг commit-ийн дараа dispatchPending() илгээнэ,
 // амжилтгүй бол worker дахин оролдоно (≤5). Текстийг хадгалахгүй — kind + лавлах дугаараас үүсгэнэ.
 import { config } from '../config.js';
-import { query } from '../db.js';
+import { query, withLock } from '../db.js';
 import { logger } from './logger.js';
 import { sendMail, url } from './mailer.js';
 
@@ -78,40 +78,46 @@ let running = false;
 export async function dispatchPending({ limit = 50 } = {}) {
   if (running) return 0;
   running = true;
-  let sent = 0;
   try {
-    const rows = await query(
-      `SELECT n.*, u.email, u.is_active, u.email_verified_at FROM notifications n JOIN users u ON u.user_id = n.user_id
-        WHERE n.email_status = 'PENDING' ORDER BY n.notification_id LIMIT ?`,
-      [limit],
-    );
-    for (const n of rows) {
-      if (!n.is_active || !n.email_verified_at) {
-        await query("UPDATE notifications SET email_status = 'SKIPPED' WHERE notification_id = ?", [n.notification_id]);
-        continue;
-      }
-      const r = render(n);
-      try {
-        const lines = [r.body, 'Мэдэгдлийг системийн хонхноос ч харж болно.'];
-        const link = r.link ? url(r.link) : null;
-        const text = [r.title, '', ...lines, '', link ? `Нээх: ${link}` : ''].join('\n');
-        await sendMail({ to: n.email, subject: r.title, text });
-        await query("UPDATE notifications SET email_status = 'SENT', emailed_at = CURRENT_TIMESTAMP(6) WHERE notification_id = ?", [
-          n.notification_id,
-        ]);
-        sent += 1;
-      } catch (err) {
-        const attempts = n.email_attempts + 1;
-        await query('UPDATE notifications SET email_attempts = ?, email_status = ? WHERE notification_id = ?', [
-          attempts,
-          attempts >= MAX_ATTEMPTS ? 'FAILED' : 'PENDING',
-          n.notification_id,
-        ]);
-        logger.warn({ err, notificationId: n.notification_id, attempts }, 'notification email failed');
-      }
-    }
+    // Үе 5 (D-30): олон инстанс зэрэг ажиллахад нэг имэйлийг давхар илгээхгүй — нэг л инстанс outbox-ийг боловсруулна
+    const r = await withLock('civiz_mailer', () => dispatchBatch(limit));
+    return r.acquired ? r.result : 0;
   } finally {
     running = false;
+  }
+}
+
+async function dispatchBatch(limit) {
+  let sent = 0;
+  const rows = await query(
+    `SELECT n.*, u.email, u.is_active, u.email_verified_at FROM notifications n JOIN users u ON u.user_id = n.user_id
+        WHERE n.email_status = 'PENDING' ORDER BY n.notification_id LIMIT ?`,
+    [limit],
+  );
+  for (const n of rows) {
+    if (!n.is_active || !n.email_verified_at) {
+      await query("UPDATE notifications SET email_status = 'SKIPPED' WHERE notification_id = ?", [n.notification_id]);
+      continue;
+    }
+    const r = render(n);
+    try {
+      const lines = [r.body, 'Мэдэгдлийг системийн хонхноос ч харж болно.'];
+      const link = r.link ? url(r.link) : null;
+      const text = [r.title, '', ...lines, '', link ? `Нээх: ${link}` : ''].join('\n');
+      await sendMail({ to: n.email, subject: r.title, text });
+      await query("UPDATE notifications SET email_status = 'SENT', emailed_at = CURRENT_TIMESTAMP(6) WHERE notification_id = ?", [
+        n.notification_id,
+      ]);
+      sent += 1;
+    } catch (err) {
+      const attempts = n.email_attempts + 1;
+      await query('UPDATE notifications SET email_attempts = ?, email_status = ? WHERE notification_id = ?', [
+        attempts,
+        attempts >= MAX_ATTEMPTS ? 'FAILED' : 'PENDING',
+        n.notification_id,
+      ]);
+      logger.warn({ err, notificationId: n.notification_id, attempts }, 'notification email failed');
+    }
   }
   return sent;
 }

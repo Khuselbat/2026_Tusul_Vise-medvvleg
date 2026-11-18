@@ -27,5 +27,6 @@ fs.rmSync(config.storageDir, { recursive: true, force: true });
 fs.rmSync(MAIL_DIR, { recursive: true, force: true });
 await resetDatabase();
 // Ажилтан урьдчилан тохируулсан 2FA-тай (VERIFY горим); бүртгэлийн урсгалыг stage2.spec-д MFA reset-ээр шалгана
-await seed({ withDemoApplications: false, staffMfaSecret: E2E_MFA_SECRET });
+// E2E_DEMO_APPS=1 — жишээ мэдүүлэгтэй (docs:screenshots)
+await seed({ withDemoApplications: process.env.E2E_DEMO_APPS === '1', staffMfaSecret: E2E_MFA_SECRET });
 createApp().listen(config.port, '127.0.0.1', () => console.log(`E2E сервер: http://127.0.0.1:${config.port} (${config.db.database})`));

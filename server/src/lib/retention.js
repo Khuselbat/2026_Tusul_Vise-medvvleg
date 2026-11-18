@@ -3,14 +3,23 @@
 // уншсан хуучин мэдэгдэл. ИЛГЭЭСЭН мэдүүлгийн архивыг автоматаар устгахгүй — устгах хүсэлтээр (D-33).
 import crypto from 'node:crypto';
 import { config } from '../config.js';
-import { query, tx } from '../db.js';
+import { query, tx, withLock } from '../db.js';
 import { audit } from './audit.js';
 import { logger } from './logger.js';
 import { listStoredFiles, removeFile } from './storage.js';
 
 const sysReq = () => ({ id: crypto.randomUUID(), user: null });
 
-export async function runRetention({ now = new Date(), dryRun = false } = {}) {
+/**
+ * Үе 5: олон инстанс (эсвэл сервер + cron скрипт) зэрэг ажиллуулахад нэг л удаа гүйцэтгэнэ.
+ * Өөр процесс ажиллаж байвал `{ skipped: true }` буцаана.
+ */
+export async function runRetention(opts = {}) {
+  const r = await withLock('civiz_retention', () => retentionPass(opts));
+  return r.acquired ? r.result : { skipped: true };
+}
+
+async function retentionPass({ now = new Date(), dryRun = false } = {}) {
   const r = config.retention;
   const out = { drafts: 0, orphanFiles: 0, tokens: 0, sessions: 0, notifications: 0 };
 

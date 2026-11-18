@@ -1,0 +1,26 @@
+# Үе 5: build context-ийг жижиг, image-ийг цэвэр байлгана (хувийн мэдээлэл, нууц, dev хэрэгсэл орохгүй)
+.git
+.github
+.env
+.env.*
+!.env.example
+**/node_modules
+**/*.log
+backups
+docs
+e2e
+loadtest
+scripts
+playwright-report
+test-results
+client/dist
+server/storage
+server/storage-test
+server/mail-outbox
+e2e/.mail
+# Жишээ өгөгдөл (мэдэгдэж буй нууц үгтэй хэрэглэгч) ба санг устгах скрипт production image-д байхгүй
+server/scripts/seed.js
+server/scripts/reset.js
+server/scripts/loadtest-prepare.js
+server/test
+*.md

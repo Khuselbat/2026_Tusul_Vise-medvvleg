@@ -7,3 +7,6 @@ test-results/
 package-lock.json
 *.md
 docs/
+loadtest/results/
+server/storage-load/
+backups/
