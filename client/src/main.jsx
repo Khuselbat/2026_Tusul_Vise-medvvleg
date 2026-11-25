@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './auth.jsx';
 import { ToastProvider } from './components/ui.jsx';
+import './theme.js';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
