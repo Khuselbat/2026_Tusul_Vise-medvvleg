@@ -1,0 +1,649 @@
+// Цахим виз мэдүүлгийн нэгдсэн веб программ (civiz) — DBML схем
+// 2026-11-25 · migration 001–013-ийн эцсийн төлөв · 26 хүснэгт
+// dbdiagram.io → шинэ диаграм → энэ файлын агуулгыг буулгана. CHECK нөхцөлүүд хүснэгтийн Note-д.
+
+Project civiz {
+  database_type: 'MySQL'
+  Note: 'Цахим виз мэдүүлгийн нэгдсэн веб программ — MySQL 8, utf8mb4'
+}
+
+// ===== 1. Хэрэглэгч ба нэвтрэлт =====
+
+Table roles {
+  role_id "tinyint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  code varchar(20) [not null, unique, note: 'Эрхийн код: APPLICANT / OPERATOR / ADMIN']
+
+  indexes {
+    code [unique, name: 'uq_roles_code']
+  }
+
+  Note: '''Хэрэглэгчийн эрх: APPLICANT, OPERATOR, ADMIN
+CHECK ck_roles_code: ((`code` in ('APPLICANT','OPERATOR','ADMIN')))'''
+}
+
+Table users {
+  user_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  public_id char(36) [not null, unique, note: 'Гадагш харагдах UUID']
+  role_id "tinyint unsigned" [not null, note: 'Эрх → roles']
+  email varchar(254) [not null, unique, note: 'Нэвтрэх имэйл (давтагдашгүй)']
+  password_hash varchar(255) [not null, note: 'Нууц үгийн bcrypt хэш']
+  display_name varchar(150) [not null, note: 'Харагдах нэр']
+  email_verified_at datetime(6) [note: 'Имэйл баталгаажсан огноо']
+  password_changed_at datetime(6)
+  mfa_secret_enc varbinary(256) [note: 'TOTP нууц (AES-256-GCM шифрлэгдсэн)']
+  mfa_key_id varchar(64)
+  mfa_enabled_at datetime(6) [note: '2FA идэвхжсэн огноо']
+  mfa_last_step bigint [note: 'Сүүлд ашигласан TOTP алхам (replay хамгаалалт)']
+  is_active tinyint(1) [not null, default: 1, note: 'Идэвхтэй эсэх']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+
+  indexes {
+    public_id [unique, name: 'uq_users_public_id']
+    email [unique, name: 'uq_users_email']
+    (role_id, is_active) [name: 'ix_users_role_active']
+  }
+
+  Note: '''Системийн хэрэглэгч (мэдүүлэгч, оператор, админ); нэг имэйл — нэг бүртгэл (BR-01)'''
+}
+
+Table user_sessions {
+  session_id char(36) [pk, note: 'Сессийн UUID (JWT-д орно)']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  last_seen_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  expires_at datetime(6) [not null, note: 'Хугацаа дуусах огноо']
+  revoked_at datetime(6) [note: 'Хүчингүй болгосон огноо']
+  user_agent varchar(200)
+
+  indexes {
+    (user_id, revoked_at, expires_at) [name: 'ix_sessions_user']
+  }
+
+  Note: '''Нэвтэрсэн сесс; JWT бүр session_id-тай, серверээс хүчингүй болгоно'''
+}
+
+Table user_tokens {
+  token_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  purpose varchar(20) [not null, note: 'Зориулалт: VERIFY_EMAIL / RESET_PASSWORD / MFA_PENDING']
+  token_hash char(64) [not null, unique, note: 'Токены SHA-256 хэш']
+  attempts "tinyint unsigned" [not null, default: 0, note: 'Буруу оролдлогын тоо']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  expires_at datetime(6) [not null, note: 'Хугацаа дуусах огноо']
+  used_at datetime(6)
+
+  indexes {
+    token_hash [unique, name: 'uq_tokens_hash']
+    (user_id, purpose, used_at) [name: 'ix_tokens_user']
+  }
+
+  Note: '''Нэг удаагийн хугацаатай токен (имэйл баталгаажуулах, нууц үг сэргээх, 2FA завсрын алхам); зөвхөн SHA-256 хэш
+CHECK ck_tokens_purpose: ((`purpose` in ('VERIFY_EMAIL','RESET_PASSWORD','MFA_PENDING')))'''
+}
+
+// ===== 2. Визийн лавлах =====
+
+Table countries {
+  country_id "smallint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  iso_code char(2) [not null, unique, note: 'ISO 3166-1 alpha-2 код']
+  name_mn varchar(100) [not null, note: 'Монгол нэр']
+  service_status varchar(20) [not null, default: 'COMING_SOON', note: 'Үйлчилгээ: ACTIVE / COMING_SOON / DISABLED']
+  official_result_url varchar(2048) [note: 'Албан үр дүн шалгах портал (https)']
+
+  indexes {
+    iso_code [unique, name: 'uq_countries_iso']
+  }
+
+  Note: '''Улс ба үйлчилгээний төлөв (эхний хувилбарт зөвхөн KR мэдүүлэг авна)
+CHECK ck_countries_status: ((`service_status` in ('ACTIVE','COMING_SOON','DISABLED')))
+CHECK ck_countries_url: (((`official_result_url` is null) or (`official_result_url` like 'https://%')))'''
+}
+
+Table visa_types {
+  visa_type_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  country_id "smallint unsigned" [not null, note: '→ countries.country_id']
+  code varchar(30) [not null, note: 'Визийн код (жишээ: C-3-9)']
+  is_active tinyint(1) [not null, default: 1]
+
+  indexes {
+    (country_id, code) [unique, name: 'uq_visa_types_country_code']
+  }
+
+  Note: '''Улс бүрийн визийн төрөл (жишээ: C-3-9)'''
+}
+
+Table visa_info_versions {
+  version_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  visa_type_id "bigint unsigned" [not null, note: '→ visa_types.visa_type_id']
+  version_no "int unsigned" [not null, note: 'Хувилбарын дугаар']
+  name_mn varchar(180) [not null, note: 'Монгол нэр']
+  description text
+  source_url varchar(2048) [note: 'Албан эх сурвалжийн холбоос']
+  verified_at date [note: 'Эх сурвалжтай тулгаж шалгасан огноо']
+  verified_by "bigint unsigned" [note: '→ users.user_id']
+  created_by "bigint unsigned" [not null, note: '→ users.user_id']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  published_at datetime(6) [note: 'Нийтэлсэн огноо (NULL = ноорог)']
+
+  indexes {
+    (visa_type_id, version_no) [unique, name: 'uq_versions_type_no']
+    (visa_type_id, published_at) [name: 'ix_versions_published']
+    created_by [name: 'fk_versions_creator']
+    verified_by [name: 'fk_versions_verifier']
+  }
+
+  Note: '''Визийн мэдээллийн хувилбар; эх сурвалж + шалгасан огноогүй бол нийтлэхгүй, нийтэлснийг засахгүй (BR-04)
+CHECK ck_versions_publish: (((`published_at` is null) or ((`source_url` is not null) and (`verified_at` is not null))))'''
+}
+
+Table visa_requirements {
+  requirement_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  version_id "bigint unsigned" [not null, note: '→ visa_info_versions.version_id']
+  code varchar(40) [not null, note: 'Шаардлагын код (хувилбар дотор давтагдашгүй)']
+  title varchar(200) [not null]
+  instructions text
+  applies_to varchar(300) [note: 'Хэнд хамаарах нөхцөл']
+  original_or_copy varchar(12) [note: 'ORIGINAL / COPY / BOTH']
+  translation_note varchar(500) [note: 'Хэл/орчуулгын шаардлага']
+  is_required tinyint(1) [not null, default: 1, note: 'Заавал эсэх']
+  sort_order "smallint unsigned" [not null, default: 0, note: 'Эрэмбэ']
+
+  indexes {
+    (version_id, code) [unique, name: 'uq_requirements_version_code']
+    (version_id, sort_order) [name: 'ix_requirements_sort']
+  }
+
+  Note: '''Хувилбар бүрийн бүрдүүлэх материалын шаардлага
+CHECK ck_requirements_original: (((`original_or_copy` is null) or (`original_or_copy` in ('ORIGINAL','COPY','BOTH'))))'''
+}
+
+Table document_types {
+  code varchar(40) [pk, note: 'Баримтын төрлийн код (жишээ: PASSPORT_COPY)']
+  name_mn varchar(150) [not null, note: 'Монгол нэр']
+  has_expiry tinyint(1) [not null, default: 0, note: 'Хүчинтэй хугацаатай эсэх']
+  sort_order "smallint unsigned" [not null, default: 0, note: 'Эрэмбэ']
+  is_active tinyint(1) [not null, default: 1]
+
+  Note: '''Баримтын төрлийн каталог (ангилал — визийн шаардлага биш)'''
+}
+
+Table requirement_document_types {
+  requirement_id "bigint unsigned" [not null, note: '→ visa_requirements.requirement_id']
+  type_code varchar(40) [not null, note: '→ document_types.code']
+
+  indexes {
+    (requirement_id, type_code) [pk]
+    type_code [name: 'ix_req_doc_types_type']
+  }
+
+  Note: '''Шаардлага ↔ баримтын төрөл (олон-олон холбоо, D-61)'''
+}
+
+// ===== 3. Мэдүүлэг =====
+
+Table applications {
+  application_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  public_id char(36) [not null, unique, note: 'Лавлах дугаар (жишээ: KR-20261105-XXXXXX)']
+  applicant_id "bigint unsigned" [not null, note: 'Мэдүүлэгч → users']
+  assigned_operator_id "bigint unsigned" [note: 'Хуваарилагдсан оператор → users']
+  version_id "bigint unsigned" [not null, note: 'Илгээх үеийн визийн мэдээллийн хувилбар']
+  idempotency_key char(36) [not null, note: 'Давхар илгээлтээс сэргийлэх түлхүүр (NFR-05)']
+  status varchar(16) [not null, default: 'DRAFT', note: 'DRAFT / SUBMITTED / IN_REVIEW / INCOMPLETE / COMPLETE / DELIVERED']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  submitted_at datetime(6) [note: 'Илгээсэн огноо']
+  archived_at datetime(6) [note: 'Архивласан огноо']
+  form_autosave_enc varbinary(8192) [note: 'Анкетын автомат хадгалсан ноорог (AES-256-GCM JSON)']
+  form_autosave_key_id varchar(64)
+  form_autosave_at datetime(6)
+
+  indexes {
+    public_id [unique, name: 'uq_applications_public_id']
+    (applicant_id, idempotency_key) [unique, name: 'uq_applications_idem']
+    (applicant_id, submitted_at) [name: 'ix_applications_owner']
+    (assigned_operator_id, status) [name: 'ix_applications_operator']
+    (status, submitted_at) [name: 'ix_applications_status']
+    version_id [name: 'fk_applications_version']
+  }
+
+  Note: '''Визийн мэдүүлэг; нэг илгээлт — нэг дотоод дугаар, idempotency (BR-07, NFR-05)
+CHECK ck_applications_status: ((`status` in ('DRAFT','SUBMITTED','IN_REVIEW','INCOMPLETE','COMPLETE','DELIVERED')))
+CHECK ck_applications_submitted: (((`status` = 'DRAFT') or (`submitted_at` is not null)))'''
+}
+
+Table application_forms {
+  application_id "bigint unsigned" [pk, note: 'Мэдүүлэг → applications (1:1)']
+  family_name varchar(100) [not null]
+  given_name varchar(100) [not null]
+  birth_date date [not null]
+  nationality_code char(2) [not null]
+  passport_number_enc varbinary(512) [not null, note: 'Паспортын дугаар (AES-256-GCM шифрлэгдсэн)']
+  passport_key_id varchar(64) [not null, note: 'Паспортын шифрлэлтийн түлхүүрийн ID']
+  passport_expires_on date [not null, note: 'Паспортын хүчинтэй хугацаа']
+  contact_email varchar(254) [not null]
+  contact_phone varchar(30) [not null]
+  travel_purpose varchar(500) [not null, note: 'Зорчих зорилго']
+  intended_entry_on date [not null]
+  intended_exit_on date [not null]
+  extra_fields json [note: 'Нэмэлт талбарууд (JSON)']
+
+  Note: '''Мэдүүлгийн анкет (мэдүүлэгтэй 1:1); паспортын дугаар AES-256-GCM
+CHECK ck_forms_dates: ((`intended_exit_on` >= `intended_entry_on`))'''
+}
+
+Table imported_applications {
+  import_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  public_id char(36) [not null, unique, note: 'Гадагш харагдах UUID']
+  applicant_id "bigint unsigned" [not null, note: '→ users.user_id']
+  idempotency_key char(36) [not null, note: 'Давхар илгээлтээс сэргийлэх түлхүүр (NFR-05)']
+  country_name varchar(100) [not null]
+  visa_category varchar(60) [not null]
+  applied_on date [not null]
+  authority varchar(150)
+  official_ref varchar(64)
+  outcome varchar(12) [not null, default: 'NOT_CHECKED', note: 'NOT_CHECKED / PENDING / APPROVED / REFUSED (мэдүүлэгчийн мэдээлснээр)']
+  note text
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+
+  indexes {
+    public_id [unique, name: 'uq_imports_public_id']
+    (applicant_id, idempotency_key) [unique, name: 'uq_imports_idem']
+    (applicant_id, applied_on) [name: 'ix_imports_owner']
+  }
+
+  Note: '''Системээс гадуур өгсөн өмнөх мэдүүлэг — мэдүүлэгч өөрөө нэмсэн, баталгаажаагүй
+CHECK ck_imports_outcome: ((`outcome` in ('NOT_CHECKED','PENDING','APPROVED','REFUSED')))'''
+}
+
+// ===== 4. Хяналт ба үр дүн =====
+
+Table reviews {
+  review_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  application_id "bigint unsigned" [not null, note: '→ applications.application_id']
+  operator_id "bigint unsigned" [not null, note: '→ users.user_id']
+  review_no "int unsigned" [not null, note: 'Үнэлгээний дараалал (мэдүүлэг дотор)']
+  completeness varchar(12) [not null, note: 'COMPLETE (Бүрэн) / INCOMPLETE (Дутуу) — визийн шийдвэр биш']
+  comment text [note: 'Тайлбар (Дутуу бол заавал)']
+  reviewed_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    (application_id, review_no) [unique, name: 'uq_reviews_app_no']
+    (operator_id, reviewed_at) [name: 'ix_reviews_operator']
+  }
+
+  Note: '''Операторын бүрдлийн үнэлгээ (Бүрэн/Дутуу); зөвхөн нэмэгдэнэ, визийн шийдвэр биш (BR-09)
+CHECK ck_reviews_comment: (((`completeness` = 'COMPLETE') or ((`comment` is not null) and (char_length(`comment`) > 0))))
+CHECK ck_reviews_completeness: ((`completeness` in ('COMPLETE','INCOMPLETE')))'''
+}
+
+Table application_supplements {
+  supplement_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  application_id "bigint unsigned" [not null, note: '→ applications.application_id']
+  round_no "int unsigned" [not null, note: 'Нэмэлт материалын давталт']
+  review_id "bigint unsigned" [not null, unique, note: '“Дутуу” үнэлгээ → reviews']
+  status varchar(12) [not null, default: 'DRAFT', note: 'DRAFT / SUBMITTED']
+  note text
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  submitted_at datetime(6)
+
+  indexes {
+    (application_id, round_no) [unique, name: 'uq_supplements_app_round']
+    review_id [unique, name: 'uq_supplements_review']
+  }
+
+  Note: '''“Дутуу” үнэлгээний дараах нэмэлт материалын багц (нэг үнэлгээнд нэг)
+CHECK ck_supplements_status: ((`status` in ('DRAFT','SUBMITTED')))
+CHECK ck_supplements_submitted: (((`status` = 'DRAFT') or (`submitted_at` is not null)))'''
+}
+
+Table application_documents {
+  document_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  application_id "bigint unsigned" [not null, note: '→ applications.application_id']
+  version_id "bigint unsigned" [not null, note: 'Хавсаргасан үеийн хувилбар → visa_info_versions']
+  requirement_id "bigint unsigned" [not null, note: 'Аль шаардлагад → visa_requirements']
+  supplement_id "bigint unsigned" [note: 'Нэмэлт багц → application_supplements (NULL = анхны илгээлт)']
+  original_name varchar(255) [not null, note: 'Байршуулсан файлын нэр']
+  storage_key varchar(255) [not null, unique, note: 'Файлын сан дахь түлхүүр (зам биш)']
+  mime_type varchar(32) [not null, note: 'application/pdf / image/jpeg / image/png']
+  size_bytes "bigint unsigned" [not null, note: 'Файлын хэмжээ, байт (≤10 MB)']
+  sha256 char(64) [not null, note: 'Файлын SHA-256 хэш']
+  scan_status varchar(16) [not null, default: 'PENDING', note: 'Вирус шалгалт: PENDING / ACCEPTED / REJECTED']
+  source_profile_document_id "bigint unsigned" [note: 'Хуулагдсан профайлын баримт (FK-гүй — профайлын баримт устсан ч хэвээр)']
+  scanned_at datetime(6)
+  uploaded_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    storage_key [unique, name: 'uq_documents_storage_key']
+    (application_id, requirement_id) [name: 'ix_documents_application']
+    version_id [name: 'fk_documents_version']
+    requirement_id [name: 'fk_documents_requirement']
+    supplement_id [name: 'ix_documents_supplement']
+    scan_status [name: 'ix_documents_scan']
+  }
+
+  Note: '''Мэдүүлгийн хавсралт файл: PDF/JPG/PNG, ≤10 MB (BR-05)
+CHECK ck_documents_mime: ((`mime_type` in ('application/pdf','image/jpeg','image/png')))
+CHECK ck_documents_scan: ((`scan_status` in ('PENDING','ACCEPTED','REJECTED')))
+CHECK ck_documents_size: (((`size_bytes` > 0) and (`size_bytes` <= 10485760)))'''
+}
+
+Table evidence_files {
+  file_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  kind varchar(16) [not null, note: 'HANDOVER / OFFICIAL_RESULT / IMPORT']
+  application_id "bigint unsigned" [note: '→ applications.application_id']
+  import_id "bigint unsigned" [note: '→ imported_applications.import_id']
+  uploaded_by "bigint unsigned" [not null, note: 'Байршуулсан хэрэглэгч → users']
+  original_name varchar(255) [not null, note: 'Байршуулсан файлын нэр']
+  storage_key varchar(255) [not null, unique, note: 'Файлын сан дахь түлхүүр (зам биш)']
+  mime_type varchar(32) [not null, note: 'application/pdf / image/jpeg / image/png']
+  size_bytes "bigint unsigned" [not null, note: 'Файлын хэмжээ, байт (≤10 MB)']
+  sha256 char(64) [not null, note: 'Файлын SHA-256 хэш']
+  scan_status varchar(16) [not null, default: 'ACCEPTED', note: 'Вирус шалгалт: PENDING / ACCEPTED / REJECTED']
+  scanned_at datetime(6)
+  uploaded_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    storage_key [unique, name: 'uq_evidence_storage_key']
+    application_id [name: 'ix_evidence_application']
+    import_id [name: 'ix_evidence_import']
+    uploaded_by [name: 'fk_evidence_uploader']
+    scan_status [name: 'ix_evidence_scan']
+  }
+
+  Note: '''Нотолгоо файл: хүргүүлсэн баримт, албан үр дүнгийн баримт, импортын баримт
+CHECK ck_evidence_kind: ((`kind` in ('HANDOVER','OFFICIAL_RESULT','IMPORT')))
+CHECK ck_evidence_mime: ((`mime_type` in ('application/pdf','image/jpeg','image/png')))
+CHECK ck_evidence_owner: ((((`kind` = 'IMPORT') and (`import_id` is not null) and (`application_id` is null)) or ((`kind` <> 'IMPORT') and (`application_id` is not null) and (`import_id` is null))))
+CHECK ck_evidence_scan: ((`scan_status` in ('PENDING','ACCEPTED','REJECTED')))
+CHECK ck_evidence_size: (((`size_bytes` > 0) and (`size_bytes` <= 10485760)))'''
+}
+
+Table application_handovers {
+  handover_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  application_id "bigint unsigned" [not null, unique, note: '→ applications.application_id']
+  operator_id "bigint unsigned" [not null, note: 'Хүргүүлсэн оператор → users']
+  authority varchar(150) [not null, note: 'Хүлээн авсан байгууллага']
+  official_ref varchar(64) [not null, note: 'Албан бүртгэлийн дугаар']
+  delivered_on date [not null]
+  evidence_file_id "bigint unsigned" [not null, unique, note: 'Хүргүүлсэн нотолгоо → evidence_files']
+  note text
+  recorded_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    application_id [unique, name: 'uq_handovers_application']
+    evidence_file_id [unique, name: 'uq_handovers_evidence']
+    operator_id [name: 'fk_handovers_operator']
+  }
+
+  Note: '''Эрх бүхий байгууллагад хүргүүлсэн бүртгэл (мэдүүлэг бүрт нэг)
+CHECK ck_handovers_ref: (((char_length(`official_ref`) > 0) and (char_length(`authority`) > 0)))'''
+}
+
+Table official_results {
+  result_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  application_id "bigint unsigned" [not null, note: '→ applications.application_id']
+  entry_no "int unsigned" [not null, note: 'Бүртгэлийн дараалал (мэдүүлэг дотор)']
+  idempotency_key char(36) [not null, note: 'Давхар илгээлтээс сэргийлэх түлхүүр (NFR-05)']
+  outcome varchar(12) [not null, note: 'PENDING / APPROVED / REFUSED (мэдүүлэгчийн мэдээлснээр)']
+  checked_on date [not null, note: 'Порталаас шалгасан огноо']
+  source varchar(150) [not null, note: 'Эх сурвалжийн нэр']
+  source_url varchar(2048)
+  evidence_file_id "bigint unsigned" [unique, note: '→ evidence_files.file_id']
+  recorded_by "bigint unsigned" [not null, note: 'Бүртгэсэн мэдүүлэгч → users']
+  recorded_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    (application_id, entry_no) [unique, name: 'uq_results_app_entry']
+    (application_id, idempotency_key) [unique, name: 'uq_results_idem']
+    evidence_file_id [unique, name: 'uq_results_evidence']
+    recorded_by [name: 'fk_results_recorder']
+  }
+
+  Note: '''Мэдүүлэгчийн мэдээлсэн албан үр дүн; зөвхөн нэмэгдэнэ, системийн шийдвэр биш (D-13)
+CHECK ck_results_outcome: ((`outcome` in ('PENDING','APPROVED','REFUSED')))
+CHECK ck_results_url: (((`source_url` is null) or (`source_url` like 'https://%')))'''
+}
+
+Table official_result_verifications {
+  verification_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  result_id "bigint unsigned" [not null, unique, note: '→ official_results.result_id']
+  operator_id "bigint unsigned" [not null, note: 'Тулгасан оператор → users']
+  verdict varchar(10) [not null, note: 'MATCHES / MISMATCH']
+  note text
+  verified_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    result_id [unique, name: 'uq_verifications_result']
+    operator_id [name: 'fk_verifications_operator']
+  }
+
+  Note: '''Оператор албан үр дүнг нотолгоотой тулгасан тэмдэглэл (D-14)
+CHECK ck_verifications_note: (((`verdict` = 'MATCHES') or ((`note` is not null) and (char_length(`note`) > 0))))
+CHECK ck_verifications_verdict: ((`verdict` in ('MATCHES','MISMATCH')))'''
+}
+
+// ===== 5. Профайл ба бичиг баримтын сан =====
+
+Table applicant_profiles {
+  user_id "bigint unsigned" [pk, note: 'Мэдүүлэгч → users (1:1)']
+  family_name varchar(100)
+  given_name varchar(100)
+  birth_date date
+  sex char(1)
+  nationality_code char(2)
+  marital_status varchar(16) [note: 'SINGLE / MARRIED / DIVORCED / WIDOWED']
+  passport_number_enc varbinary(512) [note: 'Паспортын дугаар (AES-256-GCM шифрлэгдсэн)']
+  passport_key_id varchar(64) [note: 'Паспортын шифрлэлтийн түлхүүрийн ID']
+  passport_issued_on date
+  passport_expires_on date [note: 'Паспортын хүчинтэй хугацаа']
+  contact_email varchar(254)
+  contact_phone varchar(30)
+  home_address varchar(500)
+  occupation varchar(200)
+  employer_or_school varchar(200)
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  Note: '''Мэдүүлэгчийн профайл — мэдүүлэгт хуулж ашиглах хувийн мэдээлэл (паспорт шифрлэгдсэн)
+CHECK ck_profiles_marital: (((`marital_status` is null) or (`marital_status` in ('SINGLE','MARRIED','DIVORCED','WIDOWED'))))
+CHECK ck_profiles_passport: (((`passport_number_enc` is null) = (`passport_key_id` is null)))
+CHECK ck_profiles_passport_dates: (((`passport_issued_on` is null) or (`passport_expires_on` is null) or (`passport_expires_on` > `passport_issued_on`)))
+CHECK ck_profiles_sex: (((`sex` is null) or (`sex` in ('M','F'))))'''
+}
+
+Table profile_documents {
+  document_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  type_code varchar(40) [not null, note: 'Баримтын төрөл → document_types']
+  title varchar(200)
+  original_name varchar(255) [not null, note: 'Байршуулсан файлын нэр']
+  storage_key varchar(255) [not null, unique, note: 'Файлын сан дахь түлхүүр (зам биш)']
+  mime_type varchar(32) [not null, note: 'application/pdf / image/jpeg / image/png']
+  size_bytes "bigint unsigned" [not null, note: 'Файлын хэмжээ, байт (≤10 MB)']
+  sha256 char(64) [not null, note: 'Файлын SHA-256 хэш']
+  scan_status varchar(16) [not null, default: 'PENDING', note: 'Вирус шалгалт: PENDING / ACCEPTED / REJECTED']
+  scanned_at datetime(6)
+  issued_on date
+  valid_until date [note: 'Хүчинтэй хугацаа']
+  uploaded_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    storage_key [unique, name: 'uq_profile_docs_storage_key']
+    (user_id, type_code) [name: 'ix_profile_docs_user']
+    type_code [name: 'fk_profile_docs_type']
+  }
+
+  Note: '''Мэдүүлэгчийн бичиг баримтын сан (зөвхөн эзэмшигч хандана)
+CHECK ck_profile_docs_dates: (((`issued_on` is null) or (`valid_until` is null) or (`valid_until` >= `issued_on`)))
+CHECK ck_profile_docs_mime: ((`mime_type` in ('application/pdf','image/jpeg','image/png')))
+CHECK ck_profile_docs_scan: ((`scan_status` in ('PENDING','ACCEPTED','REJECTED')))
+CHECK ck_profile_docs_size: (((`size_bytes` > 0) and (`size_bytes` <= 10485760)))'''
+}
+
+// ===== 6. Аюулгүй байдал, аудит, мэдэгдэл =====
+
+Table mfa_recovery_codes {
+  code_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  code_hash char(64) [not null, note: 'Нөөц кодын SHA-256 хэш']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  used_at datetime(6) [note: 'Ашигласан огноо (нэг удаа)']
+
+  indexes {
+    (user_id, code_hash) [unique, name: 'uq_recovery_user_hash']
+  }
+
+  Note: '''Ажилтны 2FA-ийн нэг удаагийн нөөц код (SHA-256 хэш)'''
+}
+
+Table audit_events {
+  event_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  actor_id "bigint unsigned" [note: 'Үйлдэл хийсэн хэрэглэгч → users']
+  application_id "bigint unsigned" [note: '→ applications.application_id']
+  action varchar(64) [not null, note: 'Үйлдлийн код']
+  entity_type varchar(40) [not null, note: 'Объектын төрөл']
+  entity_key varchar(64) [note: 'Объектын түлхүүр (агуулга биш)']
+  request_id char(36) [not null, note: 'HTTP хүсэлтийн ID']
+  occurred_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    occurred_at [name: 'ix_audit_time']
+    (actor_id, occurred_at) [name: 'ix_audit_actor']
+    (action, occurred_at) [name: 'ix_audit_action']
+    application_id [name: 'fk_audit_application']
+  }
+
+  Note: '''Үйлдлийн бүртгэл; нууц үг, паспорт, анкетын агуулга, файлын зам хадгалахгүй'''
+}
+
+Table account_deletion_requests {
+  request_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  status varchar(12) [not null, default: 'PENDING', note: 'PENDING / APPROVED / REJECTED / CANCELLED']
+  reason varchar(500)
+  requested_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  decided_by "bigint unsigned" [note: 'Шийдвэрлэсэн админ → users']
+  decided_at datetime(6)
+  decision_note varchar(500)
+
+  indexes {
+    (status, requested_at) [name: 'ix_deletion_status']
+    (user_id, status) [name: 'ix_deletion_user']
+    decided_by [name: 'fk_deletion_decider']
+  }
+
+  Note: '''Бүртгэл/хувийн мэдээлэл устгах хүсэлт (мэдүүлэгч гаргана, админ шийдвэрлэнэ)
+CHECK ck_deletion_decided: (((`status` in ('PENDING','CANCELLED')) or ((`decided_by` is not null) and (`decided_at` is not null))))
+CHECK ck_deletion_status: ((`status` in ('PENDING','APPROVED','REJECTED','CANCELLED')))'''
+}
+
+Table notifications {
+  notification_id "bigint unsigned" [pk, increment, note: 'Анхдагч түлхүүр']
+  user_id "bigint unsigned" [not null, note: '→ users.user_id']
+  kind varchar(32) [not null, note: 'Мэдэгдлийн төрөл (lib/notify.js KINDS)']
+  application_id "bigint unsigned" [note: '→ applications.application_id']
+  ref varchar(36) [note: 'Лавлах дугаар']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'Үүсгэсэн огноо']
+  read_at datetime(6)
+  email_status varchar(10) [not null, default: 'PENDING', note: 'Имэйл: PENDING / SENT / FAILED / SKIPPED']
+  email_attempts "tinyint unsigned" [not null, default: 0]
+  emailed_at datetime(6)
+
+  indexes {
+    (user_id, read_at, created_at) [name: 'ix_notifications_user']
+    (email_status, created_at) [name: 'ix_notifications_outbox']
+    application_id [name: 'fk_notifications_application']
+  }
+
+  Note: '''Систем доторх мэдэгдэл + имэйлийн outbox (текстгүй — зөвхөн kind + лавлах дугаар)
+CHECK ck_notifications_email: ((`email_status` in ('PENDING','SENT','FAILED','SKIPPED')))'''
+}
+
+// ===== Холбоосууд (FOREIGN KEY) =====
+
+Ref fk_users_role: users.role_id > roles.role_id
+Ref fk_sessions_user: user_sessions.user_id > users.user_id
+Ref fk_tokens_user: user_tokens.user_id > users.user_id
+Ref fk_visa_types_country: visa_types.country_id > countries.country_id
+Ref fk_versions_creator: visa_info_versions.created_by > users.user_id
+Ref fk_versions_type: visa_info_versions.visa_type_id > visa_types.visa_type_id
+Ref fk_versions_verifier: visa_info_versions.verified_by > users.user_id
+Ref fk_requirements_version: visa_requirements.version_id > visa_info_versions.version_id
+Ref fk_req_doc_types_requirement: requirement_document_types.requirement_id > visa_requirements.requirement_id [delete: cascade]
+Ref fk_req_doc_types_type: requirement_document_types.type_code > document_types.code
+Ref fk_applications_applicant: applications.applicant_id > users.user_id
+Ref fk_applications_operator: applications.assigned_operator_id > users.user_id
+Ref fk_applications_version: applications.version_id > visa_info_versions.version_id
+Ref fk_forms_application: application_forms.application_id - applications.application_id [delete: cascade]
+Ref fk_imports_applicant: imported_applications.applicant_id > users.user_id
+Ref fk_reviews_application: reviews.application_id > applications.application_id
+Ref fk_reviews_operator: reviews.operator_id > users.user_id
+Ref fk_supplements_application: application_supplements.application_id > applications.application_id [delete: cascade]
+Ref fk_supplements_review: application_supplements.review_id - reviews.review_id
+Ref fk_documents_application: application_documents.application_id > applications.application_id [delete: cascade]
+Ref fk_documents_requirement: application_documents.requirement_id > visa_requirements.requirement_id
+Ref fk_documents_supplement: application_documents.supplement_id > application_supplements.supplement_id [delete: cascade]
+Ref fk_documents_version: application_documents.version_id > visa_info_versions.version_id
+Ref fk_evidence_application: evidence_files.application_id > applications.application_id
+Ref fk_evidence_import: evidence_files.import_id > imported_applications.import_id
+Ref fk_evidence_uploader: evidence_files.uploaded_by > users.user_id
+Ref fk_handovers_application: application_handovers.application_id - applications.application_id
+Ref fk_handovers_evidence: application_handovers.evidence_file_id - evidence_files.file_id
+Ref fk_handovers_operator: application_handovers.operator_id > users.user_id
+Ref fk_results_application: official_results.application_id > applications.application_id
+Ref fk_results_evidence: official_results.evidence_file_id - evidence_files.file_id
+Ref fk_results_recorder: official_results.recorded_by > users.user_id
+Ref fk_verifications_operator: official_result_verifications.operator_id > users.user_id
+Ref fk_verifications_result: official_result_verifications.result_id - official_results.result_id
+Ref fk_profiles_user: applicant_profiles.user_id - users.user_id
+Ref fk_profile_docs_type: profile_documents.type_code > document_types.code
+Ref fk_profile_docs_user: profile_documents.user_id > users.user_id
+Ref fk_recovery_user: mfa_recovery_codes.user_id > users.user_id
+Ref fk_audit_actor: audit_events.actor_id > users.user_id
+Ref fk_audit_application: audit_events.application_id > applications.application_id [delete: set null]
+Ref fk_deletion_decider: account_deletion_requests.decided_by > users.user_id
+Ref fk_deletion_user: account_deletion_requests.user_id > users.user_id
+Ref fk_notifications_application: notifications.application_id > applications.application_id
+Ref fk_notifications_user: notifications.user_id > users.user_id
+
+TableGroup users_auth {
+  roles
+  users
+  user_sessions
+  user_tokens
+}
+
+TableGroup visa_reference {
+  countries
+  visa_types
+  visa_info_versions
+  visa_requirements
+  document_types
+  requirement_document_types
+}
+
+TableGroup application_core {
+  applications
+  application_forms
+  imported_applications
+}
+
+TableGroup review_results {
+  reviews
+  application_supplements
+  application_documents
+  evidence_files
+  application_handovers
+  official_results
+  official_result_verifications
+}
+
+TableGroup profile_vault {
+  applicant_profiles
+  profile_documents
+}
+
+TableGroup security {
+  mfa_recovery_codes
+  audit_events
+  account_deletion_requests
+  notifications
+}
