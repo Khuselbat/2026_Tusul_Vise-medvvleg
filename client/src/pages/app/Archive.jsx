@@ -1,6 +1,19 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, LinkButton, Field, Pagination, fmtDate } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Button,
+  LinkButton,
+  Field,
+  Pagination,
+  fmtDate,
+  TableWrap,
+} from '../../components/ui.jsx';
 
 // Зураг 47 Миний мэдүүлгийн архив — огноо, төрөл, бүрдлийн төлөвөөр шүүнэ (серверийн шүүлт)
 import { t } from '../../i18n.js';
@@ -97,7 +110,7 @@ export default function Archive() {
           )
         ) : (
           <>
-            <div className="table-wrap">
+            <TableWrap>
               <table>
                 <thead>
                   <tr>
@@ -127,7 +140,7 @@ export default function Archive() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
             <Pagination
               page={data.page}
               pageSize={data.pageSize}

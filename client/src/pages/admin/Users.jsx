@@ -15,6 +15,7 @@ import {
   useToast,
   Alert,
   fmtDate,
+  TableWrap,
 } from '../../components/ui.jsx';
 import { ROLE_LABEL, useAuth } from '../../auth.jsx';
 
@@ -158,7 +159,7 @@ export default function Users() {
         (data.users.length === 0 ? (
           <Empty title={t('Хэрэглэгч олдсонгүй')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -219,7 +220,7 @@ export default function Users() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Modal

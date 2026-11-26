@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#11897b"/><path d="M9 9l7 15 7-15" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- ЦАХИМ ВИЗ · E-VISA — хялбаршуулсан тэмдэг (16px-д уншигдана). docs/design/BRAND.md -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2d9bff"/>
+      <stop offset="1" stop-color="#1fd0e5"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#g)"/>
+  <rect x="13" y="9" width="22" height="30" rx="4" fill="none" stroke="#fff" stroke-width="3"/>
+  <circle cx="24" cy="20" r="5" fill="none" stroke="#fff" stroke-width="2.4"/>
+  <path d="M18.5 31.5l3.6 3.4 7.4-7.4" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

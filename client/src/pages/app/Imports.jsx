@@ -1,5 +1,5 @@
 import { api } from '../../api.js';
-import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, LinkButton, Alert, fmtDate } from '../../components/ui.jsx';
+import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, LinkButton, Alert, fmtDate, TableWrap } from '../../components/ui.jsx';
 
 // Үе 1.3 / тайлан 4.5 — системээс гадуур өгсөн өмнөх мэдүүлгүүд (импортолсон, баталгаажаагүй)
 import { t, translateServer } from '../../i18n.js';
@@ -37,7 +37,7 @@ export default function Imports() {
             {t('Өмнө нь ЭСЯ, KVAC зэрэгт өгсөн мэдүүлгийнхээ баримтыг энд хадгалж болно.')}
           </Empty>
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -70,7 +70,7 @@ export default function Imports() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Card className="mt">

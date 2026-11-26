@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Field, Pagination, Modal, DL, Button, fmtDateTime } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Field,
+  Pagination,
+  Modal,
+  DL,
+  Button,
+  fmtDateTime,
+  TableWrap,
+} from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 const ACTION_MN = {
   LOGIN: t('Нэвтэрсэн'),
@@ -141,7 +154,7 @@ export default function Audit() {
           <Empty title={t('Бүртгэл алга')} />
         ) : (
           <>
-            <div className="table-wrap">
+            <TableWrap>
               <table>
                 <thead>
                   <tr>
@@ -185,7 +198,7 @@ export default function Audit() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableWrap>
             <Pagination
               page={data.page}
               pageSize={data.pageSize}

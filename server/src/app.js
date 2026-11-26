@@ -107,8 +107,17 @@ export function createApp({ logger = defaultLogger } = {}) {
 
   // Production: React-ийн build-ийг ижил origin-оос үйлчилнэ
   if (fs.existsSync(path.join(config.clientDist, 'index.html'))) {
+    // Vite-ийн hash-тай файлууд (/assets/*-[hash].js|css) агуулга өөрчлөгдөхөд нэр нь солигддог → 1 жил, immutable.
+    // index.html-ийг үргэлж шалгуулна (no-cache) — шинэ хувилбар гармагц хөтөч шинэ assets-ийг татна.
+    const indexHtml = path.join(config.clientDist, 'index.html');
+    app.use('/assets', express.static(path.join(config.clientDist, 'assets'), { index: false, immutable: true, maxAge: '365d' }));
+    // Байхгүй asset-д index.html биш 404 (хуучин hash-тай JS-ийг HTML-ээр хариулбал хөтөч MIME алдаа өгнө)
+    app.use('/assets', (_req, res) => res.status(404).end());
     app.use(express.static(config.clientDist, { index: false, maxAge: '1h' }));
-    app.get('*', (_req, res) => res.sendFile(path.join(config.clientDist, 'index.html')));
+    app.get('*', (_req, res) => {
+      res.set('Cache-Control', 'no-cache');
+      res.sendFile(indexHtml);
+    });
   }
 
   app.use((err, req, res, _next) => {

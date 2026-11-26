@@ -4,11 +4,26 @@ import dotenv from 'dotenv';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // server/.env (хаанаас ч эхлүүлсэн). Репоны үндсэн .env нь Docker compose-ийнх — энд уншихгүй (өөр DB нууц үгтэй байж болно).
-// Аль хэдийн тохируулсан орчны хувьсагч давуу. Тестэд .env-ийн MAIL_TRANSPORT-ыг үл тооно (бодит имэйл илгээхгүй).
-const mailTransportFromProcess = process.env.MAIL_TRANSPORT;
+// Аль хэдийн тохируулсан орчны хувьсагч давуу. Тестэд .env-ийн доорх утгуудыг үл тооно: бодит имэйл илгээхгүй, dev-ийн
+// MFA_REQUIRED=0 болон жинхэнэ түлхүүрүүд тестийн таамаглалыг (2FA заавал, анхдагч dev түлхүүр) эвдэхгүй.
+// process.env-ээс устгана — тест хүү процесс руу `...process.env` дамжуулдаг.
+const TEST_IGNORED_DOTENV = [
+  'MAIL_TRANSPORT',
+  'MFA_REQUIRED',
+  'REQUIRE_EMAIL_VERIFICATION',
+  'PASSPORT_KEY',
+  'PASSPORT_KEY_ID',
+  'PASSPORT_KEYS_OLD',
+  'STORAGE_ENCRYPT',
+  'FILE_KEY',
+  'FILE_KEY_ID',
+  'FILE_KEYS_OLD',
+];
+const fromProcess = new Set(TEST_IGNORED_DOTENV.filter((k) => process.env[k] !== undefined));
 dotenv.config({ path: path.join(root, '.env'), quiet: true });
 const isTest = process.env.NODE_ENV === 'test';
 const isProd = process.env.NODE_ENV === 'production';
+if (isTest) for (const k of TEST_IGNORED_DOTENV) if (!fromProcess.has(k)) delete process.env[k];
 
 function required(name, fallback) {
   const v = process.env[name] ?? fallback;
@@ -83,7 +98,7 @@ export const config = {
     // smtp | file | console | ethereal | memory | log.
     // Анхдагч: production — smtp; test — memory; dev — SMTP_HOST тохируулсан бол smtp, үгүй бол file (server/mail-outbox + консолд холбоос)
     transport: isTest
-      ? mailTransportFromProcess || 'memory'
+      ? process.env.MAIL_TRANSPORT || 'memory'
       : process.env.MAIL_TRANSPORT || (isProd ? 'smtp' : process.env.SMTP_HOST ? 'smtp' : 'file'),
     from: process.env.MAIL_FROM || 'Цахим виз <no-reply@localhost>',
     outboxDir: path.resolve(root, process.env.MAIL_OUTBOX_DIR || 'mail-outbox'),

@@ -15,6 +15,7 @@ import {
   useToast,
   Alert,
   LinkButton,
+  TableWrap,
 } from '../../components/ui.jsx';
 import { RequirementMeta, ORIGINAL_OR_COPY } from '../../components/shared.jsx';
 import { t } from '../../i18n.js';
@@ -167,7 +168,7 @@ export default function Requirements() {
             {t('Нийтлэхэд дор хаяж нэг шаардлага хэрэгтэй.')}
           </Empty>
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -225,7 +226,7 @@ export default function Requirements() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Modal

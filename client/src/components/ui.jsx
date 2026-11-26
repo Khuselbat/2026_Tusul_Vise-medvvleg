@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 /* ───────── Форматлах ───────── */
 import { t } from '../i18n.js';
+import Icon from './Icon.jsx';
 export const fmtDate = (v) => {
   if (!v) return '—';
   const d = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00`) : new Date(v);
@@ -93,6 +94,30 @@ export function Page({ crumb, title, subtitle, actions, children, footer }) {
     </div>
   );
 }
+/**
+ * Хүснэгтийн хүрээ. Хэвтээ гүйлттэй болсон үед л гарнаас фокус авна (WCAG 2.1.1, axe scrollable-region-focusable):
+ * tabIndex=0 + role="region" + нэр. Гүйлтгүй үед Tab дарааллыг бохирдуулахгүй.
+ */
+export function TableWrap({ label, className = '', children, ...p }) {
+  const ref = useRef(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1);
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    check();
+    return () => ro.disconnect();
+  }, []);
+  const focusable = scrolls ? { tabIndex: 0, role: 'region', 'aria-label': label || t('Хүснэгт') } : {};
+  return (
+    <div ref={ref} className={`table-wrap ${className}`.trim()} {...focusable} {...p}>
+      {children}
+    </div>
+  );
+}
 export const Card = ({ children, className = '', ...p }) => (
   <section className={`card ${className}`} {...p}>
     {children}
@@ -160,7 +185,7 @@ export const Badge = ({ status, children, tone }) => (
 export const Empty = ({ title, children, action }) => (
   <div className="empty">
     <div className="empty-icon" aria-hidden>
-      ◌
+      <Icon name="folder" size={26} />
     </div>
     <h3>{title}</h3>
     {children && <p>{children}</p>}

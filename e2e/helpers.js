@@ -82,3 +82,9 @@ export async function uiLogin(page, email, password, { staff = false } = {}) {
   }
   await expect(page.getByRole('button', { name: 'Гарах' })).toBeVisible();
 }
+
+/** Зочны header: mobile (≤860px) бол hamburger цэсийг нээнэ — хэл, горим, хэсгийн холбоосууд түүн дотор */
+export async function openGuestMenu(page) {
+  const burger = page.locator('.g-burger');
+  if ((await burger.isVisible()) && (await burger.getAttribute('aria-expanded')) !== 'true') await burger.click();
+}

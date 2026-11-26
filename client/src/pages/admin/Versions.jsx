@@ -13,6 +13,7 @@ import {
   useToast,
   fmtDate,
   fmtDateTime,
+  TableWrap,
 } from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 export default function Versions() {
@@ -74,7 +75,7 @@ export default function Versions() {
         (data.versions.length === 0 ? (
           <Empty title={t('Хувилбар алга')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -121,7 +122,7 @@ export default function Versions() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
     </Page>

@@ -14,6 +14,7 @@ import {
   Badge,
   Confirm,
   fmtDateTime,
+  TableWrap,
 } from '../../components/ui.jsx';
 import { useAuth, ROLE_LABEL } from '../../auth.jsx';
 import { PrivacyCard } from '../../components/Privacy.jsx';
@@ -254,7 +255,7 @@ function Sessions() {
         <Skeleton rows={2} />
       ) : (
         data && (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -286,7 +287,7 @@ function Sessions() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         )
       )}
       <p className="small muted mb0">{t('Нууц үг солиход бусад төхөөрөмжөөс автоматаар гарна.')}</p>
