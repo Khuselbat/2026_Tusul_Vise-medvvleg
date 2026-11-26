@@ -49,10 +49,11 @@ const BENEFITS = () => [
   ['login', t('Хоёр шатлалт нэвтрэлт'), t('Оператор, админ хоёр шатлалт баталгаажуулалтаар (2FA) нэвтэрнэ.')],
 ];
 
+// Хэсэг бүр дэлгэцийн бүтэн өргөнтэй зурвас (дэвсгэр, хүрээ ирмэг хүртэл), агуулга нь .wrap container дотор
 function Section({ id, title, lead, eyebrow, className = '', children }) {
   return (
-    <section id={id} className={`op-section ${className}`} aria-labelledby={`${id}-title`} tabIndex={-1}>
-      <div className="reveal">
+    <section id={id} className={`op-section op-band ${className}`} aria-labelledby={`${id}-title`} tabIndex={-1}>
+      <div className="wrap reveal">
         <header className="op-head">
           {eyebrow}
           <h2 id={`${id}-title`}>{title}</h2>
@@ -165,38 +166,40 @@ export default function OnePage() {
   return (
     // Холбоосын click-ийг дамжуулан барина (гарын Enter нь холбоос дээр click үүсгэдэг тул тусдаа keydown хэрэггүй)
     <div className="op" ref={rootRef} onClick={onClick}>
-      <section className="op-hero hero" aria-labelledby="op-title">
-        <div className="hero-text">
-          <span className="eyebrow">
-            <Icon name="shield" size={16} />
-            {t('Цахим виз')}
-          </span>
-          <h1 id="op-title">{t('Визийн мэдээлэл нэг дор')}</h1>
-          <p>{t('Шаардлагаа уншиж, материалаа бүрдүүлээд мэдүүлгээ илгээнэ.')}</p>
-          <div className="row-actions">
-            <a className="btn btn-primary" href="#check">
-              <Icon name="check" size={18} />
-              {t('Хариугаа шалгах')}
-            </a>
-            <LinkButton variant="ghost" to="/register">
-              {t('Бүртгүүлэх')}
-            </LinkButton>
-            <a className="btn btn-link hero-more" href="#visas">
-              {t('Визийн мэдээлэл үзэх')}
-              <Icon name="arrow" size={18} />
-            </a>
+      <section className="op-band op-hero-band" aria-labelledby="op-title">
+        <div className="wrap op-hero">
+          <div className="hero-text">
+            <span className="eyebrow">
+              <Icon name="shield" size={16} />
+              {t('Цахим виз')}
+            </span>
+            <h1 id="op-title">{t('Визийн мэдээлэл нэг дор')}</h1>
+            <p>{t('Шаардлагаа уншиж, материалаа бүрдүүлээд мэдүүлгээ илгээнэ.')}</p>
+            <div className="row-actions">
+              <a className="btn btn-primary" href="#check">
+                <Icon name="check" size={18} />
+                {t('Хариугаа шалгах')}
+              </a>
+              <LinkButton variant="ghost" to="/register">
+                {t('Бүртгүүлэх')}
+              </LinkButton>
+              <a className="btn btn-link hero-more" href="#visas">
+                {t('Визийн мэдээлэл үзэх')}
+                <Icon name="arrow" size={18} />
+              </a>
+            </div>
           </div>
+          <svg className="hero-art" viewBox="0 0 220 180" aria-hidden="true" focusable="false">
+            <rect x="38" y="18" width="120" height="150" rx="14" className="ha-back" />
+            <rect x="62" y="8" width="120" height="150" rx="14" className="ha-card" />
+            <circle cx="122" cy="58" r="22" className="ha-accent" />
+            <path d="M111 58l7 7 14-14" className="ha-check" />
+            <rect x="82" y="96" width="80" height="8" rx="4" className="ha-line" />
+            <rect x="82" y="114" width="60" height="8" rx="4" className="ha-line" />
+            <rect x="82" y="132" width="70" height="8" rx="4" className="ha-line" />
+            <circle cx="186" cy="150" r="18" className="ha-dot" />
+          </svg>
         </div>
-        <svg className="hero-art" viewBox="0 0 220 180" aria-hidden="true" focusable="false">
-          <rect x="38" y="18" width="120" height="150" rx="14" className="ha-back" />
-          <rect x="62" y="8" width="120" height="150" rx="14" className="ha-card" />
-          <circle cx="122" cy="58" r="22" className="ha-accent" />
-          <path d="M111 58l7 7 14-14" className="ha-check" />
-          <rect x="82" y="96" width="80" height="8" rx="4" className="ha-line" />
-          <rect x="82" y="114" width="60" height="8" rx="4" className="ha-line" />
-          <rect x="82" y="132" width="70" height="8" rx="4" className="ha-line" />
-          <circle cx="186" cy="150" r="18" className="ha-dot" />
-        </svg>
       </section>
 
       <Section
@@ -219,7 +222,11 @@ export default function OnePage() {
 
       <Section id="visas" title={t('Визийн мэдээлэл')} lead={t('Ангилал, бүрдүүлэх материал, эх сурвалж, шалгасан огноо')}>
         <ErrorBox error={countries.error} onRetry={countries.reload} />
-        {countries.loading ? <Skeleton rows={2} /> : <CountryCards countries={countries.data?.countries || []} onSelect={pickCountry} />}
+        {countries.loading ? (
+          <Skeleton rows={2} />
+        ) : (
+          <CountryCards countries={countries.data?.countries || []} onSelect={pickCountry} gridClass="grid-auto" />
+        )}
         <h3 id="visa-list" className="op-sub">
           {t('Визийн мэдээлэл хайх')}
         </h3>
@@ -261,7 +268,7 @@ export default function OnePage() {
             {t('Өөр нэр, код эсвэл улсаар хайна уу.')}
           </Empty>
         ) : (
-          <div className="grid grid-2">
+          <div className="grid grid-auto">
             {list.data?.visas.map((v) => (
               <VisaCard key={v.versionId} v={v} />
             ))}
@@ -269,7 +276,7 @@ export default function OnePage() {
         )}
       </Section>
 
-      <Section id="how" title={t('Хэрхэн ажилладаг')} lead={t('Системийг хэрхэн ашиглах, юуг хариуцдаг вэ')}>
+      <Section id="how" className="op-alt" title={t('Хэрхэн ажилладаг')} lead={t('Системийг хэрхэн ашиглах, юуг хариуцдаг вэ')}>
         <ol className="features">
           <li>
             <span className="feature-icon" aria-hidden>
@@ -316,7 +323,7 @@ export default function OnePage() {
         </Card>
       </Section>
 
-      <Section id="faq" title={t('Түгээмэл асуулт')}>
+      <Section id="faq" className="op-alt" title={t('Түгээмэл асуулт')}>
         <div className="faq">
           {FAQ().map(([qq, a]) => (
             <details key={qq}>
@@ -331,7 +338,7 @@ export default function OnePage() {
       </Section>
 
       <Section id="contact" title={t('Тусламж ба холбоо барих')} lead={t('Мэдээллийн заавар')}>
-        <div className="grid grid-2">
+        <div className="grid grid-auto">
           <Card className="prose">
             <HelpContacts level={3} />
           </Card>

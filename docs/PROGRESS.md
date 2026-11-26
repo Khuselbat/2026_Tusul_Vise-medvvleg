@@ -103,3 +103,13 @@
 - **Дэлгэцийн зураг:** `docs/screenshots/onepage/` (desktop/mobile × light/dark — hero, check, FAQ, mobile цэс)
   — `npx playwright test --config playwright.docs.config.js e2e/docs/onepage.spec.js`.
 - Үлдсэн: `docs/screenshots/guide/`-ийн зочны зураг (a01, a02) хуучин бүтэцтэй — `npm run docs:screenshots`-ээр шинэчилж болно.
+
+### Өргөн дэлгэцэнд тохируулах (2026-11-26)
+- Тогтмол 1200px container-ийг уян хатан `.wrap`-аар солив: `min(100% − 2×clamp(16px, 4vw, 64px), 1680px)` — header, бүх хэсэг,
+  footer, зочны бусад хуудас нэг шугамд (хэмжсэн: 1920px-д ирмэг 120px, 1366px-д 55px, 390px-д 16px).
+- Hero, ★ хариу шалгах, Хэрхэн, FAQ — дэвсгэр/хүрээ/гэрэлтэлт дэлгэцийн ирмэг хүртэл (full-bleed), агуулга container-т.
+- Hero 2 баганат grid (зураг `clamp(200px, 24vw, 460px)`), хариу шалгах маягт + заавар 2fr/1fr, маягтын талбар том дэлгэцэнд 3 багана,
+  картууд 4/3/2/1 багана (`auto-fill` — ганц визийн карт сунахгүй), давуу тал 3+3, FAQ 2 багана; гарчиг `clamp()`, текст ≤75ch.
+- Нэвтэрсэн хэрэглэгчийн `.page` 1180 → 1680px: 1920px-д баруун талын хоосон зай ~436px → 40px (padding).
+- Шалгалт: 2560/1920/1536/1366/768/390px × гэрэлтэй/харанхуй — хэвтээ scroll 0, header/footer агуулга далдлахгүй;
+  зураг `docs/screenshots/onepage/w<өргөн>-<горим>-*.png` (50 файл, `e2e/docs/onepage.spec.js`).

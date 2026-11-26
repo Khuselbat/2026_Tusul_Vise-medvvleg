@@ -53,6 +53,8 @@
   --shadow-md: 0 2px 4px rgba(18, 38, 60, 0.05), 0 10px 24px rgba(18, 38, 60, 0.08);
   --shadow-lg: 0 16px 40px rgba(18, 38, 60, 0.18);
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --gutter: clamp(16px, 4vw, 64px); /* хажуугийн зай */
+  --wrap: min(100% - 2 * var(--gutter), 1680px); /* нийтлэг container-ийн өргөн */
   --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans', 'DejaVu Sans', system-ui, sans-serif;
   --mono: 'Cascadia Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, Menlo, monospace;
   font-family: var(--font);
@@ -434,7 +436,7 @@ button {
 
 /* ── Page ── */
 .page {
-  max-width: 1180px;
+  max-width: 1680px;
   width: 100%;
   animation: page-in 0.25s var(--ease);
 }
@@ -1830,11 +1832,13 @@ dl.kv dd {
   --gf: 48px; /* footer-ийн өндөр */
   min-height: 100vh;
 }
+.wrap,
 .g-inner {
-  max-width: 1200px;
+  width: var(--wrap);
+  margin-inline: auto;
+}
+.g-inner {
   height: 100%;
-  margin: 0 auto;
-  padding: 0 24px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1930,10 +1934,14 @@ dl.kv dd {
   flex-shrink: 0;
 }
 .g-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: calc(var(--gh) + 28px) 24px calc(var(--gf) + 40px);
+  padding: var(--gh) 0 var(--gf);
   outline: none;
+}
+.g-main > .page,
+.g-main > .alert {
+  width: var(--wrap);
+  max-width: none;
+  margin: 28px auto 40px;
 }
 .g-footer {
   position: fixed;
@@ -1979,7 +1987,23 @@ dl.kv dd {
 .op {
   display: flex;
   flex-direction: column;
-  gap: 72px;
+  font-size: clamp(15px, 0.25vw + 12px, 17px);
+}
+.op-band {
+  position: relative;
+  padding-block: clamp(48px, 6vw, 104px);
+}
+.op-alt {
+  background: var(--card-2);
+  border-block: 1px solid var(--line);
+}
+/* auto-fill: цөөн карт (ж: ганц визийн ангилал) бүтэн мөрөөр сунахгүй; том дэлгэцэнд 4, таблетад 2 багана */
+.grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+/* Зурвас руу үсрэхэд дээд ирмэг нь яг header-ийн доор (дотоод padding-тай тул нэмэлт зай хэрэггүй) */
+.op .op-band {
+  scroll-margin-top: var(--gh);
 }
 .op [id] {
   scroll-margin-top: calc(var(--gh) + 16px);
@@ -1987,11 +2011,60 @@ dl.kv dd {
 .op-section {
   outline: none;
 }
+/* Hero: gradient ба гэрэлтэлт ирмэг хүртэл; текст зүүн, зураг баруун */
+.op-hero-band {
+  overflow: hidden;
+  padding-block: clamp(40px, 5vw, 96px);
+  background: linear-gradient(120deg, var(--hero-from), var(--hero-to));
+  border-bottom: 1px solid var(--line);
+}
+.op-hero-band::before,
+.op-hero-band::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.op-hero-band::before {
+  width: clamp(260px, 30vw, 620px);
+  aspect-ratio: 1;
+  right: -6vw;
+  top: -40%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 18%, transparent), transparent 70%);
+}
+.op-hero-band::after {
+  width: clamp(200px, 22vw, 460px);
+  aspect-ratio: 1;
+  left: -8vw;
+  bottom: -55%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%);
+}
 .op-hero {
-  margin-bottom: 0;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); /* текст зүүн, зураг баруун баганын голд — зай тэнцүү */
+  align-items: center;
+  gap: clamp(24px, 4vw, 80px);
+}
+.op-hero .hero-text {
+  flex: 1;
+  min-width: 0;
+}
+.op-hero p {
+  color: var(--ink-2);
+  font-size: clamp(16px, 0.5vw + 0.8rem, 21px);
+  margin: 0 0 24px;
+  max-width: 60ch;
+}
+.op-hero .hero-art {
+  justify-self: center;
+  width: clamp(200px, 24vw, 460px);
+  height: auto;
+  aspect-ratio: 220 / 180;
 }
 .op-hero h1 {
-  font-size: 40px;
+  font-size: clamp(28px, 1.6vw + 1.1rem, 58px);
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 10px;
@@ -2002,18 +2075,26 @@ dl.kv dd {
   gap: 6px;
 }
 .op-head {
-  max-width: 760px;
-  margin-bottom: 24px;
+  margin-bottom: clamp(20px, 2vw, 36px);
 }
 .op-head h2 {
-  font-size: 28px;
+  font-size: clamp(24px, 1vw + 1.1rem, 40px);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 .op-lead {
   margin: 8px 0 0;
+  max-width: 75ch;
   color: var(--ink-2);
-  font-size: 16px;
+  font-size: clamp(16px, 0.3vw + 0.85rem, 19px);
+}
+/* Урт текстийн мөр ≤75 тэмдэгт — уншихад эвтэйхэн */
+.op .prose p,
+.op .prose li,
+.op .faq details p,
+.op .benefits p,
+.op .features p {
+  max-width: 75ch;
 }
 .op-sub {
   font-size: 18px;
@@ -2039,21 +2120,23 @@ dl.kv dd {
 
 /* ★ Визийн хариу шалгах — гол хэсэг */
 .op-check {
-  position: relative;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 8%, var(--card)), var(--card) 45%);
-  border: 2px solid color-mix(in srgb, var(--brand) 55%, var(--line));
-  border-radius: calc(var(--radius) + 8px);
-  padding: 40px 44px;
+  background:
+    radial-gradient(ellipse 60% 70% at 50% 0%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--card)), var(--card) 60%);
+  border-block: 2px solid color-mix(in srgb, var(--brand) 55%, var(--line));
   box-shadow:
-    0 0 0 6px color-mix(in srgb, var(--brand) 10%, transparent),
-    0 18px 48px color-mix(in srgb, var(--brand) 16%, transparent);
+    0 -8px 32px color-mix(in srgb, var(--brand) 10%, transparent),
+    0 8px 32px color-mix(in srgb, var(--brand) 10%, transparent);
 }
 .op-check .op-head {
-  margin: 0 auto 32px;
+  margin: 0 auto clamp(24px, 2.5vw, 44px);
   text-align: center;
 }
+.op-check .op-lead {
+  margin-inline: auto;
+}
 .op-check .op-head h2 {
-  font-size: 34px;
+  font-size: clamp(26px, 1.4vw + 1.2rem, 48px);
 }
 .eyebrow-strong {
   background: var(--primary);
@@ -2061,9 +2144,16 @@ dl.kv dd {
 }
 .check-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: clamp(24px, 3vw, 56px);
   align-items: start;
+}
+/* Маягтын талбарууд өргөн дэлгэцэнд 2–3 багана */
+.check-form .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+.check-form .form-grid .span-2 {
+  grid-column: 1 / -1;
 }
 .radio-field {
   border: 0;
@@ -2152,12 +2242,15 @@ dl.kv dd {
 }
 
 /* Давуу тал, FAQ */
+.op .features {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+}
 .benefits {
   list-style: none;
   margin: 0 0 16px;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   gap: 16px;
 }
 .benefits li {
@@ -2177,7 +2270,8 @@ dl.kv dd {
 .faq {
   display: grid;
   gap: 10px;
-  max-width: 880px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+  align-items: start;
 }
 .faq details {
   background: var(--card);
@@ -2223,9 +2317,6 @@ dl.kv dd {
 }
 
 @media (max-width: 1100px) {
-  .benefits {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .g-link {
     padding: 8px 9px;
   }
@@ -2239,7 +2330,6 @@ dl.kv dd {
     --gf: 36px;
   }
   .g-inner {
-    padding: 0 16px;
     gap: 10px;
   }
   .g-header.scrolled {
@@ -2300,8 +2390,9 @@ dl.kv dd {
   .g-burger {
     order: 3; /* DOM-д цэсний өмнө (Tab дараалал), харагдахдаа хамгийн баруун */
   }
-  .g-main {
-    padding: calc(var(--gh) + 16px) 16px calc(var(--gf) + 32px);
+  .g-main > .page,
+  .g-main > .alert {
+    margin: 16px auto 32px;
   }
   .g-footer {
     font-size: 12px;
@@ -2317,22 +2408,16 @@ dl.kv dd {
     width: 42px;
     height: 42px;
   }
-  .op {
-    gap: 48px;
+  .op-band {
+    padding-block: 40px;
   }
-  .op-hero h1 {
-    font-size: 28px;
+  .op-hero {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .op-head h2,
-  .op-check .op-head h2 {
-    font-size: 24px;
+  .op-hero .hero-art {
+    display: none;
   }
-  .op-check {
-    padding: 24px 16px;
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 10%, transparent);
-  }
-  .check-grid,
-  .benefits {
+  .check-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

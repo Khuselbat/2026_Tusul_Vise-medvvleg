@@ -6,7 +6,7 @@ import { t } from '../i18n.js';
 
 /** Дөрвөн улсын карт: баталгаажаагүй улсыг "Улс N" (тун удахгүй) гэж харуулна (тайлангийн 1-р бүлэг).
  *  `onSelect` өгвөл идэвхтэй улсын товч тухайн хуудсан дээр шүүлтүүр болгоно, үгүй бол /visas?country= руу. */
-export function CountryCards({ countries, onSelect, headingLevel = 3 }) {
+export function CountryCards({ countries, onSelect, headingLevel = 3, gridClass = 'grid-2' }) {
   const H = `h${headingLevel}`;
   const cards = [...countries];
   for (let i = cards.length; i < 4; i += 1)
@@ -18,7 +18,7 @@ export function CountryCards({ countries, onSelect, headingLevel = 3 }) {
       status: 'COMING_SOON',
     });
   return (
-    <div className="grid grid-2">
+    <div className={`grid ${gridClass}`}>
       {cards.map((c, i) => (
         <Card key={c.id || `p${i}`} className={`country-card ${c.submittable ? '' : 'disabled'}`}>
           <div className="country-head">
