@@ -14,6 +14,7 @@ import {
   Alert,
   Field,
   fmtDate,
+  TableWrap,
 } from '../../components/ui.jsx';
 
 // Зураг 60 Мэдүүлэг операторт хуваарилах — зөвхөн metadata
@@ -203,7 +204,7 @@ export default function Assignments() {
         (data.items.length === 0 ? (
           <Empty title={filter === 'unassigned' ? t('Хуваарилаагүй мэдүүлэг алга') : t('Мэдүүлэг алга')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -305,7 +306,7 @@ export default function Assignments() {
                 })}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Confirm

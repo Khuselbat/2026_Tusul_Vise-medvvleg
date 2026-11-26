@@ -1,61 +1,112 @@
-/* Цахим виз — прототипийн (Зураг 37–61) өнгө, бүтэцтэй нийцүүлсэн загвар.
-   Бүх өнгө :root токеноор; харанхуй горим нь системийн тохиргоо (prefers-color-scheme) эсвэл [data-theme] (theme.js).
-   Контраст (WCAG AA ≥4.5:1): текстийн токен бүрийг --card, --bg дээр шалгасан — өнгө нэмбэл хоёр горимд шалгана. */
+/* ЦАХИМ ВИЗ · E-VISA — дизайны систем (docs/design/BRAND.md).
+   Dark горим анхдагч (D-90); [data-theme='light'] нь ижил шатлалтай гэрэлтэй хувилбар (theme.js).
+   Бүх өнгө токеноор. Контраст (WCAG AA ≥4.5:1): текстийн токен бүрийг bg, bg-2, surface, field, hover
+   дэвсгэр дээр тооцоолж шалгасан — өнгө нэмбэл хоёр горимд дахин шалга. */
 :root {
-  color-scheme: light;
-  --brand: #11897b;
-  --brand-2: #0f6f8f;
-  --primary: #136b8f;
-  --primary-700: #0e5574;
-  --primary-50: #e5f1f6;
-  --primary-100: #cfe5ef;
+  color-scheme: dark;
+  /* ── Брэнд палитр (dark) ── */
+  --bg: #06162e;
+  --bg-2: #0b2344;
+  --surface: #0f2a4c;
+  --surface-2: #163a62;
+  --blue: #168bff;
+  --cyan: #20d4e8;
+  --teal: #19c7b5;
+  --gold: #e8c27a; /* зөвхөн паспортын дүрслэлд */
+  --text: #f5f9ff;
+  --text-2: #a9bed5;
+  --border: #1f4063;
+  --success: #22c99a;
+  --warning: #f5b84b;
+  --error: #f16b75;
+  --btn-from: #1270d6; /* цагаан текст ≥4.5:1 */
+  --btn-to: #0b7dae;
+  --glow: rgba(22, 139, 255, 0.35);
+  --primary-solid: var(--btn-from);
+  --success-solid: #0d7f6d;
+  --brand-sub: var(--cyan); /* E-VISA дэд бичвэр */
+
+  /* ── Семантик токен (бүрэлдэхүүнүүд эдгээрийг ашиглана) ── */
+  --brand: var(--teal);
+  --brand-2: var(--cyan);
+  --primary: #5aafff; /* текст/дүрс/идэвхтэй төлөв */
+  --primary-700: #8cc8ff;
+  --primary-50: #12345a;
+  --primary-100: #174170;
   --on-primary: #ffffff;
-  --teal-50: #e6f4f2;
-  --ink: #12263c;
-  --ink-2: #364c63;
-  --muted: #55687b; /* WCAG AA: цагаан 5.75, --bg 5.24, --primary-50 4.94 (≥4.5) */
-  --line: #e0e7ee;
-  --line-strong: #c9d5e0;
-  --bg: #f2f6f9;
-  --card: #ffffff;
-  --card-2: #f8fafc;
-  --field: #f7f9fb;
-  --field-focus: #ffffff;
-  --hover: #eef3f7;
-  --ok: #0f7a5f;
-  --ok-bg: #e4f4ee;
-  --ok-line: #b9e2d2;
-  --ok-ink: #0b5c47;
-  --warn: #8f5400;
-  --warn-bg: #fdf1dc;
-  --warn-line: #f2d9a6;
-  --warn-ink: #6b4000;
-  --danger: #b42318;
-  --danger-bg: #fdeceb;
-  --danger-line: #f5c2bf;
-  --danger-solid: #b42318;
+  --teal-50: #0e3536;
+  --ink: var(--text);
+  --ink-2: var(--text-2);
+  --muted: #93aac5;
+  --line: var(--border);
+  --line-strong: #2a5480;
+  --card: var(--surface);
+  --card-2: var(--bg-2);
+  --field: #081b36;
+  --field-focus: #0b2344;
+  --hover: var(--surface-2);
+  --ok: #3fd6a8;
+  --ok-bg: #0e3536;
+  --ok-line: #1d5e55;
+  --ok-ink: #7fe3c3;
+  --warn: var(--warning);
+  --warn-bg: #33270f;
+  --warn-line: #6b5320;
+  --warn-ink: #f7cb7b;
+  --danger: #ff8c95;
+  --danger-bg: #3a1824;
+  --danger-line: #6e2b38;
+  --danger-ink: #ffb3b9;
+  --danger-solid: #c7343f;
   --on-danger: #ffffff;
-  --info: #155e8a;
-  --info-bg: #e3eff7;
-  --info-line: #c4dcec;
-  --info-ink: #12425f;
-  --neutral-bg: #edf1f5;
-  --focus: #5fb3dc;
-  --ring: rgba(19, 107, 143, 0.22);
-  --tip-bg: #12263c;
-  --tip-ink: #ffffff;
-  --overlay: rgba(12, 24, 38, 0.5);
-  --hero-from: #e5f1f6;
-  --hero-to: #e3f3ef;
-  --radius: 14px;
+  --info: #6cb8ff;
+  --info-bg: #0f2f55;
+  --info-line: #1f4a7a;
+  --info-ink: #a8d4ff;
+  --neutral-bg: #132f52;
+  --focus: var(--cyan);
+  --ring: rgba(32, 212, 232, 0.28);
+  --tip-bg: var(--text);
+  --tip-ink: var(--bg);
+  --overlay: rgba(2, 8, 20, 0.72);
+  --hero-from: #06162e;
+  --hero-to: #0b2344;
+  --glass: rgba(6, 22, 46, 0.72);
+  --card-grad: linear-gradient(160deg, rgba(23, 59, 99, 0.72), rgba(11, 35, 68, 0.72));
+
+  /* ── Радиус 10/16/24, сүүдэр 3 түвшин ── */
   --radius-sm: 10px;
-  --shadow: 0 1px 2px rgba(18, 38, 60, 0.05), 0 2px 8px rgba(18, 38, 60, 0.04);
-  --shadow-md: 0 2px 4px rgba(18, 38, 60, 0.05), 0 10px 24px rgba(18, 38, 60, 0.08);
-  --shadow-lg: 0 16px 40px rgba(18, 38, 60, 0.18);
+  --radius: 16px;
+  --radius-lg: 24px;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 14px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.28), 0 14px 32px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.45);
+
+  /* ── Зай 4…128 ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  --sp-9: 96px;
+  --sp-10: 128px;
+  --section: clamp(64px, 8vw, 120px);
+
+  /* ── Үсэг: Inter (өөр дээрээ — @fontsource-variable/inter), 6 түвшин ── */
+  --fs-display: clamp(2.5rem, 1.4rem + 3.6vw, 4.75rem); /* 40 → 76 */
+  --fs-h1: clamp(2rem, 1.4rem + 2.2vw, 3.5rem); /* 32 → 56 */
+  --fs-h2: clamp(1.625rem, 1.2rem + 1.2vw, 2.625rem); /* 26 → 42 */
+  --fs-h3: clamp(1.0625rem, 0.95rem + 0.35vw, 1.25rem); /* 17 → 20 */
+  --fs-body: clamp(0.9375rem, 0.88rem + 0.18vw, 1.0625rem); /* 15 → 17 */
+  --fs-small: clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem); /* 13 → 14 */
+
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
   --gutter: clamp(16px, 4vw, 64px); /* хажуугийн зай */
   --wrap: min(100% - 2 * var(--gutter), 1680px); /* нийтлэг container-ийн өргөн */
-  --font: 'Inter', 'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans', 'DejaVu Sans', system-ui, sans-serif;
+  --font: 'Inter Variable', 'Inter', 'Segoe UI Variable Text', 'Segoe UI', 'Noto Sans', system-ui, sans-serif;
   --mono: 'Cascadia Mono', 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, Menlo, monospace;
   font-family: var(--font);
   color: var(--ink);
@@ -63,108 +114,55 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-/* Харанхуй горим — цэвэр хар биш, нүдэнд зөөлөн хөх саарал */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --brand: #2bb3a3;
-    --brand-2: #3d9cc4;
-    --primary: #6cc0e6;
-    --primary-700: #8ed0ee;
-    --primary-50: #16324a;
-    --primary-100: #1d3f5b;
-    --on-primary: #08202f;
-    --teal-50: #133431;
-    --ink: #e5edf4;
-    --ink-2: #c2cfdb;
-    --muted: #9cadbf;
-    --line: #263646;
-    --line-strong: #34485c;
-    --bg: #0e1720;
-    --card: #15212d;
-    --card-2: #192735;
-    --field: #111c27;
-    --field-focus: #0f1922;
-    --hover: #1c2b3a;
-    --ok: #5fd3a9;
-    --ok-bg: #12322a;
-    --ok-line: #1f5a48;
-    --ok-ink: #8fe3c3;
-    --warn: #f0b35a;
-    --warn-bg: #352812;
-    --warn-line: #5e4520;
-    --warn-ink: #f6cd8c;
-    --danger: #ff958b;
-    --danger-bg: #3a1a19;
-    --danger-line: #6a2d2a;
-    --danger-solid: #e0574b;
-    --on-danger: #1a0705;
-    --info: #7cc6ee;
-    --info-bg: #14304a;
-    --info-line: #24506f;
-    --info-ink: #a9daf5;
-    --neutral-bg: #223242;
-    --focus: #7cc6ee;
-    --ring: rgba(108, 192, 230, 0.28);
-    --tip-bg: #e5edf4;
-    --tip-ink: #0e1720;
-    --overlay: rgba(0, 0, 0, 0.6);
-    --hero-from: #15304a;
-    --hero-to: #123630;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 10px 24px rgba(0, 0, 0, 0.25);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
-  }
-}
-:root[data-theme='dark'] {
-  color-scheme: dark;
-  --brand: #2bb3a3;
-  --brand-2: #3d9cc4;
-  --primary: #6cc0e6;
-  --primary-700: #8ed0ee;
-  --primary-50: #16324a;
-  --primary-100: #1d3f5b;
-  --on-primary: #08202f;
-  --teal-50: #133431;
-  --ink: #e5edf4;
-  --ink-2: #c2cfdb;
-  --muted: #9cadbf;
-  --line: #263646;
-  --line-strong: #34485c;
-  --bg: #0e1720;
-  --card: #15212d;
-  --card-2: #192735;
-  --field: #111c27;
-  --field-focus: #0f1922;
-  --hover: #1c2b3a;
-  --ok: #5fd3a9;
-  --ok-bg: #12322a;
-  --ok-line: #1f5a48;
-  --ok-ink: #8fe3c3;
-  --warn: #f0b35a;
-  --warn-bg: #352812;
-  --warn-line: #5e4520;
-  --warn-ink: #f6cd8c;
-  --danger: #ff958b;
-  --danger-bg: #3a1a19;
-  --danger-line: #6a2d2a;
-  --danger-solid: #e0574b;
-  --on-danger: #1a0705;
-  --info: #7cc6ee;
-  --info-bg: #14304a;
-  --info-line: #24506f;
-  --info-ink: #a9daf5;
-  --neutral-bg: #223242;
-  --focus: #7cc6ee;
-  --ring: rgba(108, 192, 230, 0.28);
-  --tip-bg: #e5edf4;
-  --tip-ink: #0e1720;
-  --overlay: rgba(0, 0, 0, 0.6);
-  --hero-from: #15304a;
-  --hero-to: #123630;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.3), 0 10px 24px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+/* Гэрэлтэй горим — dark-тай ижил шатлал (хуудас → bg-2 → гадаргуу), brand цэнхэр AA-д нийцүүлж бараан */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f3f7fc;
+  --bg-2: #e8eff8;
+  --surface: #ffffff;
+  --surface-2: #eaf1f9;
+  --text: #0b1b33;
+  --text-2: #33496a;
+  --border: #d5e1ee;
+  --glow: rgba(18, 112, 214, 0.22);
+  --brand-sub: #07707f;
+  --primary: #0b63c4;
+  --primary-700: #084d99;
+  --primary-50: #e4effb;
+  --primary-100: #cfe2f7;
+  --teal-50: #e1f5f2;
+  --muted: #53698a;
+  --line-strong: #b9cbe0;
+  --field: #f7fafd;
+  --field-focus: #ffffff;
+  --ok: #0e7a5c;
+  --ok-bg: #e3f5ee;
+  --ok-line: #b5e2d0;
+  --ok-ink: #0a5c45;
+  --warn: #8a5600;
+  --warn-bg: #fdf1da;
+  --warn-line: #f0d7a3;
+  --warn-ink: #6b4300;
+  --danger: #b4232f;
+  --danger-bg: #fdeced;
+  --danger-line: #f3c2c6;
+  --danger-ink: #8e1a24;
+  --danger-solid: #b4232f;
+  --info: #0b5fb0;
+  --info-bg: #e4effb;
+  --info-line: #c3dbf3;
+  --info-ink: #0b4a8a;
+  --neutral-bg: #e9eff6;
+  --focus: #0b8fb0;
+  --ring: rgba(11, 99, 196, 0.22);
+  --overlay: rgba(8, 20, 40, 0.5);
+  --hero-from: #eaf2fc;
+  --hero-to: #e4f4f6;
+  --glass: rgba(255, 255, 255, 0.82);
+  --card-grad: linear-gradient(160deg, #ffffff, #f6f9fd);
+  --shadow: 0 1px 2px rgba(11, 27, 51, 0.06), 0 4px 14px rgba(11, 27, 51, 0.05);
+  --shadow-md: 0 2px 6px rgba(11, 27, 51, 0.06), 0 14px 32px rgba(11, 27, 51, 0.09);
+  --shadow-lg: 0 24px 60px rgba(11, 27, 51, 0.16);
 }
 * {
   box-sizing: border-box;
@@ -257,17 +255,49 @@ button {
   color: var(--ink);
   text-decoration: none;
 }
-.logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, #11897b, #136b8f);
-  color: #fff;
-  display: grid;
-  place-items: center;
+/* Лого (components/Brand.jsx) */
+.logo-mark {
+  flex-shrink: 0;
+  display: block;
+}
+.logo-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.logo-name {
   font-weight: 800;
   font-size: 19px;
-  box-shadow: 0 4px 12px rgba(17, 137, 123, 0.3);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.logo-sub {
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  color: var(--brand-sub);
+}
+.logo-tone-on-dark .logo-name {
+  color: #f5f9ff;
+}
+.logo-tone-on-dark .logo-sub {
+  color: #20d4e8;
+}
+.logo-tone-on-light .logo-name {
+  color: #0b1b33;
+}
+.logo-tone-on-light .logo-sub {
+  color: #07707f;
+}
+.logo-tone-mono :is(.logo-name, .logo-sub) {
+  color: currentColor;
 }
 .top-right {
   margin-left: auto;
@@ -575,7 +605,7 @@ button {
 .ha-card {
   fill: var(--card);
   stroke: var(--line);
-  filter: drop-shadow(0 8px 18px rgba(18, 38, 60, 0.12));
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.18));
 }
 .ha-accent {
   fill: var(--brand);
@@ -805,14 +835,13 @@ button {
   cursor: not-allowed;
 }
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--btn-from), var(--btn-to));
   color: var(--on-primary);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.08),
-    0 4px 12px color-mix(in srgb, var(--primary) 25%, transparent);
+  box-shadow: 0 8px 24px var(--glow);
 }
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-700);
+  box-shadow: 0 10px 30px var(--glow);
+  transform: translateY(-1px);
 }
 .btn-ghost {
   background: var(--card);
@@ -1219,12 +1248,12 @@ tbody tr:hover {
   font-weight: 700;
 }
 .step.on b {
-  background: var(--primary);
+  background: var(--primary-solid);
   color: var(--on-primary);
 }
 .step.done b {
-  background: var(--brand);
-  color: #fff;
+  background: var(--success-solid);
+  color: var(--on-primary);
 }
 
 /* ── Detail lists, timeline ── */
@@ -1427,8 +1456,8 @@ tbody tr:hover {
 .toast {
   padding: 12px 18px;
   border-radius: var(--radius-sm);
-  color: #fff;
-  background: #0f7a5f;
+  color: var(--on-primary);
+  background: var(--success-solid);
   box-shadow: var(--shadow-lg);
   max-width: 360px;
   animation: toast-in 0.25s var(--ease);
@@ -1439,10 +1468,10 @@ tbody tr:hover {
   }
 }
 .toast-danger {
-  background: #b42318;
+  background: var(--danger-solid);
 }
 .toast-info {
-  background: #136b8f;
+  background: var(--primary-solid);
 }
 .auth-card {
   max-width: 460px;
@@ -1829,23 +1858,6 @@ dl.kv dd {
    Нэгдсэн хэмжүүр: зай 4/8/12/16/24/32/48/64/96px (--sp-*), үсэг 5 түвшин (--fs-*), хэсэг хоорондын зай --section.
    Дэвсгэр 2 түвшин (хуудас --bg, карт --card); градиент/гэрэлтэлт зөвхөн hero ба ★ хариу шалгах хэсэгт.
    Нэвтэрсэн хэрэглэгчийн .shell-д хамаарахгүй. */
-:root {
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 24px;
-  --sp-6: 32px;
-  --sp-7: 48px;
-  --sp-8: 64px;
-  --sp-9: 96px;
-  --section: clamp(64px, 8vw, 120px);
-  --fs-h1: clamp(2rem, 1.4rem + 2.2vw, 3.5rem); /* 32 → 56 */
-  --fs-h2: clamp(1.625rem, 1.2rem + 1.2vw, 2.5rem); /* 26 → 40 */
-  --fs-h3: clamp(1.0625rem, 0.95rem + 0.35vw, 1.25rem); /* 17 → 20 */
-  --fs-body: clamp(0.9375rem, 0.88rem + 0.18vw, 1.0625rem); /* 15 → 17 */
-  --fs-small: clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem); /* 13 → 14 */
-}
 
 /* ── Shell: тогтмол header / footer ── */
 .g-shell {
@@ -1883,7 +1895,7 @@ dl.kv dd {
   background: color-mix(in srgb, var(--card) 80%, transparent);
   -webkit-backdrop-filter: saturate(1.4) blur(12px);
   backdrop-filter: saturate(1.4) blur(12px);
-  box-shadow: 0 6px 20px rgba(18, 38, 60, 0.06);
+  box-shadow: var(--shadow-md);
 }
 .g-header .brand {
   flex-shrink: 0;

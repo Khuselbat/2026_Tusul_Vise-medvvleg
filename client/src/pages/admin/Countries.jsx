@@ -1,6 +1,20 @@
 import { useState } from 'react';
 import { api } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, Modal, Field, Confirm, useToast, Alert } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Button,
+  Modal,
+  Field,
+  Confirm,
+  useToast,
+  Alert,
+  TableWrap,
+} from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 const EMPTY = {
   isoCode: '',
@@ -98,7 +112,7 @@ export default function Countries() {
         (data.countries.length === 0 ? (
           <Empty title={t('Улс бүртгээгүй')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -146,7 +160,7 @@ export default function Countries() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Modal

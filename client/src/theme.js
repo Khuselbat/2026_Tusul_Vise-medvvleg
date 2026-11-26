@@ -1,7 +1,6 @@
-// Өнгөний горим: гэрэлтэй / харанхуй. Хэрэглэгч сонгоогүй бол системийн тохиргоог (prefers-color-scheme) CSS өөрөө дагана.
+// Өнгөний горим: харанхуй (анхдагч, D-90) / гэрэлтэй. Хэрэглэгч сонгоогүй бол харанхуй — CSS-ийн :root нь dark токен.
 // Сонголтыг зөвхөн энэ хөтөчид (localStorage) хадгална — хувийн мэдээлэл биш.
 const STORAGE = 'civiz.theme';
-const media = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
 function stored() {
   try {
@@ -14,7 +13,7 @@ function stored() {
 
 /** Одоо харагдаж буй горим */
 export function currentTheme() {
-  return stored() || (media?.matches ? 'dark' : 'light');
+  return stored() || 'dark';
 }
 
 export function applyTheme() {

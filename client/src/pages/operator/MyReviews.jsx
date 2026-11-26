@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, fmtDateTime } from '../../components/ui.jsx';
+import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, fmtDateTime, TableWrap } from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 export default function MyReviews() {
   const { data, error, loading, reload } = useAsync(() => api.get('/api/operator/reviews'), []);
@@ -26,7 +26,7 @@ export default function MyReviews() {
         (data.items.length === 0 ? (
           <Empty title={t('Үнэлгээ оруулаагүй байна')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -57,7 +57,7 @@ export default function MyReviews() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
     </Page>

@@ -1,7 +1,20 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, qs } from '../../api.js';
 import { useState } from 'react';
-import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, Field, Button, Pagination, fmtDate } from '../../components/ui.jsx';
+import {
+  Page,
+  Card,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Field,
+  Button,
+  Pagination,
+  fmtDate,
+  TableWrap,
+} from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 const LATEST = {
   COMPLETE: ['ok', t('Бүрэн')],
@@ -129,7 +142,7 @@ export default function Worklist() {
         (data.items.length === 0 ? (
           <Empty title={t('Хуваарилсан мэдүүлэг алга')}>{t('Админ танд мэдүүлэг хуваарилах үед энд харагдана.')}</Empty>
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -168,7 +181,7 @@ export default function Worklist() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       {data && (

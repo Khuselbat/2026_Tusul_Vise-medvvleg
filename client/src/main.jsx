@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './auth.jsx';
 import { ToastProvider } from './components/ui.jsx';
+// Inter (variable) — өөр дээрээ (CSP: гадны эх сурвалжгүй); cyrillic-ext нь Ө, Ү-г агуулна
+import '@fontsource-variable/inter';
 import './theme.js';
 import './styles.css';
 

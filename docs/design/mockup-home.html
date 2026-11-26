@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<title>ЦАХИМ ВИЗ — дизайны жишээ</title>
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(file:///usr/share/fonts/opentype/inter/Inter-Regular.otf)}
+@font-face{font-family:Inter;font-weight:500;src:url(file:///usr/share/fonts/opentype/inter/Inter-Medium.otf)}
+@font-face{font-family:Inter;font-weight:600;src:url(file:///usr/share/fonts/opentype/inter/Inter-SemiBold.otf)}
+@font-face{font-family:Inter;font-weight:700;src:url(file:///usr/share/fonts/opentype/inter/Inter-Bold.otf)}
+@font-face{font-family:Inter;font-weight:800;src:url(file:///usr/share/fonts/opentype/inter/Inter-ExtraBold.otf)}
+@font-face{font-family:InterDisplay;font-weight:800;src:url(file:///usr/share/fonts/opentype/inter/InterDisplay-ExtraBold.otf)}
+:root{
+  --bg:#06162E;--bg2:#0B2344;--surface:#0F2A4C;--surface2:#163A62;
+  --blue:#168BFF;--cyan:#20D4E8;--teal:#19C7B5;--gold:#E8C27A;
+  --text:#F5F9FF;--text2:#A9BED5;--muted:#7189A5;--border:#1F4063;
+  --success:#22C99A;--warn:#F5B84B;--err:#F16B75;
+  --r-sm:10px;--r:16px;--r-lg:24px;--wrap:1240px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);width:1440px;-webkit-font-smoothing:antialiased}
+.wrap{width:var(--wrap);margin:0 auto}
+svg{display:block}
+/* NAV */
+.nav{position:relative;z-index:5;height:76px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(6,22,46,.7);backdrop-filter:blur(12px)}
+.nav .wrap{display:flex;align-items:center;height:100%;gap:28px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand b{white-space:nowrap;font-size:19px;font-weight:800;letter-spacing:.04em;line-height:1}
+.brand small{display:block;font-size:10px;font-weight:600;letter-spacing:.32em;color:var(--cyan);margin-top:4px}
+.links{display:flex;gap:26px;margin-left:8px}
+.links a{white-space:nowrap;font-size:14px;font-weight:500;color:var(--text2);position:relative;padding:28px 0}
+.links a.on{color:var(--text)}
+.links a.on:after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--cyan))}
+.right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.pill{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:14px;color:var(--text2);font-weight:500}
+.btn{white-space:nowrap;height:44px;padding:0 22px;border-radius:12px;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:10px;border:1px solid transparent}
+.btn-p{background:linear-gradient(135deg,#1E8CFF,#18B8E6);color:#fff;box-shadow:0 10px 30px rgba(22,139,255,.35)}
+.btn-o{border-color:#2A5480;color:var(--text)}
+.btn-lg{height:56px;padding:0 28px;font-size:16px;border-radius:14px}
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:72px 0 150px}
+.hero:before{content:"";position:absolute;inset:0;background:
+ radial-gradient(60% 70% at 78% 40%,rgba(22,139,255,.28),transparent 60%),
+ radial-gradient(40% 50% at 10% 90%,rgba(25,199,181,.14),transparent 70%)}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.02fr 1fr;align-items:center;gap:24px}
+.chip{display:inline-flex;align-items:center;gap:9px;height:36px;padding:0 16px 0 12px;border-radius:999px;background:rgba(25,199,181,.1);border:1px solid rgba(25,199,181,.3);font-size:13.5px;color:#BFEFE9;font-weight:500}
+h1{font-family:InterDisplay,Inter;font-weight:800;font-size:76px;line-height:1.02;letter-spacing:-.025em;margin:26px 0 24px}
+h1 span{background:linear-gradient(90deg,#3AA0FF,#20D4E8 60%,#5CE6D8);-webkit-background-clip:text;color:transparent}
+.lead{font-size:19px;line-height:1.6;color:var(--text2);max-width:520px}
+.ctas{display:flex;gap:14px;margin:36px 0 34px}
+.facts{display:flex;gap:26px;color:var(--muted);font-size:13.5px}
+.facts div{white-space:nowrap;display:flex;align-items:center;gap:8px}
+.ill{position:relative;height:560px}
+/* BENEFITS */
+.benefits{position:relative;z-index:3;margin-top:-104px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{background:linear-gradient(160deg,rgba(23,59,99,.72),rgba(11,35,68,.72));border:1px solid rgba(91,140,190,.2);border-radius:var(--r-lg);backdrop-filter:blur(14px)}
+.benefit{padding:26px 24px;display:flex;gap:18px;align-items:flex-start}
+.ic{flex:none;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:rgba(32,212,232,.1);border:1px solid rgba(32,212,232,.25)}
+.benefit h3{font-size:16.5px;font-weight:700;margin:3px 0 7px}
+.benefit p{font-size:14px;line-height:1.5;color:var(--text2)}
+/* SECTIONS */
+section.s{padding:112px 0 0}
+.eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:14px}
+h2{font-size:42px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.sub{font-size:17px;color:var(--text2);margin-top:14px;line-height:1.6}
+.head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px}
+.center{text-align:center}
+/* CHECK */
+.check{position:relative;border-radius:30px;padding:2px;background:linear-gradient(135deg,rgba(32,212,232,.65),rgba(22,139,255,.25) 40%,rgba(22,139,255,.08) 70%,rgba(25,199,181,.5))}
+.check-in{border-radius:28px;background:radial-gradient(70% 90% at 0% 0%,rgba(22,139,255,.16),transparent 60%),linear-gradient(180deg,#0D2748,#0A2140);padding:52px 56px;display:grid;grid-template-columns:1.45fr 1fr;gap:48px}
+.badge{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;font-size:12.5px;font-weight:700}
+.b-cyan{background:rgba(32,212,232,.14);color:#8DEBF5}
+.b-warn{background:rgba(245,184,75,.14);color:#F7CB7B}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:18px 18px;margin-top:30px}
+.f label{display:block;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px}
+.f .in{height:52px;border-radius:12px;background:#081B36;border:1px solid #21456B;display:flex;align-items:center;padding:0 16px;font-size:15px;color:#C9D7E6;justify-content:space-between}
+.f .ph{color:#5F7896}
+.seg{display:flex;background:#081B36;border:1px solid #21456B;border-radius:12px;padding:4px;height:52px}
+.seg div{flex:1;border-radius:9px;display:grid;place-items:center;font-size:14px;font-weight:600;color:var(--muted)}
+.seg .on{background:#163A62;color:var(--text);box-shadow:inset 0 0 0 1px rgba(32,212,232,.35)}
+.span2{grid-column:span 2}
+.steps-side{border-left:1px solid rgba(91,140,190,.2);padding-left:44px}
+.st{display:flex;gap:16px;margin-top:22px}
+.st i{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:14px;background:rgba(22,139,255,.16);color:#7DBBFF;border:1px solid rgba(22,139,255,.35)}
+.st b{display:block;font-size:15px;margin-bottom:4px}
+.st span{font-size:13.5px;color:var(--text2);line-height:1.5}
+.note{margin-top:28px;padding:14px 16px;border-radius:12px;background:rgba(245,184,75,.07);border:1px solid rgba(245,184,75,.22);font-size:13px;color:#E9D2A6;line-height:1.5}
+/* DEST */
+.grid3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:18px}
+.dest{padding:28px;display:flex;flex-direction:column;min-height:270px}
+.dest .top{display:flex;align-items:center;gap:14px}
+.flag{width:54px;height:38px;border-radius:7px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+.dest h3{font-size:22px;font-weight:800}
+.dest p{font-size:14.5px;color:var(--text2);line-height:1.55;margin:16px 0 18px}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;background:rgba(22,139,255,.12);color:#9CCBFF;border:1px solid rgba(22,139,255,.25)}
+.dest .foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:20px}
+.lnk{font-size:14.5px;font-weight:700;color:#5CC8FF;display:flex;align-items:center;gap:8px}
+.soon{border-style:dashed;background:rgba(11,35,68,.45)}
+.soon h3{color:#C7D5E6}
+/* STEPS */
+.stepper{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;position:relative}
+.stepper:before{content:"";position:absolute;top:44px;left:16%;right:16%;height:2px;background:linear-gradient(90deg,rgba(22,139,255,.0),rgba(32,212,232,.55),rgba(22,139,255,.0))}
+.step{padding:0 24px;text-align:center;position:relative}
+.num{width:88px;height:88px;margin:0 auto 22px;border-radius:26px;display:grid;place-items:center;background:linear-gradient(150deg,#1A4675,#0E2B4F);border:1px solid rgba(32,212,232,.35);box-shadow:0 0 0 8px var(--bg),0 18px 40px rgba(0,0,0,.35)}
+.step h3{font-size:19px;font-weight:700;margin-bottom:8px}
+.step p{font-size:14.5px;color:var(--text2);line-height:1.55;max-width:300px;margin:0 auto}
+.step small{display:block;font-size:12px;font-weight:700;letter-spacing:.18em;color:var(--cyan);margin-bottom:8px}
+/* CTA */
+.cta{border-radius:30px;padding:56px 64px;display:flex;align-items:center;justify-content:space-between;background:
+ radial-gradient(60% 120% at 100% 0%,rgba(32,212,232,.25),transparent 60%),linear-gradient(120deg,#0F3A6E,#0B2A52 60%,#0C2F4F);border:1px solid rgba(91,170,230,.25);overflow:hidden;position:relative}
+.cta h2{font-size:36px}
+/* FAQ */
+.faq{display:grid;grid-template-columns:.8fr 1.2fr;gap:56px}
+.q{border-bottom:1px solid rgba(91,140,190,.18);padding:22px 4px}
+.q .row{display:flex;justify-content:space-between;align-items:center;font-size:16.5px;font-weight:600}
+.q p{font-size:14.5px;color:var(--text2);line-height:1.6;margin-top:12px;max-width:640px}
+.pm{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;border:1px solid var(--border);color:var(--text2);font-size:18px}
+/* FOOTER */
+footer{margin-top:112px;border-top:1px solid rgba(255,255,255,.06);background:#051226;padding:56px 0 30px}
+.fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:40px}
+.fgrid h4{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:16px}
+.fgrid a{display:block;font-size:14.5px;color:var(--text2);margin-bottom:11px}
+.copy{margin-top:42px;padding-top:22px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.label{position:absolute;right:24px;top:90px;z-index:20;font-size:12px;letter-spacing:.12em;color:#7189A5;border:1px dashed #2A4A6E;padding:6px 10px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="label">ДИЗАЙНЫ ЖИШЭЭ · MOCKUP</div>
+
+<!-- NAV -->
+<header class="nav"><div class="wrap">
+  <div class="brand">
+    <svg width="42" height="42" viewBox="0 0 48 48"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2D9BFF"/><stop offset="1" stop-color="#1FD0E5"/></linearGradient></defs>
+      <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#lg)"/>
+      <rect x="13" y="9" width="22" height="30" rx="4" fill="none" stroke="#fff" stroke-width="2.4" opacity=".95"/>
+      <circle cx="24" cy="20" r="6" fill="none" stroke="#fff" stroke-width="1.6" opacity=".8"/><path d="M18 20h12M24 14c2.4 2.2 2.4 9.8 0 12M24 14c-2.4 2.2-2.4 9.8 0 12" stroke="#fff" stroke-width="1.2" fill="none" opacity=".7"/>
+      <path d="M18.5 31.5l3.6 3.4 7.4-7.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div><b>ЦАХИМ ВИЗ</b><small>E-VISA</small></div>
+  </div>
+  <nav class="links"><a class="on">Нүүр</a><a>Визийн мэдээлэл</a><a>Хариу шалгах</a><a>Улс орнууд</a><a>Түгээмэл асуулт</a><a>Тусламж</a></nav>
+  <div class="right">
+    <div class="pill"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A9BED5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>MN</div>
+    <div class="pill" style="width:40px;justify-content:center;padding:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A9BED5" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></div>
+    <a class="btn btn-o">Нэвтрэх</a><a class="btn btn-p">Бүртгүүлэх</a>
+  </div>
+</div></header>
+
+<!-- HERO -->
+<section class="hero"><div class="wrap">
+  <div>
+    <div class="chip"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="#19C7B5"/><path d="M8.5 12l2.4 2.4 4.6-4.8" stroke="#06162E" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Монгол Улсын иргэдэд зориулсан цахим үйлчилгээ</div>
+    <h1>Цахим виз<br><span>мэдүүлнэ үү</span></h1>
+    <p class="lead">Визийн шаардлагаа уншиж, материалаа нэг дор бүрдүүлээд мэдүүлгээ онлайнаар хялбар илгээнэ.</p>
+    <div class="ctas">
+      <a class="btn btn-p btn-lg"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Виз мэдүүлэх</a>
+      <a class="btn btn-o btn-lg">Дэлгэрэнгүй мэдээлэл</a>
+    </div>
+    <div class="facts">
+      <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C99A" stroke-width="2.4"><path d="M5 12l4 4 10-10"/></svg>Эх сурвалж, огноотой мэдээлэл</div>
+      <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C99A" stroke-width="2.4"><path d="M5 12l4 4 10-10"/></svg>Шифрлэгдсэн хадгалалт</div>
+      <div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22C99A" stroke-width="2.4"><path d="M5 12l4 4 10-10"/></svg>3 алхамт мэдүүлэг</div>
+    </div>
+  </div>
+
+  <!-- ILLUSTRATION: globe + orbit + passport + plane + Seoul skyline -->
+  <div class="ill">
+  <svg width="640" height="560" viewBox="0 0 640 560">
+    <defs>
+      <radialGradient id="glob" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#2F7FD8"/><stop offset=".55" stop-color="#123F78"/><stop offset="1" stop-color="#081E40"/></radialGradient>
+      <radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset=".6" stop-color="#20D4E8" stop-opacity="0"/><stop offset=".78" stop-color="#20D4E8" stop-opacity=".22"/><stop offset="1" stop-color="#20D4E8" stop-opacity="0"/></radialGradient>
+      <linearGradient id="pp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1B3F7A"/><stop offset="1" stop-color="#0B2147"/></linearGradient>
+      <linearGradient id="orb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#20D4E8" stop-opacity="0"/><stop offset=".35" stop-color="#20D4E8" stop-opacity=".9"/><stop offset=".7" stop-color="#168BFF" stop-opacity=".9"/><stop offset="1" stop-color="#168BFF" stop-opacity="0"/></linearGradient>
+      <filter id="blur"><feGaussianBlur stdDeviation="6"/></filter>
+      <filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="28" stdDeviation="22" flood-color="#000" flood-opacity=".55"/></filter>
+      <clipPath id="gc"><circle cx="360" cy="250" r="190"/></clipPath>
+      <pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.3" fill="#8FD8FF" opacity=".55"/></pattern>
+    </defs>
+    <circle cx="360" cy="250" r="240" fill="url(#halo)"/>
+    <circle cx="360" cy="250" r="190" fill="url(#glob)"/>
+    <!-- continents as dot clusters -->
+    <g clip-path="url(#gc)" opacity=".85">
+      <path d="M248 150c30-30 92-40 126-18 26 17 10 42-20 48-24 5-26 30-52 36-34 8-78-34-54-66z" fill="url(#dots)"/>
+      <path d="M392 120c40-10 96 6 116 40 16 28-8 50-40 46-22-3-30 22-58 20-30-2-50-30-40-62 4-14 10-40 22-44z" fill="url(#dots)"/>
+      <path d="M420 250c34-6 66 24 60 60-6 40-40 70-70 60-30-10-20-44-26-70-4-22 14-46 36-50z" fill="url(#dots)"/>
+      <path d="M268 280c24 4 40 30 34 58-6 30-30 60-50 52-20-8-26-40-22-66 3-24 18-48 38-44z" fill="url(#dots)"/>
+    </g>
+    <g clip-path="url(#gc)" fill="none" stroke="#7CC4FF" stroke-opacity=".22" stroke-width="1.2">
+      <ellipse cx="360" cy="250" rx="190" ry="48"/><ellipse cx="360" cy="250" rx="190" ry="120"/>
+      <ellipse cx="360" cy="250" rx="60" ry="190"/><ellipse cx="360" cy="250" rx="130" ry="190"/>
+      <path d="M170 250h380"/><path d="M360 60v380"/>
+    </g>
+    <circle cx="360" cy="250" r="190" fill="none" stroke="#5CC8FF" stroke-opacity=".5" stroke-width="1.5"/>
+    <!-- orbit ring -->
+    <ellipse cx="350" cy="300" rx="290" ry="78" transform="rotate(-14 350 300)" fill="none" stroke="url(#orb)" stroke-width="7" filter="url(#blur)" opacity=".8"/>
+    <ellipse cx="350" cy="300" rx="290" ry="78" transform="rotate(-14 350 300)" fill="none" stroke="url(#orb)" stroke-width="2.2"/>
+    <!-- dashed travel route -->
+    <path d="M110 430C200 330 300 150 520 96" fill="none" stroke="#E8C27A" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".8"/>
+    <circle cx="110" cy="430" r="6" fill="#E8C27A"/><circle cx="110" cy="430" r="14" fill="#E8C27A" opacity=".18"/>
+    <!-- plane -->
+    <g transform="translate(528 88) rotate(-18)">
+      <path d="M-34 0c0-4 4-6 10-6h46c8 0 16 3 16 6s-8 6-16 6h-46c-6 0-10-2-10-6z" fill="#EAF4FF"/>
+      <path d="M-2 -5l-16-26h8l26 26z" fill="#D6E6F8"/><path d="M-2 5l-16 26h8l26-26z" fill="#C3D6EC"/>
+      <path d="M-30 -4l-8-12h5l12 12z" fill="#D6E6F8"/><circle cx="30" cy="0" r="2.4" fill="#2B6CB0"/>
+    </g>
+    <!-- Seoul skyline (N Seoul Tower + buildings) -->
+    <g opacity=".55" fill="#2A5D96">
+      <path d="M470 470v-60h18v60zM494 470v-84h22v84zM522 470v-46h16v46zM544 470v-70h20v70zM570 470v-40h18v40z"/>
+      <path d="M596 470v-120h4v-14h-6l7-30 7 30h-6v14h4v120z"/>
+      <rect x="590" y="330" width="22" height="10" rx="4"/>
+    </g>
+    <!-- passport -->
+    <g transform="translate(250 150) rotate(-9)" filter="url(#sh)">
+      <rect x="0" y="0" width="218" height="296" rx="16" fill="url(#pp)"/>
+      <rect x="0" y="0" width="218" height="296" rx="16" fill="none" stroke="#3A6CB0" stroke-opacity=".5"/>
+      <rect x="10" y="10" width="198" height="276" rx="11" fill="none" stroke="#E8C27A" stroke-opacity=".35"/>
+      <text x="109" y="62" text-anchor="middle" font-family="Inter" font-weight="700" font-size="17" letter-spacing="4" fill="#E8C27A">ПАСПОРТ</text>
+      <text x="109" y="82" text-anchor="middle" font-family="Inter" font-weight="600" font-size="9" letter-spacing="3" fill="#E8C27A" opacity=".7">E-VISA READY</text>
+      <g transform="translate(109 160)" fill="none" stroke="#E8C27A" stroke-width="2.2">
+        <circle r="44"/><ellipse rx="44" ry="14"/><ellipse rx="18" ry="44"/><path d="M-44 0h88M0 -44v88"/>
+      </g>
+      <g transform="translate(91 238)"><rect width="36" height="26" rx="5" fill="none" stroke="#E8C27A" stroke-width="2"/><circle cx="18" cy="13" r="5.5" fill="none" stroke="#E8C27A" stroke-width="1.8"/></g>
+    </g>
+    <!-- verification badge -->
+    <g transform="translate(470 360)">
+      <circle r="40" fill="#0B2344" stroke="#22C99A" stroke-width="2"/><circle r="52" fill="none" stroke="#22C99A" stroke-opacity=".25" stroke-width="10"/>
+      <path d="M-15 1l10 10 21-22" fill="none" stroke="#22C99A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </svg>
+  </div>
+</div></section>
+
+<!-- BENEFITS -->
+<div class="benefits"><div class="wrap grid4">
+  <div class="card benefit"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg></div><div><h3>Нэг дор бүрдүүлэх</h3><p>Анкет, материалаа нэг урсгалаар илгээнэ</p></div></div>
+  <div class="card benefit"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></svg></div><div><h3>Аюулгүй, найдвартай</h3><p>Паспорт шифрлэгдэж, хандалт хязгаартай</p></div></div>
+  <div class="card benefit"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div><div><h3>Явцаа хянах</h3><p>Бүрдлийн үнэлгээ, мэдэгдэл, архив</p></div></div>
+  <div class="card benefit"><div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h12l4 4v12H4z"/><path d="M8 12h8M8 16h5"/></svg></div><div><h3>Баталгаатай мэдээлэл</h3><p>Эх сурвалж, шалгасан огноотой шаардлага</p></div></div>
+</div></div>
+
+<!-- CHECK -->
+<section class="s"><div class="wrap">
+  <div class="check"><div class="check-in">
+    <div>
+      <span class="badge b-cyan">★ Гол үйлчилгээ</span>
+      <h2 style="margin-top:16px">Визийн хариу шалгах</h2>
+      <p class="sub" style="margin-top:10px">Мэдүүлгийн мэдээллээ бэлдээд хариугаа шалгана. Шийдвэрийг эрх бүхий байгууллага гаргана.</p>
+      <div class="form">
+        <div class="f"><label>Мэдүүлгийн төрөл *</label><div class="in">Diplomatic Office <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7189A5" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></div></div>
+        <div class="f"><label>Хайх төрөл</label><div class="seg"><div class="on">Паспортын дугаар</div><div>Хүлээн авсан №</div></div></div>
+        <div class="f"><label>Паспортын дугаар *</label><div class="in"><span class="ph">E1234567</span></div></div>
+        <div class="f"><label>Төрсөн огноо *</label><div class="in"><span class="ph">YYYY-MM-DD</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7189A5" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div></div>
+        <div class="f span2"><label>Англи нэр (паспортын дагуу) *</label><div class="in"><span class="ph">BAT BOLD</span></div></div>
+        <div class="span2" style="display:flex;gap:14px;align-items:center;margin-top:6px"><a class="btn btn-p btn-lg" style="padding:0 34px">Хариу шалгах</a><span style="font-size:13px;color:var(--muted)">Оруулсан мэдээллийг хадгалахгүй</span></div>
+      </div>
+    </div>
+    <div class="steps-side">
+      <div style="font-size:17px;font-weight:700">Порталд юу оруулах вэ</div>
+      <div class="st"><i>1</i><div><b>Төрлөө сонгох</b><span>Монголоос мэдүүлсэн бол Diplomatic Office</span></div></div>
+      <div class="st"><i>2</i><div><b>Дугаараа оруулах</b><span>Паспорт эсвэл хүлээн авсан дугаар</span></div></div>
+      <div class="st"><i>3</i><div><b>Нэр, огноо</b><span>Паспорт дээрх бичлэгтэй яг ижил</span></div></div>
+      <div class="note">Хариу олдохгүй бол татгалзсан гэсэн үг биш — оруулсан мэдээллээ нягтлаарай.</div>
+      <a class="lnk" style="margin-top:22px">Албан порталаар шалгах ↗</a>
+    </div>
+  </div></div>
+</div></section>
+
+<!-- DESTINATIONS -->
+<section class="s"><div class="wrap">
+  <div class="head"><div><span class="eyebrow">Улс орнууд</span><h2>Мэдүүлэг авч буй улс</h2></div><a class="lnk">Бүх визийн мэдээлэл →</a></div>
+  <div class="grid3">
+    <div class="card dest">
+      <div class="top"><div class="flag"><svg width="54" height="38" viewBox="0 0 54 38"><rect width="54" height="38" fill="#fff"/><path d="M27 10a9 9 0 0 1 0 18 4.5 4.5 0 0 1 0-9 4.5 4.5 0 0 0 0-9z" fill="#CD2E3A"/><path d="M27 28a9 9 0 0 1 0-18 4.5 4.5 0 0 1 0 9 4.5 4.5 0 0 0 0 9z" fill="#0047A0"/><g stroke="#000" stroke-width="1.6"><path d="M9 8l5 -4M10 10l5-4M11 12l5-4" /><path d="M38 30l5-4M39 32l5-4M40 34l5-4"/><path d="M38 8l5 4M39 6l5 4M40 4l5 4"/><path d="M9 30l5 4M10 28l5 4M11 26l5 4"/></g></svg></div><div><h3>БНСУ</h3><div style="font-size:13px;color:var(--success);font-weight:600;margin-top:4px">● Мэдүүлэг авч байна</div></div></div>
+      <p>Аялал жуулчлал, суралцах зэрэг ангиллын шаардлагыг эх сурвалж, шалгасан огноотой нь үзнэ.</p>
+      <div class="tags"><span class="tag">C-3-9 · Аялал жуулчлал</span><span class="tag" style="background:transparent;color:#7189A5;border-style:dashed;border-color:#2A4A6E">+3 ангилал баталгаажиж байна</span></div>
+      <div class="foot"><span style="font-size:13px;color:var(--muted)">Шалгасан: 2026.10.30</span><a class="lnk">Дэлгэрэнгүй →</a></div>
+    </div>
+    <div class="card dest soon"><div class="top"><div class="flag" style="display:grid;place-items:center;background:#102D50"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7189A5" stroke-width="2"><path d="M4 22V4l8 2 8-2v12l-8 2-8-2"/></svg></div><div><h3>Улс 2</h3><div style="font-size:13px;color:var(--muted);font-weight:600;margin-top:4px">Тун удахгүй</div></div></div><p>Нэр, шаардлагыг баталгаажуулсны дараа нээгдэнэ.</p><div class="foot"><span class="badge b-warn">Удахгүй</span></div></div>
+    <div class="card dest soon"><div class="top"><div class="flag" style="display:grid;place-items:center;background:#102D50"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7189A5" stroke-width="2"><path d="M4 22V4l8 2 8-2v12l-8 2-8-2"/></svg></div><div><h3>Улс 3</h3><div style="font-size:13px;color:var(--muted);font-weight:600;margin-top:4px">Тун удахгүй</div></div></div><p>Нэр, шаардлагыг баталгаажуулсны дараа нээгдэнэ.</p><div class="foot"><span class="badge b-warn">Удахгүй</span></div></div>
+  </div>
+</div></section>
+
+<!-- HOW -->
+<section class="s"><div class="wrap">
+  <div class="center" style="margin-bottom:56px"><span class="eyebrow">Хэрхэн ажилладаг</span><h2>Гурван алхамд мэдүүлнэ</h2></div>
+  <div class="stepper">
+    <div class="step"><div class="num"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/></svg></div><small>АЛХАМ 01</small><h3>Бүртгүүлэх</h3><p>Имэйлээрээ бүртгүүлж, профайлдаа хувийн мэдээллээ нэг удаа оруулна.</p></div>
+    <div class="step"><div class="num"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="1.8" stroke-linecap="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h4"/></svg></div><small>АЛХАМ 02</small><h3>Материалаа бүрдүүлэх</h3><p>Анкет профайлаас автоматаар бөглөгдөж, баримтаа хавсаргаад илгээнэ.</p></div>
+    <div class="step"><div class="num"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#20D4E8" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4M8 11l2 2 4-4"/></svg></div><small>АЛХАМ 03</small><h3>Хариугаа шалгах</h3><p>Операторын бүрдлийн үнэлгээг хянаж, албан хариугаа порталаас шалгана.</p></div>
+  </div>
+</div></section>
+
+<!-- CTA -->
+<section class="s"><div class="wrap">
+  <div class="cta">
+    <div><h2>Аяллаа өнөөдөр эхлүүлээрэй</h2><p class="sub" style="margin-top:10px">Бүртгүүлэхэд 1 минут. Материалын жагсаалт таныг алхам бүрт хөтөлнө.</p></div>
+    <div style="display:flex;gap:14px"><a class="btn btn-p btn-lg">Виз мэдүүлэх</a><a class="btn btn-o btn-lg" style="background:rgba(6,22,46,.35)">Шаардлага унших</a></div>
+  </div>
+</div></section>
+
+<!-- FAQ -->
+<section class="s"><div class="wrap faq">
+  <div><span class="eyebrow">Түгээмэл асуулт</span><h2>Асуух зүйл байна уу?</h2><p class="sub">Хариу олдохгүй бол тусламжийн хэсгээс холбогдоно уу.</p><a class="btn btn-o" style="margin-top:28px">Тусламж →</a></div>
+  <div>
+    <div class="q"><div class="row">Энэ систем визийн шийдвэр гаргадаг уу?<span class="pm">−</span></div><p>Үгүй. Систем материалын бүрдлийг шалгаж, мэдүүлгийг зохион байгуулна. Визийн шийдвэрийг эрх бүхий байгууллага гаргана.</p></div>
+    <div class="q"><div class="row">Ямар файл хавсаргаж болох вэ?<span class="pm">+</span></div></div>
+    <div class="q"><div class="row">Миний паспортын мэдээлэл хэрхэн хамгаалагдах вэ?<span class="pm">+</span></div></div>
+    <div class="q"><div class="row">Дотоод лавлах дугаар нь визийн дугаар мөн үү?<span class="pm">+</span></div></div>
+  </div>
+</div></section>
+
+<!-- FOOTER -->
+<footer><div class="wrap">
+  <div class="fgrid">
+    <div><div class="brand"><svg width="36" height="36" viewBox="0 0 48 48"><rect x="2" y="2" width="44" height="44" rx="13" fill="url(#lg)"/><rect x="13" y="9" width="22" height="30" rx="4" fill="none" stroke="#fff" stroke-width="2.4"/><path d="M18.5 31.5l3.6 3.4 7.4-7.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b>ЦАХИМ ВИЗ</b><small>E-VISA</small></div></div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin-top:18px;max-width:340px">Визийн мэдээлэл, мэдүүлэг, архивыг нэг дор. Сургалтын төслийн хүрээнд бүтээсэн платформ.</p></div>
+    <div><h4>Платформ</h4><a>Визийн мэдээлэл</a><a>Хариу шалгах</a><a>Улс орнууд</a></div>
+    <div><h4>Тусламж</h4><a>Түгээмэл асуулт</a><a>Мэдээллийн заавар</a><a>Холбоо барих</a></div>
+    <div><h4>Эрх зүй</h4><a>Нууцлалын бодлого</a><a>Үйлчилгээний нөхцөл</a></div>
+  </div>
+  <div class="copy"><span>© 2026 ЦАХИМ ВИЗ · Сургалтын төсөл</span><span>Албан ёсны визийн мэдээллийг ЭСЯ болон visa.go.kr-аас шалгана уу</span></div>
+</div></footer>
+</body>
+</html>

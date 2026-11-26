@@ -5,6 +5,7 @@ import { Modal, Button, Loading } from './ui.jsx';
 import GuestShell from './GuestShell.jsx';
 import { NotificationBell, EmailVerifyBanner, OfflineBanner } from './Notifications.jsx';
 import Icon from './Icon.jsx';
+import { LogoMark } from './Brand.jsx';
 import { currentTheme, setTheme } from '../theme.js';
 
 // Хүснэгт 40: эрх тус бүрийн үндсэн цэс
@@ -97,10 +98,11 @@ export default function Layout() {
           <Icon name={open ? 'close' : 'menu'} size={22} />
         </button>
         <Link to={user ? HOME_BY_ROLE[user.role] : '/'} className="brand">
-          <span className="logo" aria-hidden>
-            V
+          <LogoMark size={40} />
+          <span className="logo-text">
+            <span className="logo-name">ЦАХИМ ВИЗ</span>
+            <span className="logo-sub">E-VISA</span>
           </span>
-          <span>{t('ЦАХИМ ВИЗ')}</span>
         </Link>
         <div className="top-right">
           <span className="user-chip" title={user?.email}>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, LinkButton, fmtDate } from '../../components/ui.jsx';
+import { Page, Card, useAsync, ErrorBox, Skeleton, Empty, Badge, LinkButton, fmtDate, TableWrap } from '../../components/ui.jsx';
 import { NotDecisionNote } from '../../components/shared.jsx';
 import { useAuth } from '../../auth.jsx';
 
@@ -93,8 +93,7 @@ export default function Dashboard() {
                   {t('Визийн мэдээллээ уншаад анхны мэдүүлгээ илгээгээрэй.')}
                 </Empty>
               ) : (
-                <div
-                  className="table-wrap"
+                <TableWrap
                   style={{
                     boxShadow: 'none',
                   }}
@@ -127,7 +126,7 @@ export default function Dashboard() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableWrap>
               )}
               <div className="mt">
                 <NotDecisionNote />

@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, Card, useAsync, ErrorBox, Skeleton, Field, Badge } from '../../components/ui.jsx';
+import { Page, Card, useAsync, ErrorBox, Skeleton, Field, Badge, TableWrap } from '../../components/ui.jsx';
 import { BarChart } from '../../components/BarChart.jsx';
 import { t } from '../../i18n.js';
 const STATUS = [
@@ -135,7 +135,7 @@ export default function Stats() {
             <div className="grid grid-2 mt">
               <Card>
                 <h2>{t('Операторын ачаалал')}</h2>
-                <div className="table-wrap">
+                <TableWrap>
                   <table>
                     <thead>
                       <tr>
@@ -158,7 +158,7 @@ export default function Stats() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </TableWrap>
                 <p className="small muted mb0">{t('Үнэлгээ, хүргүүлсэн — сонгосон хугацаанд.')}</p>
               </Card>
               <Card>

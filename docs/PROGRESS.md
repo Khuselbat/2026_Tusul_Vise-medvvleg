@@ -124,3 +124,24 @@
   хариу шалгах 3fr/2fr, талбар 48px; hero 2 тэнцүү багана, ~66vh, гарчиг `text-wrap: balance`; mobile-д товч бүтэн өргөн.
 - Нэвтэрсэн хэрэглэгчийн хуудсанд нөлөөгүй (CSS `.op`, `.g-*` хүрээнд).
 - Зураг: `docs/screenshots/polish/before/`, `docs/screenshots/polish/after/` (бүтэн хуудас), `docs/screenshots/onepage/` шинэчлэгдсэн.
+
+## Brand & UI redesign (эхэлсэн 2026-11-26, салбар `feat/onepage-guest`)
+
+Brief: `docs/design/` (mockup-home.png, mockup-hero.png, mockup-home.html), брэнд гарын авлага `docs/design/BRAND.md`.
+Үе: A суурь → B бүрэлдэхүүн → C зочны нүүр → D нэвтэрсэн хэсэг → E өнгөлгөө/QA. Дараагийн session-д:
+*“docs/PROGRESS.md-ийг уншаад redesign-ийн дараагийн үеийг үргэлжлүүл”*.
+“Өмнө” зураг: `docs/screenshots/redesign/before/` (1440, 1920, 390 × dark/light; нүүр, нэвтрэх, мэдүүлэгч/оператор/админ).
+
+### Phase A — Суурь ✅
+- Токен: брэнд палитр (dark анхдагч, D-90) + ижил шатлалтай light; семантик токенууд (`--card`, `--ink`, `--primary`…) шинэ
+  палитрт холбогдсон тул бүх дэлгэц автоматаар шинэ өнгөнд шилжсэн. Зай 4…128, үсэг 6 түвшин, радиус 10/16/24, сүүдэр 3, нэг фокус.
+- AA: brief-ийн 3 өнгийг тааруулсан (D-91) — 5 дэвсгэр × 2 горимд тооцоолж шалгасан. Хатуу бичсэн өнгийг токен болгосон
+  (товч, алхам, toast, сүүдэр).
+- Inter (variable) өөр дээрээ (D-92). Лого `components/Brand.jsx` (хэвтээ/нягт/тэмдэг × auto/on-dark/on-light/mono, 16px-д
+  хялбаршуулна), header-үүдэд; `favicon.svg`, `icon-32.png`, `apple-touch-icon.png`, `icon-192/512.png` (maskable),
+  `site.webmanifest`, `theme-color`.
+- a11y e2e: dark (анхдагч) ба light хоёр горимд axe.
+
+### Дараагийн үе — Phase B (бүрэлдэхүүн)
+Button, Input/Select/Textarea, Card, Badge (төлөвийн хувилбар), Alert, Modal/Confirm, Tabs, Accordion, Stepper, Progress,
+Toast, Skeleton, Empty, Error, Navbar, Footer — нэг радиус/зай/сүүдэр/hover/focus/disabled. Төлөвийн нэр хуучнаараа (D-94).

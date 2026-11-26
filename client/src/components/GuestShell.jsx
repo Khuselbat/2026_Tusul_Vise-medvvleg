@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { OfflineBanner } from './Notifications.jsx';
 import Icon from './Icon.jsx';
+import { LogoMark } from './Brand.jsx';
 import { currentTheme, setTheme } from '../theme.js';
 import { t, lang, LANGS, setLanguage } from '../i18n.js';
 import { NAV_SECTIONS, useActiveSection, scrollToSection, replaceHash, setActiveSection } from '../onepage.js';
@@ -77,10 +78,11 @@ export default function GuestShell() {
       <header ref={headerRef} className={`g-header ${scrolled ? 'scrolled' : ''} ${open ? 'menu-open' : ''}`}>
         <div className="g-inner">
           <a href="/" className="brand" onClick={(e) => go(e, '')}>
-            <span className="logo" aria-hidden>
-              V
+            <LogoMark size={40} />
+            <span className="logo-text">
+              <span className="logo-name">ЦАХИМ ВИЗ</span>
+              <span className="logo-sub">E-VISA</span>
             </span>
-            <span>{t('ЦАХИМ ВИЗ')}</span>
           </a>
           <button
             ref={burgerRef}

@@ -26,14 +26,15 @@ test('WCAG 2.1 AA — зочин, мэдүүлэгч, оператор, адми
     await guest.waitForLoadState('networkidle');
     await audit(guest, p);
   }
-  // Нэг хуудас: харанхуй горим, хариу шалгах маягтын алдаатай төлөв, нээлттэй mobile цэс
+  // Нэг хуудас: хариу шалгах маягтын алдаатай төлөв — dark (анхдагч, D-90) ба light горимд; нээлттэй mobile цэс
   await guest.goto('/#check');
   await guest.waitForLoadState('networkidle');
-  await guest.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
-  await settled(guest);
   await guest.locator('#check button[type=submit]').click();
   await expect(guest.locator('#check .field-error').first()).toBeVisible();
   await audit(guest, '/ (dark, check errors)');
+  await guest.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'));
+  await settled(guest);
+  await audit(guest, '/ (light, check errors)');
   await guest.evaluate(() => document.documentElement.removeAttribute('data-theme'));
   await settled(guest);
   await openGuestMenu(guest);

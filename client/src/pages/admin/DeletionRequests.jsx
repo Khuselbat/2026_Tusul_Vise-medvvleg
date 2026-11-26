@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Field, Confirm, Alert, useToast, fmtDateTime } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Field,
+  Confirm,
+  Alert,
+  useToast,
+  fmtDateTime,
+  TableWrap,
+} from '../../components/ui.jsx';
 import { t } from '../../i18n.js';
 const TABS = [
   ['PENDING', t('Хүлээгдэж буй')],
@@ -81,7 +94,7 @@ export default function DeletionRequests() {
         (data.items.length === 0 ? (
           <Empty title={t('Хүсэлт алга')} />
         ) : (
-          <div className="table-wrap mt">
+          <TableWrap className="mt">
             <table>
               <thead>
                 <tr>
@@ -152,7 +165,7 @@ export default function DeletionRequests() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Confirm

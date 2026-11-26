@@ -18,6 +18,7 @@ import {
   useToast,
   fmtBytes,
   fmtDate,
+  TableWrap,
 } from '../../components/ui.jsx';
 import { FileViewer, ScanBadge, usePendingScanPoll } from '../../components/shared.jsx';
 import { ExpiryWarnings } from '../../components/PersonalInfoCard.jsx';
@@ -182,7 +183,7 @@ export default function Documents() {
             {!data.documents.length ? (
               <Empty title={t('Баримт хадгалаагүй байна')}>{t('Дээрх маягтаар эхний баримтаа нэмнэ үү.')}</Empty>
             ) : (
-              <div className="table-wrap">
+              <TableWrap>
                 <table>
                   <thead>
                     <tr>
@@ -250,7 +251,7 @@ export default function Documents() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableWrap>
             )}
           </Card>
           {data.documents.length > 0 && (

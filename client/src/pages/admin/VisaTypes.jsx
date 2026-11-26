@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, Modal, Field, useToast, Alert } from '../../components/ui.jsx';
+import {
+  Page,
+  useAsync,
+  ErrorBox,
+  Skeleton,
+  Empty,
+  Badge,
+  Button,
+  Modal,
+  Field,
+  useToast,
+  Alert,
+  TableWrap,
+} from '../../components/ui.jsx';
 
 // Зураг 56 Визийн төрөл удирдах
 import { t } from '../../i18n.js';
@@ -83,7 +96,7 @@ export default function VisaTypes() {
         (data.visaTypes.length === 0 ? (
           <Empty title={t('Визийн төрөл алга')} />
         ) : (
-          <div className="table-wrap">
+          <TableWrap>
             <table>
               <thead>
                 <tr>
@@ -117,7 +130,7 @@ export default function VisaTypes() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableWrap>
         ))
       )}
       <Modal
