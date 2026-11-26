@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 /* ───────── Форматлах ───────── */
 import { t } from '../i18n.js';
+import Icon from './Icon.jsx';
 export const fmtDate = (v) => {
   if (!v) return '—';
   const d = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(`${v}T00:00:00`) : new Date(v);
@@ -184,7 +185,7 @@ export const Badge = ({ status, children, tone }) => (
 export const Empty = ({ title, children, action }) => (
   <div className="empty">
     <div className="empty-icon" aria-hidden>
-      ◌
+      <Icon name="folder" size={26} />
     </div>
     <h3>{title}</h3>
     {children && <p>{children}</p>}
