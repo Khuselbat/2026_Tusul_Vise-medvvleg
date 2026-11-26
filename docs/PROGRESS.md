@@ -80,3 +80,26 @@
 - **Шалгалт:** серверийн тест **171/171**, E2E **24/24**, ESLint/Prettier цэвэр, client build ногоон.
   axe: гэрэлтэй + харанхуй × desktop + mobile, 18 дэлгэц — зөрчил 0.
 
+## Зочны нэг хуудас (2026-11-26, салбар `feat/onepage-guest`)
+
+- **Бүтэц:** зочинд sidebar-гүй `GuestShell` — тогтмол header (лого, Мэдээлэл · Хариу шалгах · Хэрхэн · FAQ · Холбоо барих,
+  хэл, горим, Нэвтрэх, Бүртгүүлэх; гүйлгэхэд нимгэрч backdrop blur), тогтмол 48px footer (mobile 36px, зөвхөн ©), “Дээш буцах”.
+  Mobile (≤860px): hamburger → доош нээгдэх цэс (Esc, сонголт, гадна дарахад хаагдана). Нэвтэрсэн хэрэглэгчийн layout хэвээр.
+- **Нэг урт хуудас (`OnePage.jsx`):** hero (нэг h1) → ★ **Визийн хариу шалгах** (#check, онцгой том карт) → Визийн мэдээлэл (#visas:
+  улсын карт, хайлт, ангиллын карт → `/visas/:id`) → Хэрхэн ажилладаг (#how) → Давуу тал/аюулгүй байдал (#security, #privacy) →
+  FAQ (#faq, `<details>` accordion) → Тусламж/холбоо барих (#contact, #terms). Хуучин Нүүр, `/visas`, `/help`-ийн агуулга бүгд орсон.
+- **Хариу шалгах:** мэдүүлгийн төрөл, хайх төрөл (паспорт/хүлээн авсан дугаар), дугаар, англи нэр, төрсөн огноо — формат шалгалт,
+  тайлбартай. Сервер рүү илгээхгүй, хадгалахгүй, шийдвэр зохиохгүй; бэлэн болсон мэдээллийг (дугаар далдлагдсан) доор нь харуулаад
+  албан порталыг Confirm-оор нээнэ (D-82). Хажууд нь “Порталд юу оруулах вэ” 3 алхам + анхааруулга.
+- Scroll-spy (`aria-current="location"`), hash шинэчлэл, `/#faq` шууд хаяг, scroll-margin-top; гарч ирэх анимац (transform, reduced-motion-д үгүй).
+- **Redirect (зөвхөн зочинд):** `/visas?country=KR` → `/?country=KR#visas`, `/help` → `/#contact`. SEO meta (`description`, `og:*`, `theme-color`).
+- Хуваалцсан бүрэлдэхүүн: `officialPortal.jsx` (`/app/official-result`-тэй), `visaCards.jsx` (Нүүр, `/visas`-тай), Help-ийн хэсгүүд.
+- **Засвар (D-86):** 2FA бүртгэлийн дараа shell солигдоход Mfa хуудас дахин mount болж “Сесс дууссан” гарч байсныг `/login…`-д
+  `GuestShell` үлдээж зассан.
+- **Шалгалт:** серверийн тест **171/171**; e2e — шинэ `e2e/onepage.spec.js` (fixed header/footer, цэс бүр → хэсэг, scroll-spy,
+  mobile цэс, хариу шалгах (сервер рүү хувийн мэдээлэл явахгүйг шалгана), шүүлтүүр, redirect, нэвтэрсэн layout хэвээр);
+  `a11y.spec.js` шинэ бүтцэд тааруулсан (харанхуй горим + маягтын алдаатай төлөв + нээлттэй цэс axe); ESLint, Prettier, client build ногоон.
+  axe: гэрэлтэй/харанхуй × desktop/mobile — зөрчил 0.
+- **Дэлгэцийн зураг:** `docs/screenshots/onepage/` (desktop/mobile × light/dark — hero, check, FAQ, mobile цэс)
+  — `npx playwright test --config playwright.docs.config.js e2e/docs/onepage.spec.js`.
+- Үлдсэн: `docs/screenshots/guide/`-ийн зочны зураг (a01, a02) хуучин бүтэцтэй — `npm run docs:screenshots`-ээр шинэчилж болно.

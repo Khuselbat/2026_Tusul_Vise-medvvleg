@@ -1,9 +1,14 @@
 // Үе 4 — хүртээмж (WCAG 2.1 AA, axe-core) ба хэл (англи горим).
+/* global document, CSSTransition -- page.evaluate() дотор браузерт ажиллана */
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { uiLogin, staffApiLogin, mailToken, H } from './helpers.js';
+import { uiLogin, staffApiLogin, mailToken, H, openGuestMenu } from './helpers.js';
 
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+// Горим солиход өнгөний transition (≈0.2 сек) дуустал хүлээнэ — завсрын өнгийг axe контрастын алдаа гэж уншина
+const settled = (page) =>
+  page.waitForFunction(() => document.getAnimations().every((a) => !(a instanceof CSSTransition) || a.playState !== 'running'));
 
 async function audit(page, name) {
   const r = await new AxeBuilder({ page }).withTags(TAGS).analyze();
@@ -15,12 +20,25 @@ test('WCAG 2.1 AA — зочин, мэдүүлэгч, оператор, адми
   test.setTimeout(180_000);
   const guestCtx = await browser.newContext();
   const guest = await guestCtx.newPage();
-  for (const p of ['/', '/visas', '/login', '/register', '/forgot-password', '/help']) {
+  // Зочны нэг хуудас (/visas, /help нь түүний хэсэг рүү чиглэнэ) + нэвтрэх хуудсууд
+  for (const p of ['/', '/login', '/register', '/forgot-password']) {
     await guest.goto(p);
     await guest.waitForLoadState('networkidle');
     await audit(guest, p);
   }
-  await guest.goto('/visas');
+  // Нэг хуудас: харанхуй горим, хариу шалгах маягтын алдаатай төлөв, нээлттэй mobile цэс
+  await guest.goto('/#check');
+  await guest.waitForLoadState('networkidle');
+  await guest.evaluate(() => document.documentElement.setAttribute('data-theme', 'dark'));
+  await settled(guest);
+  await guest.locator('#check button[type=submit]').click();
+  await expect(guest.locator('#check .field-error').first()).toBeVisible();
+  await audit(guest, '/ (dark, check errors)');
+  await guest.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+  await settled(guest);
+  await openGuestMenu(guest);
+  await audit(guest, '/ (menu)');
+  await guest.goto('/#visas');
   await guest.getByRole('link', { name: /C-3-9/ }).first().click();
   await guest.waitForLoadState('networkidle');
   await audit(guest, 'visa detail');
@@ -98,6 +116,7 @@ test('WCAG 2.1 AA — зочин, мэдүүлэгч, оператор, адми
 
 test('гарын товчлуураар: skip link, цонх (Escape), хонх', async ({ page }) => {
   await page.goto('/');
+  await page.locator('.g-header').waitFor(); // сесс шалгаж дуусаад shell гарна
   await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: 'Үндсэн агуулга руу шилжих' });
   await expect(skip).toBeFocused();
@@ -142,6 +161,7 @@ test('цонхны фокус: дотогш орж, гадагш гарахгү�
 
 test('англи хэл: хэл солих, орчуулга, серверийн алдааны мессеж', async ({ page }) => {
   await page.goto('/login');
+  await openGuestMenu(page);
   await page.getByLabel('Хэл / Language').selectOption('en');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
@@ -149,9 +169,12 @@ test('англи хэл: хэл солих, орчуулга, серверийн
   await page.locator('#pw').fill('Wrong12345');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page.getByText('Incorrect email or password.')).toBeVisible();
-  await page.goto('/visas');
+  await page.goto('/visas'); // зочин → /#visas
+  await expect(page).toHaveURL(/\/#visas$/);
   await expect(page.getByRole('heading', { name: 'Search visa information' })).toBeVisible();
-  await audit(page, '/visas (en)');
+  await expect(page.getByRole('heading', { name: 'Check your visa result' })).toBeVisible();
+  await audit(page, '/ (en)');
+  await openGuestMenu(page);
   await page.getByLabel('Language').selectOption('mn');
   await expect(page.getByRole('heading', { name: 'Визийн мэдээлэл хайх' })).toBeVisible();
 });

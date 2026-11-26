@@ -1,8 +1,9 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
-import { RequireRole } from './auth.jsx';
+import { RequireRole, useAuth } from './auth.jsx';
 import { Page, Empty, LinkButton } from './components/ui.jsx';
 import Home from './pages/public/Home.jsx';
+import OnePage from './pages/public/OnePage.jsx';
 import Login from './pages/public/Login.jsx';
 import Register from './pages/public/Register.jsx';
 import Visas from './pages/public/Visas.jsx';
@@ -42,6 +43,19 @@ import DeletionRequests from './pages/admin/DeletionRequests.jsx';
 import Stats from './pages/admin/Stats.jsx';
 import { t } from './i18n.js';
 const guard = (role, el) => <RequireRole role={role}>{el}</RequireRole>;
+// Зочны нүүр — нэг урт хуудас; нэвтэрсэн хэрэглэгчид өмнөх нүүр хэвээр
+function HomeRoute() {
+  const { user } = useAuth();
+  return user ? <Home /> : <OnePage />;
+}
+// Хуучин зочны статик хуудсууд → нэг хуудасны хэсэг (query-г хадгална: /visas?country=KR → /?country=KR#visas).
+// Нэвтэрсэн хэрэглэгчид тухайн хуудас хэвээр (мэдүүлэгчийн цэс, sidebar-ын "Мэдээллийн заавар").
+function GuestToSection({ section, children }) {
+  const { user } = useAuth();
+  const loc = useLocation();
+  if (user) return children;
+  return <Navigate replace to={{ pathname: '/', search: loc.search, hash: `#${section}` }} />;
+}
 function NotFound() {
   return (
     <Page title={t('Хуудас олдсонгүй')}>
@@ -56,12 +70,26 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         {/* Зочин — Зураг 37–41 */}
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<HomeRoute />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/visas" element={<Visas />} />
+        <Route
+          path="/visas"
+          element={
+            <GuestToSection section="visas">
+              <Visas />
+            </GuestToSection>
+          }
+        />
         <Route path="/visas/:versionId" element={<VisaDetail />} />
-        <Route path="/help" element={<Help />} />
+        <Route
+          path="/help"
+          element={
+            <GuestToSection section="contact">
+              <Help />
+            </GuestToSection>
+          }
+        />
         {/* Үе 2 — 2FA, нууц үг сэргээх, имэйл баталгаажуулалт */}
         <Route path="/login/mfa" element={<Mfa />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

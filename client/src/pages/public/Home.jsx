@@ -1,25 +1,14 @@
-import { Link } from 'react-router-dom';
 import { api } from '../../api.js';
 import { Page, Card, LinkButton, useAsync, ErrorBox, Skeleton } from '../../components/ui.jsx';
 import { useAuth, HOME_BY_ROLE } from '../../auth.jsx';
 import Icon from '../../components/Icon.jsx';
+import { CountryCards } from '../../components/visaCards.jsx';
 
 // Зураг 37 Нүүр хуудас — дөрвөн улсын карт; зөвхөн идэвхтэй улсын үйлчилгээг сонгоно
 import { t } from '../../i18n.js';
 export default function Home() {
   const { user } = useAuth();
   const { data, error, loading, reload } = useAsync(() => api.get('/api/countries'), []);
-  const countries = data?.countries || [];
-  // Бусад улсын нэр баталгаажаагүй бол "Улс N" гэсэн хаалттай карт харуулна (тайлангийн 1-р бүлэг)
-  const cards = [...countries];
-  for (let i = cards.length; i < 4; i += 1)
-    cards.push({
-      placeholder: true,
-      name: t('Улс {{v0}}', {
-        v0: i + 1,
-      }),
-      status: 'COMING_SOON',
-    });
   return (
     <Page
       crumb={[
@@ -66,34 +55,7 @@ export default function Home() {
         </svg>
       </div>
       <ErrorBox error={error} onRetry={reload} />
-      {loading ? (
-        <Skeleton rows={2} />
-      ) : (
-        <div className="grid grid-2">
-          {cards.slice(0, Math.max(4, cards.length)).map((c, i) => (
-            <Card key={c.id || `p${i}`} className={`country-card ${c.submittable ? '' : 'disabled'}`}>
-              <div className="country-head">
-                <span className="country-badge" aria-hidden>
-                  {c.iso || <Icon name="flag" size={18} />}
-                </span>
-                <h3>{t(c.name) /* мэдэгдэж буй улсын нэрийг орчуулна (ж: БНСУ) */}</h3>
-              </div>
-              <div className="state">
-                {c.placeholder ? t('Нэрийг баталгаажуулна') : c.submittable ? t('Үйлчилгээ нээлттэй') : t('Мэдүүлэг авахгүй байна')}
-              </div>
-              {c.submittable ? (
-                <Link className="cta" to={`/visas?country=${c.iso}`}>
-                  {t('Мэдээлэл үзэх →')}
-                </Link>
-              ) : (
-                <span className="cta cta-off" aria-disabled>
-                  {t('Тун удахгүй')}
-                </span>
-              )}
-            </Card>
-          ))}
-        </div>
-      )}
+      {loading ? <Skeleton rows={2} /> : <CountryCards countries={data?.countries || []} />}
       <Card className="mt">
         <h2>{t('Энэ систем юу хийдэг вэ?')}</h2>
         <ol className="features">

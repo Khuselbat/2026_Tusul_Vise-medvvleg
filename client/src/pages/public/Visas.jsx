@@ -1,7 +1,8 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import { api, qs } from '../../api.js';
-import { Page, useAsync, ErrorBox, Skeleton, Empty, Badge, Button, fmtDate, Field } from '../../components/ui.jsx';
+import { VisaCard } from '../../components/visaCards.jsx';
+import { Page, useAsync, ErrorBox, Skeleton, Empty, Button, Field } from '../../components/ui.jsx';
 
 // Зураг 40 Визийн мэдээлэл хайх — зөвхөн нийтэлсэн хувилбарууд
 import { t } from '../../i18n.js';
@@ -91,38 +92,7 @@ export default function Visas() {
       ) : (
         <div className="grid grid-2">
           {data?.visas.map((v) => (
-            <Link key={v.versionId} to={`/visas/${v.versionId}`} className="card visa-card">
-              <div className="between">
-                <span className="code">
-                  {v.country.name} · {v.code}
-                </span>
-                {v.canApply ? <Badge tone="ok">{t('Мэдүүлэг авна')}</Badge> : <Badge tone="muted">{t('Зөвхөн мэдээлэл')}</Badge>}
-              </div>
-              <h3>{v.name}</h3>
-              <p
-                className="muted small mb0"
-                style={{
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {v.description}
-              </p>
-              <div className="kv-inline">
-                <span>
-                  {t('Материал:')} {v.requirementCount}
-                </span>
-                <span>
-                  {t('Шалгасан:')} {fmtDate(v.verifiedAt)}
-                </span>
-                <span>
-                  {t('Хувилбар v')}
-                  {v.versionNo}
-                </span>
-              </div>
-            </Link>
+            <VisaCard key={v.versionId} v={v} />
           ))}
         </div>
       )}

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, ROLE_LABEL, HOME_BY_ROLE } from '../auth.jsx';
-import { Modal, Button } from './ui.jsx';
+import { Modal, Button, Loading } from './ui.jsx';
+import GuestShell from './GuestShell.jsx';
 import { NotificationBell, EmailVerifyBanner, OfflineBanner } from './Notifications.jsx';
 import Icon from './Icon.jsx';
 import { currentTheme, setTheme } from '../theme.js';
@@ -55,6 +56,37 @@ export default function Layout() {
     setTheme(next);
     setThemeState(next);
   };
+  const expiredModal = (
+    <Modal
+      open={expired}
+      title={t('Сесс дууссан')}
+      onClose={() => setExpired(false)}
+      footer={
+        <Button
+          onClick={() => {
+            setExpired(false);
+            navigate(`/login?next=${encodeURIComponent(loc.pathname)}`);
+          }}
+        >
+          {t('Дахин нэвтрэх')}
+        </Button>
+      }
+    >
+      {t('Нэвтрэх хугацаа дууссан эсвэл эрх өөрчлөгдсөн байна. Дахин нэвтэрнэ үү. Илгээгээгүй мэдээлэл хадгалагдаагүй байж болно.')}
+    </Modal>
+  );
+  // Сесс шалгаж байх үед (user === undefined) аль shell-ийг харуулахаа мэдэхгүй — анивчилтаас сэргийлж түр хүлээнэ
+  if (user === undefined) return <Loading />;
+  // Зочин: дээд цэстэй, sidebar-гүй нэг хуудасны бүтэц.
+  // /login… (нэвтрэх, 2FA) дээр нэвтэрсэн ч энэ shell хэвээр — completeLogin() → navigate() хооронд shell солигдвол
+  // хуудас дахин mount болж 2FA-ийн setup-ийг дахин дуудна (401 → "Сесс дууссан").
+  if (!user || loc.pathname.startsWith('/login'))
+    return (
+      <>
+        <GuestShell />
+        {expiredModal}
+      </>
+    );
   return (
     <div className="shell">
       <a className="skip" href="#main">
@@ -135,23 +167,7 @@ export default function Layout() {
           </footer>
         </main>
       </div>
-      <Modal
-        open={expired}
-        title={t('Сесс дууссан')}
-        onClose={() => setExpired(false)}
-        footer={
-          <Button
-            onClick={() => {
-              setExpired(false);
-              navigate(`/login?next=${encodeURIComponent(loc.pathname)}`);
-            }}
-          >
-            {t('Дахин нэвтрэх')}
-          </Button>
-        }
-      >
-        {t('Нэвтрэх хугацаа дууссан эсвэл эрх өөрчлөгдсөн байна. Дахин нэвтэрнэ үү. Илгээгээгүй мэдээлэл хадгалагдаагүй байж болно.')}
-      </Modal>
+      {expiredModal}
     </div>
   );
 }
