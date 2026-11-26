@@ -50,12 +50,15 @@ const BENEFITS = () => [
 ];
 
 // Хэсэг бүр дэлгэцийн бүтэн өргөнтэй зурвас (дэвсгэр, хүрээ ирмэг хүртэл), агуулга нь .wrap container дотор
-function Section({ id, title, lead, eyebrow, className = '', children }) {
+function Section({ id, title, lead, badge, icon, className = '', children }) {
   return (
     <section id={id} className={`op-section op-band ${className}`} aria-labelledby={`${id}-title`} tabIndex={-1}>
       <div className="wrap reveal">
         <header className="op-head">
-          {eyebrow}
+          <span className="eyebrow">
+            <Icon name={icon} size={14} />
+            {badge}
+          </span>
           <h2 id={`${id}-title`}>{title}</h2>
           {lead && <p className="op-lead">{lead}</p>}
         </header>
@@ -205,12 +208,8 @@ export default function OnePage() {
       <Section
         id="check"
         className="op-check"
-        eyebrow={
-          <span className="eyebrow eyebrow-strong">
-            <Icon name="check" size={16} />
-            {t('Гол үйлчилгээ')}
-          </span>
-        }
+        icon="check"
+        badge={t('Гол үйлчилгээ')}
         title={t('Визийн хариу шалгах')}
         lead={t(
           'Визийнхээ хариуг эндээс шалгана уу. Мэдээллээ бэлдээд албан ёсны порталаар шалгана — хариуг эрх бүхий байгууллага гаргана.',
@@ -220,12 +219,18 @@ export default function OnePage() {
         <ResultCheck countries={countries.data?.countries || []} visas={allVisas.data?.visas || []} loading={allVisas.loading} />
       </Section>
 
-      <Section id="visas" title={t('Визийн мэдээлэл')} lead={t('Ангилал, бүрдүүлэх материал, эх сурвалж, шалгасан огноо')}>
+      <Section
+        id="visas"
+        icon="book"
+        badge={t('Мэдээлэл')}
+        title={t('Визийн мэдээлэл')}
+        lead={t('Ангилал, бүрдүүлэх материал, эх сурвалж, шалгасан огноо')}
+      >
         <ErrorBox error={countries.error} onRetry={countries.reload} />
         {countries.loading ? (
           <Skeleton rows={2} />
         ) : (
-          <CountryCards countries={countries.data?.countries || []} onSelect={pickCountry} gridClass="grid-auto" />
+          <CountryCards countries={countries.data?.countries || []} onSelect={pickCountry} gridClass="grid-4" />
         )}
         <h3 id="visa-list" className="op-sub">
           {t('Визийн мэдээлэл хайх')}
@@ -276,54 +281,70 @@ export default function OnePage() {
         )}
       </Section>
 
-      <Section id="how" className="op-alt" title={t('Хэрхэн ажилладаг')} lead={t('Системийг хэрхэн ашиглах, юуг хариуцдаг вэ')}>
-        <ol className="features">
-          <li>
-            <span className="feature-icon" aria-hidden>
-              <Icon name="book" size={22} />
-            </span>
-            <strong>{t('1. Мэдээлэл унших')}</strong>
-            <p className="muted small">{t('Ангилал бүрийн материал, эх сурвалж, шалгасан огноог харна.')}</p>
-          </li>
-          <li>
-            <span className="feature-icon" aria-hidden>
-              <Icon name="upload" size={22} />
-            </span>
-            <strong>{t('2. Анкет, материал илгээх')}</strong>
-            <p className="muted small">{t('PDF, JPG, PNG файлаа хавсаргаад нэг дор илгээнэ. Дотоод лавлах дугаар олгоно.')}</p>
-          </li>
-          <li>
-            <span className="feature-icon" aria-hidden>
-              <Icon name="archive" size={22} />
-            </span>
-            <strong>{t('3. Архив, явц хянах')}</strong>
-            <p className="muted small">{t('Өмнөх мэдүүлэг, бүрдлийн үнэлгээгээ хэзээ ч нээж харна.')}</p>
-          </li>
-        </ol>
-        <Card className="prose">
-          <HelpSteps visasLink="#visas" level={3} />
-        </Card>
-        <p className="small muted mb0">{t('Систем виз олгох шийдвэр гаргахгүй. Албан ёсны хариуг Korea Visa Portal-аас шалгана.')}</p>
-      </Section>
-
-      <Section id="security" title={t('Давуу тал ба аюулгүй байдал')} lead={t('Таны мэдээллийг хэрхэн хамгаалдаг вэ')}>
-        <ul className="benefits">
-          {BENEFITS().map(([icon, title, body]) => (
-            <li key={title}>
+      <Section
+        id="how"
+        icon="list"
+        badge={t('Хэрхэн')}
+        title={t('Хэрхэн ажилладаг')}
+        lead={t('Системийг хэрхэн ашиглах, юуг хариуцдаг вэ')}
+      >
+        <div className="split">
+          <ol className="steps-list">
+            <li>
               <span className="feature-icon" aria-hidden>
-                <Icon name={icon} size={22} />
+                <Icon name="book" size={22} />
               </span>
-              <h3>{title}</h3>
-              <p className="muted small">{body}</p>
+              <strong>{t('1. Мэдээлэл унших')}</strong>
+              <p className="muted small">{t('Ангилал бүрийн материал, эх сурвалж, шалгасан огноог харна.')}</p>
             </li>
-          ))}
-        </ul>
-        <Card className="prose" id="privacy">
-          <HelpPrivacy level={3} />
-        </Card>
+            <li>
+              <span className="feature-icon" aria-hidden>
+                <Icon name="upload" size={22} />
+              </span>
+              <strong>{t('2. Анкет, материал илгээх')}</strong>
+              <p className="muted small">{t('PDF, JPG, PNG файлаа хавсаргаад нэг дор илгээнэ. Дотоод лавлах дугаар олгоно.')}</p>
+            </li>
+            <li>
+              <span className="feature-icon" aria-hidden>
+                <Icon name="archive" size={22} />
+              </span>
+              <strong>{t('3. Архив, явц хянах')}</strong>
+              <p className="muted small">{t('Өмнөх мэдүүлэг, бүрдлийн үнэлгээгээ хэзээ ч нээж харна.')}</p>
+            </li>
+          </ol>
+          <Card className="prose">
+            <HelpSteps visasLink="#visas" level={3} />
+          </Card>
+        </div>
+        <p className="small muted op-note">{t('Систем виз олгох шийдвэр гаргахгүй. Албан ёсны хариуг Korea Visa Portal-аас шалгана.')}</p>
       </Section>
 
-      <Section id="faq" className="op-alt" title={t('Түгээмэл асуулт')}>
+      <Section
+        id="security"
+        icon="shield"
+        badge={t('Аюулгүй байдал')}
+        title={t('Давуу тал ба аюулгүй байдал')}
+        lead={t('Таны мэдээллийг хэрхэн хамгаалдаг вэ')}
+      >
+        <div className="split split-wide">
+          <ul className="benefits">
+            {BENEFITS().map(([icon, title, body]) => (
+              <li key={title}>
+                <span className="feature-icon" aria-hidden>
+                  <Icon name={icon} size={22} />
+                </span>
+                <h3>{title}</h3>
+                <p className="muted small">{body}</p>
+              </li>
+            ))}
+          </ul>
+          <Card className="prose" id="privacy">
+            <HelpPrivacy level={3} />
+          </Card>
+        </div>
+      </Section>
+
+      <Section id="faq" icon="help" badge={t('FAQ')} title={t('Түгээмэл асуулт')}>
         <div className="faq">
           {FAQ().map(([qq, a]) => (
             <details key={qq}>
@@ -337,8 +358,8 @@ export default function OnePage() {
         </div>
       </Section>
 
-      <Section id="contact" title={t('Тусламж ба холбоо барих')} lead={t('Мэдээллийн заавар')}>
-        <div className="grid grid-auto">
+      <Section id="contact" icon="file" badge={t('Тусламж')} title={t('Тусламж ба холбоо барих')} lead={t('Мэдээллийн заавар')}>
+        <div className="split">
           <Card className="prose">
             <HelpContacts level={3} />
           </Card>
@@ -346,7 +367,7 @@ export default function OnePage() {
             <HelpNotes level={3} />
           </Card>
         </div>
-        <p className="small muted mb0">
+        <p className="small muted op-note">
           {t('Цахим виз · Энэхүү систем нь материалын бүрдлийг зохион байгуулна; виз олгох шийдвэрийг эрх бүхий байгууллага гаргана.')}
         </p>
       </Section>

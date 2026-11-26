@@ -1826,7 +1826,28 @@ dl.kv dd {
 }
 
 /* ══ Зочны нэг хуудас (GuestShell + OnePage) ══
-   Тогтмол header/footer, агуулга дунд нь гүйлгэгдэнэ. Нэвтэрсэн хэрэглэгчийн .shell-д хамаарахгүй. */
+   Нэгдсэн хэмжүүр: зай 4/8/12/16/24/32/48/64/96px (--sp-*), үсэг 5 түвшин (--fs-*), хэсэг хоорондын зай --section.
+   Дэвсгэр 2 түвшин (хуудас --bg, карт --card); градиент/гэрэлтэлт зөвхөн hero ба ★ хариу шалгах хэсэгт.
+   Нэвтэрсэн хэрэглэгчийн .shell-д хамаарахгүй. */
+:root {
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+  --sp-9: 96px;
+  --section: clamp(64px, 8vw, 120px);
+  --fs-h1: clamp(2rem, 1.4rem + 2.2vw, 3.5rem); /* 32 → 56 */
+  --fs-h2: clamp(1.625rem, 1.2rem + 1.2vw, 2.5rem); /* 26 → 40 */
+  --fs-h3: clamp(1.0625rem, 0.95rem + 0.35vw, 1.25rem); /* 17 → 20 */
+  --fs-body: clamp(0.9375rem, 0.88rem + 0.18vw, 1.0625rem); /* 15 → 17 */
+  --fs-small: clamp(0.8125rem, 0.78rem + 0.1vw, 0.875rem); /* 13 → 14 */
+}
+
+/* ── Shell: тогтмол header / footer ── */
 .g-shell {
   --gh: 68px; /* header-ийн өндөр */
   --gf: 48px; /* footer-ийн өндөр */
@@ -1841,7 +1862,7 @@ dl.kv dd {
   height: 100%;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .g-header {
   position: fixed;
@@ -1858,11 +1879,11 @@ dl.kv dd {
     box-shadow 0.2s;
 }
 .g-header.scrolled {
-  height: 56px;
-  background: color-mix(in srgb, var(--card) 78%, transparent);
+  height: 60px;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
   -webkit-backdrop-filter: saturate(1.4) blur(12px);
   backdrop-filter: saturate(1.4) blur(12px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 6px 20px rgba(18, 38, 60, 0.06);
 }
 .g-header .brand {
   flex-shrink: 0;
@@ -1872,7 +1893,7 @@ dl.kv dd {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 .g-nav {
   flex: 1;
@@ -1885,18 +1906,18 @@ dl.kv dd {
   margin: 0;
   padding: 0;
   display: flex;
-  gap: 2px;
+  gap: var(--sp-1);
 }
 .g-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
   border-radius: 999px;
   color: var(--ink-2);
   text-decoration: none;
   font-weight: 500;
-  font-size: 14px;
+  font-size: var(--fs-small);
   white-space: nowrap;
   transition:
     background 0.15s,
@@ -1918,20 +1939,15 @@ dl.kv dd {
   color: var(--primary);
   font-weight: 700;
 }
-.g-actions {
+.g-actions,
+.g-auth {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   flex-shrink: 0;
 }
 .g-burger {
   display: none;
-}
-.g-auth {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 }
 .g-main {
   padding: var(--gh) 0 var(--gf);
@@ -1941,7 +1957,7 @@ dl.kv dd {
 .g-main > .alert {
   width: var(--wrap);
   max-width: none;
-  margin: 28px auto 40px;
+  margin: var(--sp-6) auto var(--sp-7);
 }
 .g-footer {
   position: fixed;
@@ -1954,7 +1970,7 @@ dl.kv dd {
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--line);
-  font-size: 13px;
+  font-size: var(--fs-small);
   color: var(--muted);
 }
 .g-footer .g-inner {
@@ -1962,18 +1978,18 @@ dl.kv dd {
 }
 .g-foot-links {
   display: flex;
-  gap: 18px;
+  gap: var(--sp-5);
 }
 .g-foot-links a {
   color: var(--ink-2);
 }
 .to-top {
   position: fixed;
-  right: 20px;
-  bottom: calc(var(--gf) + 16px);
+  right: var(--sp-5);
+  bottom: calc(var(--gf) + var(--sp-4));
   z-index: 36;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--card);
   border: 1px solid var(--line);
@@ -1983,122 +1999,116 @@ dl.kv dd {
   transform: rotate(-90deg);
 }
 
-/* ── Хэсгүүд ── */
+/* ── Хуудасны үсгийн 5 түвшин ── */
 .op {
   display: flex;
   flex-direction: column;
-  font-size: clamp(15px, 0.25vw + 12px, 17px);
+  font-size: var(--fs-body);
+  line-height: 1.6;
 }
+.op h1 {
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+.op h2 {
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.op h3,
+.op .card h3 {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+}
+.op :is(p, li, input, select, .btn, .cta, summary, .radio, h4) {
+  font-size: var(--fs-body);
+}
+.op
+  :is(
+    .small,
+    .muted.small,
+    .country-badge,
+    .field label,
+    .field-hint,
+    .field-error,
+    legend,
+    .badge,
+    .eyebrow,
+    .kv-inline,
+    .code,
+    .state,
+    .notes,
+    .notes li,
+    .mini-steps b
+  ) {
+  font-size: var(--fs-small);
+}
+.op .small {
+  line-height: 1.55;
+}
+/* Урт текст ≤70 тэмдэгт */
+.op :is(.op-lead, .prose p, .prose li, .faq details p, .benefits p, .steps-list p, .hero-text p) {
+  max-width: 70ch;
+}
+
+/* ── Хэсэг: бүтэн өргөний зурвас, агуулга .wrap-д; толгой нэг хэв маяг (badge → h2 → тайлбар, зүүн) ── */
 .op-band {
   position: relative;
-  padding-block: clamp(48px, 6vw, 104px);
+  padding-block: var(--section);
 }
-.op-alt {
-  background: var(--card-2);
-  border-block: 1px solid var(--line);
-}
-/* auto-fill: цөөн карт (ж: ганц визийн ангилал) бүтэн мөрөөр сунахгүй; том дэлгэцэнд 4, таблетад 2 багана */
-.grid-auto {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-}
-/* Зурвас руу үсрэхэд дээд ирмэг нь яг header-ийн доор (дотоод padding-тай тул нэмэлт зай хэрэггүй) */
 .op .op-band {
   scroll-margin-top: var(--gh);
 }
 .op [id] {
-  scroll-margin-top: calc(var(--gh) + 16px);
+  scroll-margin-top: calc(var(--gh) + var(--sp-5));
 }
 .op-section {
   outline: none;
 }
-/* Hero: gradient ба гэрэлтэлт ирмэг хүртэл; текст зүүн, зураг баруун */
-.op-hero-band {
-  overflow: hidden;
-  padding-block: clamp(40px, 5vw, 96px);
-  background: linear-gradient(120deg, var(--hero-from), var(--hero-to));
-  border-bottom: 1px solid var(--line);
+.op-head {
+  margin-bottom: var(--sp-7);
 }
-.op-hero-band::before,
-.op-hero-band::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  pointer-events: none;
-}
-.op-hero-band::before {
-  width: clamp(260px, 30vw, 620px);
-  aspect-ratio: 1;
-  right: -6vw;
-  top: -40%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 18%, transparent), transparent 70%);
-}
-.op-hero-band::after {
-  width: clamp(200px, 22vw, 460px);
-  aspect-ratio: 1;
-  left: -8vw;
-  bottom: -55%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--primary) 12%, transparent), transparent 70%);
-}
-.op-hero {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); /* текст зүүн, зураг баруун баганын голд — зай тэнцүү */
-  align-items: center;
-  gap: clamp(24px, 4vw, 80px);
-}
-.op-hero .hero-text {
-  flex: 1;
-  min-width: 0;
-}
-.op-hero p {
-  color: var(--ink-2);
-  font-size: clamp(16px, 0.5vw + 0.8rem, 21px);
-  margin: 0 0 24px;
-  max-width: 60ch;
-}
-.op-hero .hero-art {
-  justify-self: center;
-  width: clamp(200px, 24vw, 460px);
-  height: auto;
-  aspect-ratio: 220 / 180;
-}
-.op-hero h1 {
-  font-size: clamp(28px, 1.6vw + 1.1rem, 58px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin-bottom: 10px;
-}
-.hero-more {
+.op .eyebrow {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-.op-head {
-  margin-bottom: clamp(20px, 2vw, 36px);
-}
-.op-head h2 {
-  font-size: clamp(24px, 1vw + 1.1rem, 40px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: 999px;
+  background: var(--primary-50);
+  color: var(--primary);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: none;
 }
 .op-lead {
-  margin: 8px 0 0;
-  max-width: 75ch;
+  margin: var(--sp-3) 0 0;
   color: var(--ink-2);
-  font-size: clamp(16px, 0.3vw + 0.85rem, 19px);
 }
-/* Урт текстийн мөр ≤75 тэмдэгт — уншихад эвтэйхэн */
-.op .prose p,
-.op .prose li,
-.op .faq details p,
-.op .benefits p,
-.op .features p {
-  max-width: 75ch;
+.op .op-sub {
+  margin: var(--sp-7) 0 var(--sp-4);
 }
-.op-sub {
-  font-size: 18px;
-  margin: 28px 0 12px;
+.op .card {
+  margin: 0;
+  padding: var(--sp-6);
+}
+.op .grid {
+  gap: var(--sp-5);
+}
+.op .grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+/* Визийн ангиллын карт: auto-fill — цөөн карт бүтэн мөрөөр сунахгүй; 1680px-д дээд тал нь 4 багана */
+.grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+}
+.op .filters {
+  margin: 0 0 var(--sp-5);
 }
 .clamp-2 {
   display: -webkit-box;
@@ -2106,54 +2116,143 @@ dl.kv dd {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* Картууд: нэг эгнээнд ижил өндөр, товч/мета доод талд нэг шугамд */
+.op :is(.country-card, .visa-card) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  height: 100%;
+  margin: 0;
+  padding: var(--sp-6);
+}
+.op .country-head {
+  margin: 0;
+}
+.op .country-card .cta,
+.op .visa-card .kv-inline {
+  margin-top: auto;
+  padding-top: var(--sp-3);
+}
 .country-card .cta-btn {
   background: none;
   border: 0;
-  padding: 0;
+  padding: var(--sp-3) 0 0;
   font: inherit;
   font-weight: 700;
+  text-align: left;
   cursor: pointer;
 }
 .country-card .cta-btn:hover {
   text-decoration: underline;
 }
+/* Хоёр баганат тэнцвэртэй зохион байгуулалт */
+.split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+  align-items: stretch;
+}
+.split-wide {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+}
+.op .split > .card {
+  height: 100%;
+}
+.op-note {
+  margin: var(--sp-6) 0 0;
+}
 
-/* ★ Визийн хариу шалгах — гол хэсэг */
+/* ── Hero: текст | зураг, босоогоор голлосон, ~65% өндөр ── */
+.op-hero-band {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  min-height: clamp(440px, 66vh, 760px);
+  padding-block: var(--sp-8);
+  background: linear-gradient(120deg, var(--hero-from), var(--hero-to));
+}
+.op-hero-band::before {
+  content: '';
+  position: absolute;
+  right: -8vw;
+  top: -30%;
+  width: clamp(320px, 40vw, 760px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.op-hero {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: var(--sp-7);
+}
+.op-hero .hero-text {
+  min-width: 0;
+}
+.op-hero h1 {
+  margin: 0 0 var(--sp-4);
+  text-wrap: balance; /* мөр тэнцвэртэй тасарна */
+}
+.op-hero .hero-text p {
+  margin: 0 0 var(--sp-6);
+  color: var(--ink-2);
+  font-size: var(--fs-h3);
+}
+.op-hero .hero-art {
+  justify-self: center;
+  width: clamp(240px, 26vw, 480px);
+  height: auto;
+  aspect-ratio: 220 / 180;
+}
+.op .row-actions {
+  gap: var(--sp-3);
+}
+.hero-more {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* ── ★ Визийн хариу шалгах: тод боловч тайван ── */
 .op-check {
   background:
-    radial-gradient(ellipse 60% 70% at 50% 0%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--card)), var(--card) 60%);
-  border-block: 2px solid color-mix(in srgb, var(--brand) 55%, var(--line));
-  box-shadow:
-    0 -8px 32px color-mix(in srgb, var(--brand) 10%, transparent),
-    0 8px 32px color-mix(in srgb, var(--brand) 10%, transparent);
-}
-.op-check .op-head {
-  margin: 0 auto clamp(24px, 2.5vw, 44px);
-  text-align: center;
-}
-.op-check .op-lead {
-  margin-inline: auto;
-}
-.op-check .op-head h2 {
-  font-size: clamp(26px, 1.4vw + 1.2rem, 48px);
-}
-.eyebrow-strong {
-  background: var(--primary);
-  color: var(--on-primary);
+    radial-gradient(ellipse 55% 60% at 20% 0%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 55% at 90% 100%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 70%), var(--bg);
+  border-block: 1px solid color-mix(in srgb, var(--brand) 35%, var(--line));
 }
 .check-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-  gap: clamp(24px, 3vw, 56px);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--sp-7);
   align-items: start;
 }
-/* Маягтын талбарууд өргөн дэлгэцэнд 2–3 багана */
+.check-form {
+  padding: var(--sp-6);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
 .check-form .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  gap: var(--sp-5);
 }
 .check-form .form-grid .span-2 {
   grid-column: 1 / -1;
+}
+.check-form .field {
+  gap: var(--sp-2);
+}
+.check-form :is(input:not([type='radio']), select) {
+  box-sizing: border-box;
+  height: 48px;
+}
+.check-form .field-hint {
+  min-height: 2lh; /* тайлбар 1–2 мөр — талбарууд нэг шугамд */
 }
 .radio-field {
   border: 0;
@@ -2163,24 +2262,27 @@ dl.kv dd {
 }
 .radio-field legend {
   padding: 0;
-  margin-bottom: 6px;
+  margin-bottom: var(--sp-2);
   color: var(--ink-2);
-  font-size: 14px;
   font-weight: 500;
 }
 .check-privacy {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   align-items: flex-start;
-  margin: 16px 0;
+  margin: var(--sp-5) 0;
 }
 .check-privacy .icon {
   color: var(--ok);
   margin-top: 2px;
 }
+.check-form .row-actions .btn-primary {
+  min-height: 48px;
+  padding-inline: var(--sp-6);
+}
 .check-ready {
-  margin-top: 20px;
-  padding: 18px 20px;
+  margin-top: var(--sp-5);
+  padding: var(--sp-5);
   background: var(--card);
   border: 1px solid var(--line);
   border-left: 4px solid var(--ok);
@@ -2188,34 +2290,32 @@ dl.kv dd {
   outline: none;
 }
 .check-ready h3 {
-  font-size: 17px;
-  margin-bottom: 6px;
+  margin-bottom: var(--sp-2);
 }
 .check-aside {
-  background: var(--card-2);
+  padding: var(--sp-6);
+  background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 22px;
+  box-shadow: var(--shadow);
 }
 .check-aside h3 {
-  font-size: 17px;
-  margin-bottom: 14px;
+  margin-bottom: var(--sp-4);
 }
 .check-aside h4 {
-  margin: 20px 0 8px;
-  font-size: 14px;
+  margin: var(--sp-6) 0 var(--sp-2);
   color: var(--ink);
 }
 .mini-steps {
   list-style: none;
-  margin: 0 0 18px;
+  margin: 0 0 var(--sp-5);
   padding: 0;
   display: grid;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 .mini-steps li {
   display: flex;
-  gap: 12px;
+  gap: var(--sp-3);
   align-items: flex-start;
 }
 .mini-steps b {
@@ -2227,7 +2327,6 @@ dl.kv dd {
   place-items: center;
   background: var(--primary-50);
   color: var(--primary);
-  font-size: 14px;
 }
 .w-full {
   width: 100%;
@@ -2238,39 +2337,89 @@ dl.kv dd {
   padding-left: 18px;
 }
 .notes li + li {
-  margin-top: 4px;
+  margin-top: var(--sp-1);
+}
+.check-aside .small.muted {
+  margin: var(--sp-2) 0 0;
 }
 
-/* Давуу тал, FAQ */
-.op .features {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-}
-.benefits {
+/* ── Хэрхэн: алхмын жагсаалт | илгээх алхам ── */
+.steps-list {
   list-style: none;
-  margin: 0 0 16px;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
-  gap: 16px;
-}
-.benefits li {
+  margin: 0;
+  padding: var(--sp-6);
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px;
   box-shadow: var(--shadow);
 }
+.steps-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--sp-4);
+  align-items: start;
+}
+.steps-list li + li {
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+}
+.steps-list .feature-icon {
+  grid-row: span 2;
+  margin: 0;
+}
+.steps-list p {
+  margin: var(--sp-1) 0 0;
+}
+.op .prose h3 {
+  margin-bottom: var(--sp-3);
+}
+.op .prose ol,
+.op .prose ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.op .prose li + li {
+  margin-top: var(--sp-2);
+}
+.op .prose p {
+  margin: 0 0 var(--sp-3);
+}
+.op .prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Аюулгүй байдал: давуу тал (2×3) | хувийн мэдээлэл ── */
+.benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-5);
+}
+.benefits li {
+  padding: var(--sp-5);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.benefits .feature-icon {
+  margin-bottom: var(--sp-4);
+}
 .benefits h3 {
-  font-size: 16px;
-  margin-bottom: 6px;
+  margin-bottom: var(--sp-2);
 }
 .benefits p {
   margin: 0;
 }
+
+/* ── FAQ ── */
 .faq {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+  gap: var(--sp-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
 }
 .faq details {
@@ -2285,8 +2434,8 @@ dl.kv dd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
   font-weight: 600;
   border-radius: var(--radius-sm);
 }
@@ -2302,7 +2451,7 @@ dl.kv dd {
 }
 .faq details p {
   margin: 0;
-  padding: 0 20px 18px;
+  padding: 0 var(--sp-5) var(--sp-5);
   color: var(--ink-2);
 }
 
@@ -2312,16 +2461,23 @@ dl.kv dd {
     transition: transform 0.6s var(--ease);
   }
   .reveal-on .reveal:not(.in) {
-    transform: translateY(28px);
+    transform: translateY(24px);
   }
 }
 
 @media (max-width: 1100px) {
   .g-link {
-    padding: 8px 9px;
+    padding: var(--sp-2);
   }
   .g-link .icon {
     display: none;
+  }
+  .op .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .split-wide,
+  .check-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 @media (max-width: 860px) {
@@ -2330,13 +2486,18 @@ dl.kv dd {
     --gf: 36px;
   }
   .g-inner {
-    gap: 10px;
+    gap: var(--sp-3);
   }
   .g-header.scrolled {
     height: var(--gh);
   }
   .g-burger {
     display: inline-grid;
+    order: 3; /* DOM-д цэсний өмнө (Tab дараалал), харагдахдаа хамгийн баруун */
+  }
+  .g-auth {
+    margin-left: auto;
+    gap: var(--sp-1);
   }
   .g-menu {
     position: absolute;
@@ -2345,8 +2506,8 @@ dl.kv dd {
     right: 0;
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
-    padding: 12px 16px 16px;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
     max-height: calc(100vh - var(--gh));
     overflow: auto;
     background: var(--card);
@@ -2371,31 +2532,21 @@ dl.kv dd {
   }
   .g-link {
     display: flex;
-    padding: 12px 14px;
+    padding: var(--sp-3) var(--sp-4);
     border-radius: var(--radius-sm);
-    font-size: 16px;
+    font-size: var(--fs-body);
   }
   .g-link .icon {
     display: block;
   }
   .g-actions {
     flex-wrap: wrap;
-    padding-top: 12px;
+    padding-top: var(--sp-3);
     border-top: 1px solid var(--line);
-  }
-  .g-auth {
-    margin-left: auto;
-    gap: 4px;
-  }
-  .g-burger {
-    order: 3; /* DOM-д цэсний өмнө (Tab дараалал), харагдахдаа хамгийн баруун */
   }
   .g-main > .page,
   .g-main > .alert {
-    margin: 16px auto 32px;
-  }
-  .g-footer {
-    font-size: 12px;
+    margin: var(--sp-4) auto var(--sp-6);
   }
   .g-footer .g-inner {
     justify-content: center;
@@ -2404,12 +2555,16 @@ dl.kv dd {
     display: none;
   }
   .to-top {
-    right: 14px;
-    width: 42px;
-    height: 42px;
+    right: var(--sp-4);
+    width: 44px;
+    height: 44px;
   }
-  .op-band {
-    padding-block: 40px;
+  .op-head {
+    margin-bottom: var(--sp-6);
+  }
+  .op-hero-band {
+    min-height: 0;
+    padding-block: var(--sp-7);
   }
   .op-hero {
     grid-template-columns: minmax(0, 1fr);
@@ -2417,7 +2572,33 @@ dl.kv dd {
   .op-hero .hero-art {
     display: none;
   }
-  .check-grid {
+  .split,
+  .faq {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .op .card,
+  .op :is(.country-card, .visa-card),
+  .check-form,
+  .check-aside,
+  .steps-list {
+    padding: var(--sp-5);
+  }
+  .check-form .field-hint {
+    min-height: 0;
+  }
+}
+@media (max-width: 600px) {
+  .op .grid-4,
+  .benefits {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Mobile: товчнууд бүтэн өргөнтэй */
+  .op .row-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .op .row-actions :is(.btn, .hero-more) {
+    width: 100%;
+    justify-content: center;
   }
 }
